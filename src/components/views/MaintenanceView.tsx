@@ -6,7 +6,9 @@ import { motion } from 'framer-motion';
 import {
   Wrench, Plus, Search, ChevronLeft, ChevronRight, Calendar,
   DollarSign, AlertCircle, CheckCircle2, Clock, XCircle, Truck,
+  Download,
 } from 'lucide-react';
+import { exportCSV, MAINTENANCE_COLUMNS } from '@/lib/export';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -276,12 +278,13 @@ export default function MaintenanceView() {
             {total}
           </Badge>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-              <Plus className="w-4 h-4" /> New Record
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                <Plus className="w-4 h-4" /> New Record
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Maintenance Record</DialogTitle>
@@ -349,6 +352,15 @@ export default function MaintenanceView() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => exportCSV({ data: maintenanceRecords, filename: 'maintenance', columns: MAINTENANCE_COLUMNS })}
+            disabled={maintenanceRecords.length === 0}
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

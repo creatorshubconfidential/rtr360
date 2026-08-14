@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { exportCSV, INVOICE_COLUMNS } from '@/lib/export';
 
 function authFetch(url: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
@@ -143,6 +144,15 @@ export default function InvoicesView() {
           </div>
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">{total}</Badge>
         </div>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => exportCSV({ data: invoices, filename: 'invoices', columns: INVOICE_COLUMNS })}
+          disabled={invoices.length === 0}
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"><Plus className="w-4 h-4" /> New Invoice</Button>
@@ -236,6 +246,7 @@ export default function InvoicesView() {
                     {inv.status === 'pending' && (
                       <Button className="w-full mt-3 h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => handleMarkPaid(inv.id)}>Mark as Paid</Button>
                     )}
+                    <Button variant="outline" className="w-full mt-2 h-8 text-xs gap-1" onClick={() => { window.open(`/api/invoices/${inv.id}/pdf`, '_blank'); }}><Download className="w-3 h-3" /> Download PDF</Button>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -266,11 +277,14 @@ export default function InvoicesView() {
                     <TableCell><Badge className={`text-[11px] ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-600'} border-0`}>{inv.status}</Badge></TableCell>
                     <TableCell className="text-sm text-slate-600">{new Date(inv.dueDate).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      {inv.status === 'pending' ? (
-                        <Button className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => handleMarkPaid(inv.id)}>Mark Paid</Button>
-                      ) : inv.status === 'paid' ? (
-                        <span className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Paid</span>
-                      ) : null}
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.open(`/api/invoices/${inv.id}/pdf`, '_blank'); }}><Download className="w-3 h-3" /> PDF</Button>
+                        {inv.status === 'pending' ? (
+                          <Button className="h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => handleMarkPaid(inv.id)}>Pay</Button>
+                        ) : inv.status === 'paid' ? (
+                          <span className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Paid</span>
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

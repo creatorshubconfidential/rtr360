@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   Ticket, Plus, Search, ChevronLeft, ChevronRight,
-  MessageSquare, Clock, CheckCircle2, AlertCircle,
+  MessageSquare, Clock, CheckCircle2, AlertCircle, Download,
 } from 'lucide-react';
+import { exportCSV, TICKET_COLUMNS } from '@/lib/export';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -152,6 +153,15 @@ export default function TicketsView() {
           </div>
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">{total}</Badge>
         </div>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => exportCSV({ data: tickets, filename: 'tickets', columns: TICKET_COLUMNS })}
+          disabled={tickets.length === 0}
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"><Plus className="w-4 h-4" /> New Ticket</Button>

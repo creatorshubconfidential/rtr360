@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 import {
   Users, Plus, Search, Filter, Phone, Mail, CreditCard,
   IdCard, AlertTriangle, ChevronLeft, ChevronRight, MoreVertical,
-  Eye, Trash2, Ban, CheckCircle2, XCircle
+  Eye, Trash2, Ban, CheckCircle2, XCircle, Download
 } from 'lucide-react';
+import { exportCSV, DRIVER_COLUMNS } from '@/lib/export';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -185,6 +186,15 @@ export default function DriversView() {
             {EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          className="gap-2 h-10"
+          onClick={() => exportCSV({ data: drivers, filename: 'drivers', columns: DRIVER_COLUMNS })}
+          disabled={drivers.length === 0}
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-10"><Plus className="w-4 h-4 mr-1.5" /> Add Driver</Button>

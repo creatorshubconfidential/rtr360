@@ -40,6 +40,8 @@ import {
   UserCog,
   FileSignature,
   Route as RouteIcon,
+  Bot,
+  ExternalLink,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -87,6 +89,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// AI Assistant
+import AIChatPanel from '@/components/AIChatPanel';
 
 // Phase 2 CRM Views
 import PipelineView from '@/components/views/PipelineView';
@@ -213,7 +219,8 @@ type ViewType =
   | 'contracts'
   | 'notifications'
   | 'settings'
-  | 'audit-logs';
+  | 'audit-logs'
+  | 'ai-assistant';
 
 // ────────────────────────────────────────
 // Constants
@@ -278,6 +285,7 @@ const NAV_SECTIONS = [
       { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
       { id: 'reports' as ViewType, icon: BarChart3, label: 'Reports' },
       { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
+      { id: 'ai-assistant' as ViewType, icon: Bot, label: 'AI Assistant' },
     ],
   },
   {
@@ -1462,11 +1470,32 @@ function PlaceholderView({ title, icon: Icon }: { title: string; icon: React.Ele
 function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () => void }) {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifList, setNotifList] = useState<any[]>([]);
+  const [notifCount, setNotifCount] = useState(0);
+
+  const fetchNotifPreview = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('rtr_token');
+      const res = await fetch('/api/notifications?limit=8', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifList(data.notifications || []);
+        setNotifCount(data.unreadCount || 0);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { fetchNotifPreview(); }, [fetchNotifPreview]);
 
   const viewTitle: Record<ViewType, string> = {
     dashboard: 'Dashboard',
     reports: 'Reports & Analytics',
     'live-tracking': 'Live Tracking',
+    'ai-assistant': 'AI Assistant',
     vehicles: 'Vehicles',
     drivers: 'Drivers',
     devices: 'Devices',
@@ -1540,6 +1569,8 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
         return <SettingsView />;
       case 'audit-logs':
         return <AuditLogsView />;
+      case 'ai-assistant':
+        return <DashboardView />; // AI panel opens as overlay
       default:
         return <DashboardView />;
     }
@@ -1577,13 +1608,73 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification Bell */}
-            <button className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer" aria-label="Notifications">
-              <Bell className="w-5 h-5 text-slate-600" />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                3
-              </span>
+            {/* AI Assistant Button */}
+            <button
+              onClick={() => setAiPanelOpen(true)}
+              className="relative p-2 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer group"
+              aria-label="AI Assistant"
+            >
+              <Bot className="w-5 h-5 text-slate-600 group-hover:text-emerald-600 transition-colors" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
             </button>
+
+            {/* Notification Bell */}
+            <div className="relative">
+              <button
+                onClick={() => { setNotifOpen(!notifOpen); fetchNotifPreview(); }}
+                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 text-slate-600" />
+                {notifCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {notifCount > 99 ? '99+' : notifCount}
+                  </span>
+                )}
+              </button>
+              {/* Notification Dropdown */}
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    className="absolute right-0 top-12 w-80 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                      <h3 className="font-semibold text-sm text-slate-800">Notifications</h3>
+                      <div className="flex items-center gap-2">
+                        {notifCount > 0 && (
+                          <Badge className="bg-red-100 text-red-700 border-0 text-[10px]">{notifCount} new</Badge>
+                        )}
+                        <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer">
+                          View All <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <ScrollArea className="max-h-72">
+                      {notifList.length === 0 ? (
+                        <div className="p-6 text-center text-slate-400 text-sm">No notifications</div>
+                      ) : (
+                        <div className="divide-y divide-slate-50">
+                          {notifList.slice(0, 8).map((n: any) => (
+                            <div key={n.id} className={`px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
+                              <p className={`text-xs ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
+                              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                    <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+                      <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold w-full text-center cursor-pointer">
+                        Open Notification Center
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* User Dropdown */}
             <DropdownMenu>
@@ -1635,6 +1726,12 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
           </AnimatePresence>
         </main>
       </div>
+
+      {/* AI Chat Panel Overlay */}
+      <AIChatPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* Click-outside handler for notification dropdown */}
+      {notifOpen && <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />}
     </div>
   );
 }
