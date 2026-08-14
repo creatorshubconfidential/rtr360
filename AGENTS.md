@@ -44,12 +44,12 @@ All development follows the **KEEP / IMPROVE / INTEGRATE / REPLACE / BUILD** str
 | 4 | FleetOS (Live GPS Map) | ✅ Complete | 20 | +1 = 11 |
 | 5 | Maintenance, Billing, Support, Settings | ✅ Complete | +10 = 30 | +6 = 17 |
 | 6 | AI Intelligence & Platform Polish | ✅ Complete | +3 = 33→46 | +5 = 21+AI |
-| 7 | Advanced Analytics & Predictive Intelligence | 🔲 Upcoming | — | — |
-| 8 | Mobile-First PWA & Real-Time WebSocket | 🔲 Upcoming | — | — |
-| 9 | Multi-Org Super Admin & White-Label | 🔲 Upcoming | — | — |
+| 7 | Advanced Analytics & Predictive Intelligence | ✅ Complete | +4 = 50 | +1 = 22+AI |
+| 8 | Mobile-First PWA & Real-Time WebSocket | ✅ Complete | +2 = 52 | +4 components |
+| 9 | Multi-Org Super Admin & White-Label | ✅ Complete | +5 = 57 | +1 = 23+AI |
 | 10 | API Gateway, Webhooks & Integrations | 🔲 Upcoming | — | — |
 
-**Totals (Phase 1-6)**: 46 API routes, 21 view components, 28 DB models, 40+ UI components
+**Totals (Phase 1-9)**: 57 API routes, 23 view components + AI panel, 28 DB models, 45+ UI components
 
 ---
 
@@ -76,14 +76,18 @@ prisma/
   schema.prisma              # 28 models — single source of truth for DB
 src/
   app/
-    api/                     # All API routes (46 files)
+    api/                     # All API routes (57 files)
     globals.css              # RTR brand CSS variables
     layout.tsx               # Root layout (metadata, Toaster, Inter font, Leaflet CSS)
     page.tsx                 # SPA entry — LoginScreen + AdminDashboard
   components/
     ui/                      # 40+ shadcn/ui components (DO NOT EDIT)
-    views/                   # 21 view components (main development area)
+    views/                   # 23 view components (main development area)
     AIChatPanel.tsx          # AI assistant slide-out overlay
+    MobileBottomNav.tsx      # PWA mobile bottom navigation
+    PWAInstallPrompt.tsx     # PWA install prompt card
+    ConnectionStatus.tsx     # Online/offline/reconnecting indicator
+    RealtimeEventToasts.tsx  # SSE fleet event toast notifications
   lib/
     auth.ts                  # hashPassword(), verifyPassword(), createSession(), verifySession()
     db.ts                    # Prisma client singleton
@@ -232,6 +236,7 @@ function authFetch(url: string, options: RequestInit = {}) {
 | 23 | Audit Logs | AuditLogsView.tsx | Full trail with user, action, IP |
 | 24 | Reports | ReportsView.tsx | Fleet analytics, charts, KPIs |
 | 25 | AI Assistant | AIChatPanel.tsx | Chat overlay, 12+ intents, quick actions |
+| 26 | Super Admin | SuperAdminView.tsx | Platform stats, org management, onboarding, white-label, usage |
 
 ---
 
@@ -377,18 +382,22 @@ Default demo data includes:
 - Custom report builder
 
 ### Phase 8: Mobile-First PWA & Real-Time WebSocket
-- Progressive Web App (installable, offline)
-- WebSocket real-time vehicle updates
-- Push notifications (mobile + desktop)
-- Mobile-optimized UI with bottom navigation
-- Offline data sync
+- ✅ Progressive Web App (installable, offline)
+- ✅ SSE real-time vehicle updates (3s interval)
+- ✅ Push notification support (service worker)
+- ✅ Mobile-optimized UI with bottom navigation
+- ✅ Connection status indicator (offline/reconnecting)
+- ✅ Live fleet event toasts (speed, geofence, harsh braking)
 
 ### Phase 9: Multi-Org Super Admin & White-Label
-- Super admin dashboard for platform management
-- Organization onboarding flow
-- White-label branding per organization
-- Custom domain support
-- Usage analytics per organization
+- ✅ Super admin dashboard for platform management
+- ✅ Organization onboarding flow (3-step wizard)
+- ✅ White-label branding per organization (colors, app name, footer)
+- ✅ Usage analytics per organization (30d/90d)
+- ✅ Organization list with search, filters, detail dialog
+- ✅ Platform-wide stats (orgs, users, vehicles, revenue, white-label count)
+- ✅ Role-based nav (PLATFORM section visible only for super_admin)
+- ✅ Soft-deactivate organizations with user cascading
 
 ### Phase 10: API Gateway, Webhooks & Integrations
 - Public API with API key management

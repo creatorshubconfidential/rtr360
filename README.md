@@ -32,7 +32,7 @@ The platform serves the **UAE market** with support for AED currency, Dubai time
 | Phase 6 | AI Intelligence & Platform Polish | ✅ Complete |
 | Phase 7 | Advanced Analytics & Predictive Intelligence | ✅ Complete |
 | Phase 8 | Mobile-First PWA & Real-Time WebSocket | ✅ Complete |
-| Phase 9 | Multi-Org Super Admin & White-Label | 🔲 Upcoming |
+| Phase 9 | Multi-Org Super Admin & White-Label | ✅ Complete |
 | Phase 10 | API Gateway, Webhooks & Integrations | 🔲 Upcoming |
 
 ---
@@ -143,7 +143,7 @@ rtr360/
 │   │   ├── api.ts             # authFetch, formatAED, formatDate
 │   │   ├── export.ts          # CSV export utility
 │   │   ├── utils.ts           # cn() helper
-│   │   └── seed.ts            # demo data (3 orgs, 4 users, 5 vehicles, etc.)
+│   │   └── seed.ts            # demo data (7 orgs, 4 users, 5 vehicles, etc.)
 │   └── types/
 │       └── leaflet.d.ts       # Leaflet type declarations
 ├── package.json
@@ -247,13 +247,13 @@ npm run dev
 | Role | Email | Password |
 |------|-------|----------|
 | Super Admin | admin@rtr.ae | REDACTED_DEMO_PASSWORD |
-| Sales Manager | omar@alfahim.ae | REDACTED_DEMO_PASSWORD |
-| Fleet Manager | ahmed@alfahim.ae | REDACTED_DEMO_PASSWORD |
-| Dispatcher | sara@alfahim.ae | REDACTED_DEMO_PASSWORD |
+| Ops Manager | ahmed.ops@rtr.ae | REDACTED_DEMO_PASSWORD |
+| Sales Manager | fatima.sales@rtr.ae | REDACTED_DEMO_PASSWORD |
+| Customer Admin | khalid@alfahim.ae | REDACTED_DEMO_PASSWORD |
 
 ---
 
-## 📱 Features (22 Modules)
+## 📱 Features (26 Modules)
 
 ### 📊 Dashboard
 - Real-time KPI cards (vehicles, drivers, leads, alerts, trips)
@@ -309,6 +309,26 @@ npm run dev
 - **Audit Logs**: Full audit trail with user, action, entity, IP tracking
 - **Reports & Analytics**: Fleet analytics with charts, KPI summaries
 
+### 🧠 Advanced Analytics (Phase 7)
+- **Fleet Health**: Vehicle health scoring (0-100, grades A-D), risk classification
+- **Driver Trends**: Behavior analytics, risk trends, violation leaderboard
+- **Maintenance AI**: Frequency + mileage prediction, urgency classification
+- **Revenue Forecast**: 12-month historical, linear regression, confidence bands
+
+### 📲 PWA & Real-Time (Phase 8)
+- **PWA**: Installable, offline-capable, service worker with API caching
+- **SSE Real-Time**: Vehicle positions (3s), fleet events (8-15s)
+- **Mobile Bottom Nav**: 5 quick-access items, notification badge
+- **Connection Status**: Offline/reconnecting indicator
+- **Event Toasts**: Speed violations, geofence exits, harsh braking
+
+### 👑 Super Admin & White-Label (Phase 9)
+- **Platform Dashboard**: Total orgs, users, vehicles, revenue, white-label count
+- **Organization Management**: List, search, filter, detail, edit, deactivate
+- **Onboarding**: 3-step wizard (Org Info → Admin User → Plan & Branding)
+- **White-Label Branding**: Color picker, app name, footer, enable/disable toggle
+- **Usage Analytics**: Per-org utilization, trips, leads, revenue, feature usage, daily activity
+
 ### 📤 Exports
 - CSV export with UTF-8 BOM (Arabic support) on 8 table views
 - PDF invoice generation with RTR 360 branding
@@ -328,7 +348,7 @@ npm run dev
 
 ---
 
-## 📋 API Routes (46 Endpoints)
+## 📋 API Routes (57 Endpoints)
 
 ### Auth (3)
 - `POST /api/auth/login` — Login with email/password
@@ -376,7 +396,7 @@ npm run dev
 - `GET/POST /api/contracts` — List/Create contracts
 - `GET/PATCH /api/contracts/[id]` — Detail/Update contract
 
-### Admin (9)
+### Admin & Platform (14)
 - `GET /api/dashboard/stats` — Dashboard KPIs
 - `GET /api/analytics/fleet-health` — Fleet health scoring (0-100, grades A-D)
 - `GET /api/analytics/driver-trends` — Driver behavior analytics
@@ -388,6 +408,11 @@ npm run dev
 - `GET /api/audit-logs` — Audit trail
 - `GET /api/notifications` — Notification list
 - `GET /api/reports` — Analytics data
+- `GET /api/admin/platform-stats` — Platform-wide stats (super admin)
+- `GET|POST /api/admin/organizations` — List/Create organizations (super admin)
+- `GET|PATCH|DELETE /api/admin/organizations/[id]` — Detail/Update/Deactivate org
+- `GET|PUT /api/admin/organizations/[id]/branding` — White-label branding
+- `GET /api/admin/organizations/[id]/usage` — Per-org usage analytics
 
 ### Real-Time (2)
 - `GET /api/realtime/vehicles` — SSE vehicle position stream (3s updates)

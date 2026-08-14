@@ -43,6 +43,7 @@ import {
   Route as RouteIcon,
   Bot,
   ExternalLink,
+  Crown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -124,6 +125,7 @@ import ConnectionStatus from '@/components/ConnectionStatus';
 import RealtimeEventToasts from '@/components/RealtimeEventToasts';
 
 // Phase 6 Intelligence & Admin Views
+import SuperAdminView from '@/components/views/SuperAdminView';
 import ReportsView from '@/components/views/ReportsView';
 import AlertRulesView from '@/components/views/AlertRulesView';
 import GeofencesView from '@/components/views/GeofencesView';
@@ -231,7 +233,8 @@ type ViewType =
   | 'notifications'
   | 'settings'
   | 'audit-logs'
-  | 'ai-assistant';
+  | 'ai-assistant'
+  | 'super-admin';
 
 // ────────────────────────────────────────
 // Constants
@@ -354,6 +357,13 @@ const NAV_SECTIONS = [
       { id: 'users' as ViewType, icon: UserCog, label: 'Users' },
       { id: 'settings' as ViewType, icon: Settings, label: 'Settings' },
       { id: 'audit-logs' as ViewType, icon: Shield, label: 'Audit Logs' },
+    ],
+  },
+  {
+    label: 'PLATFORM',
+    superAdminOnly: true as const,
+    items: [
+      { id: 'super-admin' as ViewType, icon: Crown, label: 'Super Admin' },
     ],
   },
 ];
@@ -538,10 +548,12 @@ function SidebarNav({
   currentView,
   onNavigate,
   onClose,
+  userRole,
 }: {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
   onClose?: () => void;
+  userRole?: string;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -557,7 +569,7 @@ function SidebarNav({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-6">
-        {NAV_SECTIONS.map((section) => (
+        {NAV_SECTIONS.filter((section) => !section.superAdminOnly || userRole === 'super_admin').map((section) => (
           <div key={section.label}>
             <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
               {section.label}
@@ -1634,6 +1646,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     users: 'User Management',
     settings: 'Settings',
     'audit-logs': 'Audit Logs',
+    'super-admin': 'Super Admin',
   };
 
   const renderView = () => {
@@ -1688,6 +1701,8 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
         return <SettingsView />;
       case 'audit-logs':
         return <AuditLogsView />;
+      case 'super-admin':
+        return <SuperAdminView />;
       case 'ai-assistant':
         return <DashboardView />; // AI panel opens as overlay
       default:
@@ -1699,14 +1714,14 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     <div className="min-h-screen flex bg-[var(--rtr-bg)]">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 text-white shrink-0">
-        <SidebarNav currentView={currentView} onNavigate={setCurrentView} />
+        <SidebarNav currentView={currentView} onNavigate={setCurrentView} userRole={user.role} />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-72 p-0 bg-slate-900 text-white border-slate-700">
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-          <SidebarNav currentView={currentView} onNavigate={setCurrentView} onClose={() => setSidebarOpen(false)} />
+          <SidebarNav currentView={currentView} onNavigate={setCurrentView} onClose={() => setSidebarOpen(false)} userRole={user.role} />
         </SheetContent>
       </Sheet>
 

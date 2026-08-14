@@ -62,6 +62,9 @@ async function main() {
       address: 'Dubai Internet City, Building 12',
       city: 'Dubai',
       status: 'active',
+      planName: 'Enterprise',
+      vehicleLimit: 9999,
+      userLimit: 999,
     },
   });
   console.log(`  ✅ RTR Platform (${rtrOrg.id})`);
@@ -79,6 +82,9 @@ async function main() {
       address: 'Khalifa Industrial Zone (KIZAD)',
       city: 'Abu Dhabi',
       status: 'active',
+      planName: 'Premium',
+      vehicleLimit: 50,
+      userLimit: 20,
     },
   });
   console.log(`  ✅ Al Fahim Logistics (${customerOrg.id})`);
@@ -96,9 +102,111 @@ async function main() {
       address: 'JAFZA South, Building 45',
       city: 'Dubai',
       status: 'active',
+      planName: 'Starter',
+      vehicleLimit: 10,
+      userLimit: 5,
     },
   });
   console.log(`  ✅ Mega Logistics FZCO (${megaOrg.id})`);
+
+  // Phase 9: Additional orgs for Super Admin demo
+  const gulfTransitOrg = await db.organization.create({
+    data: {
+      name: 'Gulf Transit LLC',
+      tradeName: 'Gulf Transit',
+      legalName: 'Gulf Transit LLC',
+      industry: 'Transportation',
+      email: 'ops@gulftransit.ae',
+      phone: '+971-6-555-1234',
+      emirate: 'Sharjah',
+      address: 'SAIF Zone, Sharjah',
+      city: 'Sharjah',
+      status: 'active',
+      planName: 'Starter',
+      vehicleLimit: 15,
+      userLimit: 5,
+    },
+  });
+  console.log(`  ✅ Gulf Transit LLC (${gulfTransitOrg.id})`);
+
+  const emiratesFleetOrg = await db.organization.create({
+    data: {
+      name: 'Emirates Fleet Services',
+      tradeName: 'Emirates Fleet',
+      legalName: 'Emirates Fleet Services LLC',
+      industry: 'Fleet Management',
+      email: 'info@emiratesfleet.ae',
+      phone: '+971-3-777-8899',
+      emirate: 'Ajman',
+      address: 'Ajman Free Zone',
+      city: 'Ajman',
+      status: 'active',
+      planName: 'Premium',
+      vehicleLimit: 30,
+      userLimit: 10,
+      whiteLabelEnabled: true,
+      primaryColor: '#1e40af',
+      brandedAppName: 'FleetTrack Pro',
+    },
+  });
+  console.log(`  ✅ Emirates Fleet Services (${emiratesFleetOrg.id})`);
+
+  const nationalCargoOrg = await db.organization.create({
+    data: {
+      name: 'National Cargo Co.',
+      tradeName: 'National Cargo',
+      legalName: 'National Cargo Company LLC',
+      industry: 'Cargo & Logistics',
+      email: 'info@nationalcargo.ae',
+      phone: '+971-7-222-3344',
+      emirate: 'Ras Al Khaimah',
+      address: 'RAK Free Trade Zone',
+      city: 'Ras Al Khaimah',
+      status: 'active',
+      planName: 'Free',
+      vehicleLimit: 5,
+      userLimit: 3,
+    },
+  });
+  console.log(`  ✅ National Cargo Co. (${nationalCargoOrg.id})`);
+
+  const adnocOrg = await db.organization.create({
+    data: {
+      name: 'ADNOC Distribution',
+      tradeName: 'ADNOC Dist',
+      legalName: 'ADNOC Distribution LLC',
+      industry: 'Oil & Gas',
+      email: 'fleet@adnocdist.ae',
+      phone: '+971-2-666-7788',
+      emirate: 'Abu Dhabi',
+      address: 'ADNOC HQ, Corniche Road',
+      city: 'Abu Dhabi',
+      status: 'active',
+      planName: 'Enterprise',
+      vehicleLimit: 200,
+      userLimit: 50,
+      whiteLabelEnabled: true,
+      primaryColor: '#dc2626',
+      accentColor: '#fbbf24',
+      brandedAppName: 'ADNOC Fleet Command',
+    },
+  });
+  console.log(`  ✅ ADNOC Distribution (${adnocOrg.id})`);
+
+  const inactiveOrg = await db.organization.create({
+    data: {
+      name: 'Desert Express (Inactive)',
+      tradeName: 'Desert Express',
+      industry: 'Courier',
+      email: 'info@desertexpress.ae',
+      emirate: 'Fujairah',
+      status: 'inactive',
+      planName: 'Free',
+      vehicleLimit: 5,
+      userLimit: 2,
+    },
+  });
+  console.log(`  ✅ Desert Express (Inactive) (${inactiveOrg.id})`);
 
   // ========================================
   // 2. USERS
@@ -110,10 +218,10 @@ async function main() {
     data: {
       email: 'admin@rtr.ae',
       passwordHash: adminPw,
-      name: 'RTR Admin',
+      name: 'RTR Super Admin',
       phone: '+971-50-111-2233',
       role: 'super_admin',
-      organizationId: rtrOrg.id,
+      // No organizationId — super admin sees all orgs
       status: 'active',
       emailVerified: true,
     },
@@ -158,7 +266,7 @@ async function main() {
       passwordHash: customerPw,
       name: 'Khalid Al Fahim',
       phone: '+971-50-333-4455',
-      role: 'admin',
+      role: 'org_owner',
       organizationId: customerOrg.id,
       status: 'active',
       emailVerified: true,
@@ -1540,11 +1648,11 @@ async function main() {
   console.log('\n' + '='.repeat(50));
   console.log('🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
-  console.log(`   Organizations: 3`);
+  console.log(`   Organizations: 7`);
   console.log(`   Users: 4`);
   console.log(`   Vehicles: 5`);
   console.log(`   Drivers: 3`);
-  console.log(`   Devices: 3`);
+  console.log(`   Devices: 8`);
   console.log(`   Leads: 10`);
   console.log(`   Contacts: 4`);
   console.log(`   Activities: 6`);
