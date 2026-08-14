@@ -25,6 +25,9 @@ export async function GET(request: Request) {
       totalLeads,
       openAlerts,
       openTickets,
+      totalDevices,
+      pendingInstallations,
+      activeTechnicians,
     ] = await Promise.all([
       db.vehicle.count({ where: vehicleFilter }),
       db.vehicle.count({
@@ -37,6 +40,15 @@ export async function GET(request: Request) {
       }),
       db.ticket.count({
         where: { ...vehicleFilter, status: 'open' },
+      }),
+      db.device.count({
+        where: user.role === 'super_admin' ? {} : { OR: [{ ...orgFilter }, { organizationId: null, status: 'warehouse' }] },
+      }),
+      db.installation.count({
+        where: { ...orgFilter, status: { in: ['scheduled', 'in_progress', 'testing'] } },
+      }),
+      db.technician.count({
+        where: { ...orgFilter, status: 'active' },
       }),
     ]);
 
@@ -83,6 +95,9 @@ export async function GET(request: Request) {
       openTickets,
       todayTrips,
       totalDistance: Math.round(totalDistance),
+      totalDevices,
+      pendingInstallations,
+      activeTechnicians,
     });
   } catch (error) {
     console.error('Dashboard stats error:', error);

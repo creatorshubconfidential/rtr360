@@ -18,6 +18,7 @@ async function main() {
   await db.trip.deleteMany();
   await db.maintenanceRecord.deleteMany();
   await db.installation.deleteMany();
+  await db.technician.deleteMany();
   await db.notification.deleteMany();
   await db.document.deleteMany();
   await db.quotation.deleteMany();
@@ -240,6 +241,76 @@ async function main() {
   ]);
   console.log(`  ✅ Created ${devices.length} devices`);
 
+  // Add warehouse devices (for RTR platform - unassigned inventory)
+  const warehouseDevices = await Promise.all([
+    db.device.create({
+      data: {
+        imei: '860987654321001', serialNumber: 'RTR-WH-001', model: 'GT06N', manufacturer: 'Concox',
+        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+        status: 'warehouse', purchaseCost: 185, purchaseDate: new Date('2025-06-01'),
+      },
+    }),
+    db.device.create({
+      data: {
+        imei: '860987654321002', serialNumber: 'RTR-WH-002', model: 'GT06N', manufacturer: 'Concox',
+        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+        status: 'warehouse', purchaseCost: 185, purchaseDate: new Date('2025-06-01'),
+      },
+    }),
+    db.device.create({
+      data: {
+        imei: '860987654321003', serialNumber: 'RTR-WH-003', model: 'FM1200', manufacturer: 'Teltonika',
+        deviceType: 'Wired Tracker', protocol: 'FM', warehouse: 'RTR Dubai Warehouse',
+        status: 'warehouse', purchaseCost: 220, purchaseDate: new Date('2025-06-15'),
+      },
+    }),
+    db.device.create({
+      data: {
+        imei: '860987654321004', serialNumber: 'RTR-WH-004', model: 'S10', manufacturer: 'Queclink',
+        deviceType: 'OBD Tracker', protocol: 'Queclink', warehouse: 'RTR Abu Dhabi Warehouse',
+        status: 'warehouse', purchaseCost: 150, purchaseDate: new Date('2025-07-01'),
+      },
+    }),
+    db.device.create({
+      data: {
+        imei: '860987654321005', serialNumber: 'RTR-WH-005', model: 'GT06N', manufacturer: 'Concox',
+        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+        status: 'defective', purchaseCost: 185, purchaseDate: new Date('2025-03-10'),
+      },
+    }),
+  ]);
+  console.log(`  ✅ Created ${warehouseDevices.length} warehouse devices`);
+
+  // ========================================
+  // 4B. TECHNICIANS
+  // ========================================
+  console.log('\n🔧 Creating technicians...');
+
+  const technicians = await Promise.all([
+    db.technician.create({
+      data: {
+        name: 'Hassan Ali Khan', phone: '+971-55-100-2233', email: 'hassan.tech@rtr.ae',
+        emirate: 'Dubai', specialty: 'GPS Installation', organizationId: rtrOrg.id,
+        status: 'active', totalInstalled: 47,
+      },
+    }),
+    db.technician.create({
+      data: {
+        name: 'Waqar Ahmed', phone: '+971-55-200-3344', email: 'waqar.tech@rtr.ae',
+        emirate: 'Dubai', specialty: 'All Types', organizationId: rtrOrg.id,
+        status: 'active', totalInstalled: 32,
+      },
+    }),
+    db.technician.create({
+      data: {
+        name: 'Bilal Sheikh', phone: '+971-55-300-4455',
+        emirate: 'Abu Dhabi', specialty: 'Camera Setup', organizationId: rtrOrg.id,
+        status: 'active', totalInstalled: 18,
+      },
+    }),
+  ]);
+  console.log(`  ✅ Created ${technicians.length} technicians`);
+
   // ========================================
   // 5. DRIVERS
   // ========================================
@@ -253,7 +324,12 @@ async function main() {
         phone: '+971-50-222-3344',
         email: 'mohammed.drv@alfahim.ae',
         licenseNumber: 'DL-87654',
+        licenseType: 'Heavy Vehicle',
         licenseExpiry: new Date('2026-06-15'),
+        emirate: 'Dubai',
+        nationality: 'UAE',
+        emergencyContact: 'Ali Al Rashid',
+        emergencyPhone: '+971-50-222-9900',
         organizationId: customerOrg.id,
         status: 'active',
         score: 95.5,
@@ -269,7 +345,10 @@ async function main() {
         phone: '+971-50-333-4455',
         email: 'rashid.drv@alfahim.ae',
         licenseNumber: 'DL-54321',
+        licenseType: 'Heavy Vehicle',
         licenseExpiry: new Date('2025-12-01'),
+        emirate: 'Dubai',
+        nationality: 'India',
         organizationId: customerOrg.id,
         status: 'active',
         score: 88.0,
@@ -284,7 +363,10 @@ async function main() {
         employeeId: 'DRV-003',
         phone: '+971-50-444-5566',
         licenseNumber: 'DL-11223',
+        licenseType: 'Light Vehicle',
         licenseExpiry: new Date('2026-09-30'),
+        emirate: 'Abu Dhabi',
+        nationality: 'UAE',
         organizationId: customerOrg.id,
         status: 'active',
         score: 97.2,
@@ -386,6 +468,85 @@ async function main() {
     )
   );
   console.log(`  ✅ Created ${vehicles.length} vehicles`);
+
+  // ========================================
+  // 6B. INSTALLATIONS
+  // ========================================
+  console.log('\n🔧 Creating installations...');
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 5);
+
+  const installations = await Promise.all([
+    db.installation.create({
+      data: {
+        installationNumber: 'INST-202508-001',
+        organizationId: customerOrg.id,
+        vehicleId: vehicles[0].id,
+        deviceId: devices[0].id,
+        technicianId: technicians[0].id,
+        status: 'completed',
+        scheduledDate: new Date('2024-01-14'),
+        scheduledTime: '09:00',
+        completedAt: new Date('2024-01-15'),
+        emirate: 'Dubai',
+        location: 'Al Quoz Industrial Area, Unit 45',
+        gpsSignal: true, powerWiring: true, antennaMounted: true,
+        testResult: 'passed',
+        notes: 'Standard installation, GPS signal strong.',
+      },
+    }),
+    db.installation.create({
+      data: {
+        installationNumber: 'INST-202508-002',
+        organizationId: customerOrg.id,
+        vehicleId: vehicles[1].id,
+        deviceId: devices[1].id,
+        technicianId: technicians[1].id,
+        status: 'completed',
+        scheduledDate: new Date('2024-02-19'),
+        scheduledTime: '10:30',
+        completedAt: new Date('2024-02-20'),
+        emirate: 'Abu Dhabi',
+        location: 'Mussafah Industrial, Block 12',
+        gpsSignal: true, powerWiring: true, antennaMounted: true,
+        testResult: 'passed',
+      },
+    }),
+    db.installation.create({
+      data: {
+        installationNumber: 'INST-202508-003',
+        organizationId: customerOrg.id,
+        vehicleId: vehicles[4].id,
+        deviceId: warehouseDevices[0].id,
+        technicianId: technicians[0].id,
+        status: 'scheduled',
+        scheduledDate: tomorrow,
+        scheduledTime: '08:00',
+        emirate: 'Dubai',
+        location: 'Customer site - Al Jaddaf',
+        notes: 'New vehicle delivery, customer requested morning slot.',
+      },
+    }),
+    db.installation.create({
+      data: {
+        installationNumber: 'INST-202508-004',
+        organizationId: customerOrg.id,
+        vehicleId: vehicles[3].id,
+        deviceId: warehouseDevices[1].id,
+        technicianId: technicians[2].id,
+        status: 'in_progress',
+        scheduledDate: new Date(),
+        scheduledTime: '14:00',
+        emirate: 'Dubai',
+        location: 'RTR Workshop - Al Quoz',
+        notes: 'Maintenance vehicle re-install after repair.',
+      },
+    }),
+  ]);
+  console.log(`  ✅ Created ${installations.length} installations`);
 
   // ========================================
   // 7. ALERTS

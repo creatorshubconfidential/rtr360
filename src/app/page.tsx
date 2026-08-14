@@ -33,6 +33,7 @@ import {
   Globe,
   Menu,
   Kanban,
+  HardHat,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,19 @@ import PipelineView from '@/components/views/PipelineView';
 import QuotationsView from '@/components/views/QuotationsView';
 import ContactsView from '@/components/views/ContactsView';
 
+// Phase 3 Operations Views
+import DriversView from '@/components/views/DriversView';
+import DevicesView from '@/components/views/DevicesView';
+import InstallationsView from '@/components/views/InstallationsView';
+import TechniciansView from '@/components/views/TechniciansView';
+
+// Phase 4 FleetOS Views
+import dynamic from 'next/dynamic';
+const LiveTrackingView = dynamic(() => import('@/components/views/LiveTrackingView'), {
+  ssr: false,
+  loading: () => <div className="h-[calc(100vh-8rem)] flex items-center justify-center bg-slate-50 rounded-xl"><div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>,
+});
+
 // ────────────────────────────────────────
 // Types
 // ────────────────────────────────────────
@@ -107,6 +121,9 @@ interface DashboardStats {
   openTickets: number;
   todayTrips: number;
   totalDistance: number;
+  totalDevices: number;
+  pendingInstallations: number;
+  activeTechnicians: number;
 }
 
 interface Lead {
@@ -157,6 +174,7 @@ type ViewType =
   | 'devices'
   | 'installations'
   | 'maintenance'
+  | 'technicians'
   | 'pipeline'
   | 'leads'
   | 'contacts'
@@ -228,7 +246,7 @@ const NAV_SECTIONS = [
     label: 'MAIN',
     items: [
       { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
-      { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking', badge: 'Coming Soon' },
+      { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
     ],
   },
   {
@@ -243,6 +261,7 @@ const NAV_SECTIONS = [
     label: 'OPERATIONS',
     items: [
       { id: 'installations' as ViewType, icon: Wrench, label: 'Installations' },
+      { id: 'technicians' as ViewType, icon: HardHat, label: 'Technicians' },
       { id: 'maintenance' as ViewType, icon: Settings, label: 'Maintenance' },
     ],
   },
@@ -562,14 +581,17 @@ function DashboardView() {
 
   const kpiCards = stats
     ? [
-        { icon: Truck, label: 'Total Vehicles', value: stats.totalVehicles, change: '+12%', color: 'bg-emerald-100 text-emerald-600' },
-        { icon: Activity, label: 'Active Vehicles', value: stats.activeVehicles, change: '+8%', color: 'bg-green-100 text-green-600' },
-        { icon: Users, label: 'Total Drivers', value: stats.totalDrivers, change: '+5%', color: 'bg-teal-100 text-teal-600' },
-        { icon: UserPlus, label: 'Open Leads', value: stats.totalLeads, change: '+23%', color: 'bg-amber-100 text-amber-600' },
-        { icon: AlertTriangle, label: 'Open Alerts', value: stats.openAlerts, change: '-5%', color: 'bg-red-100 text-red-600' },
-        { icon: Ticket, label: 'Open Tickets', value: stats.openTickets, change: '+2%', color: 'bg-orange-100 text-orange-600' },
-        { icon: Route, label: "Today's Trips", value: stats.todayTrips, change: '+15%', color: 'bg-purple-100 text-purple-600' },
-        { icon: Gauge, label: 'Total Distance (km)', value: stats.totalDistance.toLocaleString(), change: '+9%', color: 'bg-cyan-100 text-cyan-600' },
+        { icon: Truck, label: 'Total Vehicles', value: stats.totalVehicles, color: 'bg-emerald-100 text-emerald-600' },
+        { icon: Activity, label: 'Active Vehicles', value: stats.activeVehicles, color: 'bg-green-100 text-green-600' },
+        { icon: Users, label: 'Total Drivers', value: stats.totalDrivers, color: 'bg-teal-100 text-teal-600' },
+        { icon: UserPlus, label: 'Open Leads', value: stats.totalLeads, color: 'bg-amber-100 text-amber-600' },
+        { icon: AlertTriangle, label: 'Open Alerts', value: stats.openAlerts, color: 'bg-red-100 text-red-600' },
+        { icon: Ticket, label: 'Open Tickets', value: stats.openTickets, color: 'bg-orange-100 text-orange-600' },
+        { icon: Cpu, label: 'Total Devices', value: stats.totalDevices, color: 'bg-blue-100 text-blue-600' },
+        { icon: Wrench, label: 'Pending Installs', value: stats.pendingInstallations, color: 'bg-purple-100 text-purple-600' },
+        { icon: HardHat, label: 'Technicians', value: stats.activeTechnicians, color: 'bg-cyan-100 text-cyan-600' },
+        { icon: Route, label: "Today's Trips", value: stats.todayTrips, color: 'bg-indigo-100 text-indigo-600' },
+        { icon: Gauge, label: 'Total Distance (km)', value: stats.totalDistance.toLocaleString(), color: 'bg-pink-100 text-pink-600' },
       ]
     : [];
 
@@ -1406,6 +1428,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     drivers: 'Drivers',
     devices: 'Devices',
     installations: 'Installations',
+    technicians: 'Technicians',
     maintenance: 'Maintenance',
     pipeline: 'Sales Pipeline',
     leads: 'Leads',
@@ -1433,13 +1456,15 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
       case 'vehicles':
         return <VehiclesView />;
       case 'live-tracking':
-        return <PlaceholderView title="Live Tracking" icon={MapPin} />;
+        return <LiveTrackingView />;
       case 'drivers':
-        return <PlaceholderView title="Drivers" icon={Users} />;
+        return <DriversView />;
       case 'devices':
-        return <PlaceholderView title="Devices" icon={Cpu} />;
+        return <DevicesView />;
       case 'installations':
-        return <PlaceholderView title="Installations" icon={Wrench} />;
+        return <InstallationsView />;
+      case 'technicians':
+        return <TechniciansView />;
       case 'maintenance':
         return <PlaceholderView title="Maintenance" icon={Settings} />;
       case 'subscriptions':

@@ -54,6 +54,7 @@ model Organization {
   documents      Document[]
   notifications  Notification[]
   quotations    Quotation[]
+  technicians   Technician[]
   installations  Installation[]
   maintenanceRecords MaintenanceRecord[]
   subscriptions  Subscription[]
@@ -240,7 +241,14 @@ model Driver {
   phone          String?
   email          String?
   licenseNumber  String?  @map("license_number")
+  licenseType    String?  @map("license_type")
   licenseExpiry  DateTime? @map("license_expiry")
+  emirate        String?
+  nationality    String?
+  passportNumber String?  @map("passport_number")
+  dateOfBirth    DateTime? @map("date_of_birth")
+  emergencyContact String? @map("emergency_contact")
+  emergencyPhone   String? @map("emergency_phone")
   organizationId String   @map("organization_id")
   status         String   @default("active")
   score          Float    @default(100)
@@ -265,28 +273,64 @@ model Device {
   serialNumber   String?  @map("serial_number")
   model          String?
   manufacturer   String?
+  deviceType     String?  @map("device_type")
+  protocol       String?
   phoneNumber    String?
   firmware       String?
+  simId          String?  @map("sim_id")
   organizationId String?  @map("organization_id")
   warehouse      String?
   status         String   @default("warehouse")
+  purchaseDate   DateTime? @map("purchase_date")
+  purchaseCost   Float?   @map("purchase_cost")
   installDate    DateTime? @map("install_date")
   warrantyExpiry DateTime? @map("warranty_expiry")
+  lastPingAt     DateTime? @map("last_ping_at")
+  batteryLevel   Int?     @map("battery_level")
+  notes          String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization? @relation(fields: [organizationId], references: [id])
   vehicles       Vehicle[]
+  sim            SIM?      @relation(fields: [simId], references: [id])
 }
 
 model SIM {
   id             String   @id @default(cuid())
   number         String   @unique
   provider       String?
+  dataPlan       String?  @map("data_plan")
   status         String   @default("available")
+  activatedAt    DateTime? @map("activated_at")
   organizationId String?  @map("organization_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+
+  devices        Device[]
+}
+
+// ----------------------
+// OPERATIONS — TECHNICIANS
+// ----------------------
+
+model Technician {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String
+  email          String?
+  emirate        String?
+  specialty      String?
+  organizationId String   @map("organization_id")
+  status         String   @default("active")
+  totalInstalled Int      @default(0) @map("total_installed")
+  rating         Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  installations  Installation[]
 }
 
 // ----------------------
@@ -295,22 +339,31 @@ model SIM {
 
 model Installation {
   id             String   @id @default(cuid())
+  installationNumber String @unique @map("installation_number")
   organizationId String   @map("organization_id")
   vehicleId      String   @map("vehicle_id")
   deviceId       String   @map("device_id")
   technicianId   String?  @map("technician_id")
   status         String   @default("scheduled")
-  scheduledAt    DateTime? @map("scheduled_at")
+  scheduledDate  DateTime? @map("scheduled_date")
+  scheduledTime  String?  @map("scheduled_time")
   completedAt    DateTime? @map("completed_at")
+  emirate        String?
   location       String?
+  latitude       Float?
+  longitude      Float?
   photos         String?
   testResult     String?  @map("test_result")
+  gpsSignal      Boolean? @default(false) @map("gps_signal")
+  powerWiring    Boolean? @default(false) @map("power_wiring")
+  antennaMounted Boolean? @default(false) @map("antenna_mounted")
   signature      String?
   notes          String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  technician    Technician?  @relation(fields: [technicianId], references: [id])
 }
 
 // ----------------------

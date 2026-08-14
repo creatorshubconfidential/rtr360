@@ -1,0 +1,80 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { getAuthUser } from '@/lib/auth';
+
+const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    const { id } = await params;
+    const body = await request.json();
+    const { status, model, manufacturer, deviceType, protocol, simId, warehouse, notes, firmware } = body;
+
+    const existing = await db.device.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (status && VALID_STATUSES.includes(status)) updateData.status = status;
+    if (model !== undefined) updateData.model = model?.trim() || null;
+    if (manufacturer !== undefined) updateData.manufacturer = manufacturer?.trim() || null;
+    if (deviceType) updateData.deviceType = deviceType;
+    if (protocol !== undefined) updateData.protocol = protocol?.trim() || null;
+    if (simId !== undefined) updateData.simId = simId || null;
+    if (warehouse !== undefined) updateData.warehouse = warehouse?.trim() || null;
+    if (notes !== undefined) updateData.notes = notes?.trim() || null;
+    if (firmware !== undefined) updateData.firmware = firmware?.trim() || null;
+
+    const device = await db.device.update({
+      where: { id },
+      data: updateData,
+      include: { sim: true },
+    });
+    return NextResponse.json({ device });
+  } catch (error) {
+    console.error('Device PATCH error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    const { id } = await params;
+    const existing = await db.device.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+    }
+
+    if (existing.status === 'installed') {
+      return NextResponse.json({ error: 'Cannot delete an installed device. Uninstall it first.' }, { status: 400 });
+    }
+
+    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await db.vehicle.updateMany({ where: { deviceId: id }, data: { deviceId: null } });
+    await db.device.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Device DELETE error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
