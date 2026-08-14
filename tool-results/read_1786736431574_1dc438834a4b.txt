@@ -1,0 +1,1933 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { toast } from 'sonner';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import {
+     7→  LayoutDashboard,
+     8→  MapPin,
+     9→  BrainCircuit,
+    10→  Truck,
+    11→  Users,
+    12→  UserPlus,
+    13→  AlertTriangle,
+    14→  Ticket,
+    15→  Route,
+    16→  Gauge,
+    17→  Wrench,
+    18→  Cpu,
+    19→  CreditCard,
+    20→  FileText,
+    21→  Settings,
+    22→  LogOut,
+    23→  Bell,
+    24→  Search,
+    25→  Plus,
+    26→  ChevronLeft,
+    27→  ChevronRight,
+    28→  Filter,
+    29→  Activity,
+    30→  Shield,
+    31→  Building2,
+    32→  Phone,
+    33→  Mail,
+    34→  Globe,
+    35→  Menu,
+    36→  Kanban,
+    37→  HardHat,
+    38→  BarChart3,
+    39→  BellRing,
+    40→  MapPinned,
+    41→  UserCog,
+    42→  FileSignature,
+    43→  Route as RouteIcon,
+    44→  Bot,
+    45→  ExternalLink,
+    46→} from 'lucide-react';
+    47→
+    48→import { Button } from '@/components/ui/button';
+    49→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    50→import { Input } from '@/components/ui/input';
+    51→import { Label } from '@/components/ui/label';
+    52→import { Badge } from '@/components/ui/badge';
+    53→import {
+    54→  Dialog,
+    55→  DialogContent,
+    56→  DialogHeader,
+    57→  DialogTitle,
+    58→  DialogTrigger,
+    59→  DialogFooter,
+    60→} from '@/components/ui/dialog';
+    61→import {
+    62→  Select,
+    63→  SelectContent,
+    64→  SelectItem,
+    65→  SelectTrigger,
+    66→  SelectValue,
+    67→} from '@/components/ui/select';
+    68→import {
+    69→  Sheet,
+    70→  SheetContent,
+    71→  SheetTrigger,
+    72→  SheetTitle,
+    73→} from '@/components/ui/sheet';
+    74→import {
+    75→  Table,
+    76→  TableBody,
+    77→  TableCell,
+    78→  TableHead,
+    79→  TableHeader,
+    80→  TableRow,
+    81→} from '@/components/ui/table';
+    82→import {
+    83→  DropdownMenu,
+    84→  DropdownMenuContent,
+    85→  DropdownMenuItem,
+    86→  DropdownMenuSeparator,
+    87→  DropdownMenuTrigger,
+    88→} from '@/components/ui/dropdown-menu';
+    89→import { Textarea } from '@/components/ui/textarea';
+    90→import { Skeleton } from '@/components/ui/skeleton';
+    91→import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+    92→import { Separator } from '@/components/ui/separator';
+    93→import { ScrollArea } from '@/components/ui/scroll-area';
+    94→
+    95→// AI Assistant
+    96→import AIChatPanel from '@/components/AIChatPanel';
+    97→
+    98→// Phase 2 CRM Views
+    99→import PipelineView from '@/components/views/PipelineView';
+   100→import QuotationsView from '@/components/views/QuotationsView';
+   101→import ContactsView from '@/components/views/ContactsView';
+   102→
+   103→// Phase 3 Operations Views
+   104→import DriversView from '@/components/views/DriversView';
+   105→import DevicesView from '@/components/views/DevicesView';
+   106→import InstallationsView from '@/components/views/InstallationsView';
+   107→import TechniciansView from '@/components/views/TechniciansView';
+   108→
+   109→// Phase 5 Views
+   110→import MaintenanceView from '@/components/views/MaintenanceView';
+   111→import SubscriptionsView from '@/components/views/SubscriptionsView';
+   112→import InvoicesView from '@/components/views/InvoicesView';
+   113→import TicketsView from '@/components/views/TicketsView';
+   114→import SettingsView from '@/components/views/SettingsView';
+   115→import AuditLogsView from '@/components/views/AuditLogsView';
+   116→
+   117→// Phase 7 Advanced Analytics
+   118→import AnalyticsView from '@/components/views/AnalyticsView';
+   119→
+   120→// Phase 8 PWA & Real-Time
+   121→import MobileBottomNav from '@/components/MobileBottomNav';
+   122→import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+   123→import ConnectionStatus from '@/components/ConnectionStatus';
+   124→import RealtimeEventToasts from '@/components/RealtimeEventToasts';
+   125→
+   126→// Phase 6 Intelligence & Admin Views
+   127→import ReportsView from '@/components/views/ReportsView';
+   128→import AlertRulesView from '@/components/views/AlertRulesView';
+   129→import GeofencesView from '@/components/views/GeofencesView';
+   130→import UsersView from '@/components/views/UsersView';
+   131→import ContractsView from '@/components/views/ContractsView';
+   132→import TripsView from '@/components/views/TripsView';
+   133→import NotificationsView from '@/components/views/NotificationsView';
+   134→
+   135→// Phase 4 FleetOS Views
+   136→import dynamic from 'next/dynamic';
+   137→const LiveTrackingView = dynamic(() => import('@/components/views/LiveTrackingView'), {
+   138→  ssr: false,
+   139→  loading: () => <div className="h-[calc(100vh-8rem)] flex items-center justify-center bg-slate-50 rounded-xl"><div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>,
+   140→});
+   141→
+   142→// ────────────────────────────────────────
+   143→// Types
+   144→// ────────────────────────────────────────
+   145→
+   146→interface UserSession {
+   147→  id: string;
+   148→  email: string;
+   149→  name: string;
+   150→  role: string;
+   151→  organizationId: string | null;
+   152→}
+   153→
+   154→interface DashboardStats {
+   155→  totalVehicles: number;
+   156→  activeVehicles: number;
+   157→  totalDrivers: number;
+   158→  totalLeads: number;
+   159→  openAlerts: number;
+   160→  openTickets: number;
+   161→  todayTrips: number;
+   162→  totalDistance: number;
+   163→  totalDevices: number;
+   164→  pendingInstallations: number;
+   165→  activeTechnicians: number;
+   166→}
+   167→
+   168→interface Lead {
+   169→  id: string;
+   170→  name: string;
+   171→  email: string | null;
+   172→  phone: string | null;
+   173→  company: string | null;
+   174→  emirate: string | null;
+   175→  vehicleCount: number | null;
+   176→  vehicleType: string | null;
+   177→  source: string | null;
+   178→  status: string;
+   179→  priority: string;
+   180→  createdAt: string;
+   181→}
+   182→
+   183→interface Vehicle {
+   184→  id: string;
+   185→  plateNumber: string;
+   186→  make: string | null;
+   187→  model: string | null;
+   188→  year: number | null;
+   189→  vehicleType: string | null;
+   190→  vin: string | null;
+   191→  color: string | null;
+   192→  status: string;
+   193→  mileage: number | null;
+   194→  driver: { id: string; name: string; phone: string | null } | null;
+   195→  device: { id: string; imei: string; status: string } | null;
+   196→  createdAt: string;
+   197→}
+   198→
+   199→interface Alert {
+   200→  id: string;
+   201→  type: string;
+   202→  severity: string;
+   203→  vehiclePlate: string | null;
+   204→  message: string;
+   205→  createdAt: string;
+   206→}
+   207→
+   208→type ViewType =
+   209→  | 'dashboard'
+   210→  | 'analytics'
+   211→  | 'live-tracking'
+   212→  | 'vehicles'
+   213→  | 'drivers'
+   214→  | 'devices'
+   215→  | 'installations'
+   216→  | 'maintenance'
+   217→  | 'technicians'
+   218→  | 'pipeline'
+   219→  | 'leads'
+   220→  | 'contacts'
+   221→  | 'quotations'
+   222→  | 'subscriptions'
+   223→  | 'invoices'
+   224→  | 'tickets'
+   225→  | 'reports'
+   226→  | 'alert-rules'
+   227→  | 'geofences'
+   228→  | 'trips'
+   229→  | 'users'
+   230→  | 'contracts'
+   231→  | 'notifications'
+   232→  | 'settings'
+   233→  | 'audit-logs'
+   234→  | 'ai-assistant';
+   235→
+   236→// ────────────────────────────────────────
+   237→// Constants
+   238→// ────────────────────────────────────────
+   239→
+   240→const STATUS_COLORS: Record<string, string> = {
+   241→  new: 'bg-blue-100 text-blue-700',
+   242→  contacted: 'bg-yellow-100 text-yellow-700',
+   243→  qualified: 'bg-purple-100 text-purple-700',
+   244→  demo: 'bg-cyan-100 text-cyan-700',
+   245→  proposal: 'bg-orange-100 text-orange-700',
+   246→  quotation: 'bg-orange-100 text-orange-700',
+   247→  negotiation: 'bg-amber-100 text-amber-700',
+   248→  won: 'bg-emerald-100 text-emerald-700',
+   249→  lost: 'bg-red-100 text-red-700',
+   250→  closed: 'bg-slate-100 text-slate-700',
+   251→  active: 'bg-emerald-100 text-emerald-700',
+   252→  inactive: 'bg-slate-100 text-slate-600',
+   253→  maintenance: 'bg-amber-100 text-amber-700',
+   254→  decommissioned: 'bg-red-100 text-red-700',
+   255→};
+   256→
+   257→const PRIORITY_COLORS: Record<string, string> = {
+   258→  low: 'bg-slate-300',
+   259→  medium: 'bg-amber-400',
+   260→  high: 'bg-orange-500',
+   261→  urgent: 'bg-red-500',
+   262→};
+   263→
+   264→const EMIRATES = [
+   265→  'Dubai',
+   266→  'Abu Dhabi',
+   267→  'Sharjah',
+   268→  'Ajman',
+   269→  'UAQ',
+   270→  'RAK',
+   271→  'Fujairah',
+   272→];
+   273→
+   274→const VEHICLE_TYPES = [
+   275→  'Sedan',
+   276→  'SUV',
+   277→  'Truck',
+   278→  'Van',
+   279→  'Bus',
+   280→  'Heavy Equipment',
+   281→];
+   282→
+   283→const LEAD_SOURCES = [
+   284→  'Website',
+   285→  'WhatsApp',
+   286→  'Referral',
+   287→  'Google Ads',
+   288→  'Meta',
+   289→  'Walk-in',
+   290→];
+   291→
+   292→const NAV_SECTIONS = [
+   293→  {
+   294→    label: 'MAIN',
+   295→    items: [
+   296→      { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
+   297→      { id: 'analytics' as ViewType, icon: BrainCircuit, label: 'Analytics AI' },
+   298→      { id: 'reports' as ViewType, icon: BarChart3, label: 'Reports' },
+   299→      { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
+   300→      { id: 'ai-assistant' as ViewType, icon: Bot, label: 'AI Assistant' },
+   301→    ],
+   302→  },
+   303→  {
+   304→    label: 'FLEET',
+   305→    items: [
+   306→      { id: 'vehicles' as ViewType, icon: Truck, label: 'Vehicles' },
+   307→      { id: 'drivers' as ViewType, icon: Users, label: 'Drivers' },
+   308→      { id: 'devices' as ViewType, icon: Cpu, label: 'Devices' },
+   309→      { id: 'trips' as ViewType, icon: RouteIcon, label: 'Trips' },
+   310→    ],
+   311→  },
+   312→  {
+   313→    label: 'OPERATIONS',
+   314→    items: [
+   315→      { id: 'installations' as ViewType, icon: Wrench, label: 'Installations' },
+   316→      { id: 'technicians' as ViewType, icon: HardHat, label: 'Technicians' },
+   317→      { id: 'maintenance' as ViewType, icon: Settings, label: 'Maintenance' },
+   318→    ],
+   319→  },
+   320→  {
+   321→    label: 'CRM',
+   322→    items: [
+   323→      { id: 'pipeline' as ViewType, icon: Kanban, label: 'Pipeline' },
+   324→      { id: 'leads' as ViewType, icon: UserPlus, label: 'Leads' },
+   325→      { id: 'contacts' as ViewType, icon: Users, label: 'Contacts' },
+   326→      { id: 'quotations' as ViewType, icon: FileText, label: 'Quotations' },
+   327→      { id: 'contracts' as ViewType, icon: FileSignature, label: 'Contracts' },
+   328→    ],
+   329→  },
+   330→  {
+   331→    label: 'FINANCE',
+   332→    items: [
+   333→      { id: 'subscriptions' as ViewType, icon: CreditCard, label: 'Subscriptions' },
+   334→      { id: 'invoices' as ViewType, icon: FileText, label: 'Invoices' },
+   335→    ],
+   336→  },
+   337→  {
+   338→    label: 'INTELLIGENCE',
+   339→    items: [
+   340→      { id: 'geofences' as ViewType, icon: MapPinned, label: 'Geofences' },
+   341→      { id: 'alert-rules' as ViewType, icon: BellRing, label: 'Alert Rules' },
+   342→    ],
+   343→  },
+   344→  {
+   345→    label: 'SUPPORT',
+   346→    items: [
+   347→      { id: 'tickets' as ViewType, icon: Ticket, label: 'Tickets' },
+   348→      { id: 'notifications' as ViewType, icon: Bell, label: 'Notifications' },
+   349→    ],
+   350→  },
+   351→  {
+   352→    label: 'ADMIN',
+   353→    items: [
+   354→      { id: 'users' as ViewType, icon: UserCog, label: 'Users' },
+   355→      { id: 'settings' as ViewType, icon: Settings, label: 'Settings' },
+   356→      { id: 'audit-logs' as ViewType, icon: Shield, label: 'Audit Logs' },
+   357→    ],
+   358→  },
+   359→];
+   360→
+   361→const VALID_LEAD_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
+   362→
+   363→// ────────────────────────────────────────
+   364→// Helper: Auth fetch
+   365→// ────────────────────────────────────────
+   366→
+   367→function authFetch(url: string, options: RequestInit = {}) {
+   368→  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
+   369→  return fetch(url, {
+   370→    ...options,
+   371→    headers: {
+   372→      'Content-Type': 'application/json',
+   373→      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+   374→      ...options.headers,
+   375→    },
+   376→  });
+   377→}
+   378→
+   379→// ────────────────────────────────────────
+   380→// LoginScreen
+   381→// ────────────────────────────────────────
+   382→
+   383→function LoginScreen({ onLogin }: { onLogin: (user: UserSession, token: string) => void }) {
+   384→  const [email, setEmail] = useState('');
+   385→  const [password, setPassword] = useState('');
+   386→  const [loading, setLoading] = useState(false);
+   387→
+   388→  const handleLogin = async (e: React.FormEvent) => {
+   389→    e.preventDefault();
+   390→    if (!email || !password) {
+   391→      toast.error('Please enter email and password');
+   392→      return;
+   393→    }
+   394→    setLoading(true);
+   395→    try {
+   396→      const res = await fetch('/api/auth/login', {
+   397→        method: 'POST',
+   398→        headers: { 'Content-Type': 'application/json' },
+   399→        body: JSON.stringify({ email, password }),
+   400→      });
+   401→      const data = await res.json();
+   402→      if (!res.ok) {
+   403→        toast.error(data.error || 'Login failed');
+   404→        return;
+   405→      }
+   406→      localStorage.setItem('rtr_token', data.token);
+   407→      localStorage.setItem('rtr_user', JSON.stringify(data.user));
+   408→      onLogin(data.user, data.token);
+   409→      toast.success('Welcome back!');
+   410→    } catch {
+   411→      toast.error('Network error. Please try again.');
+   412→    } finally {
+   413→      setLoading(false);
+   414→    }
+   415→  };
+   416→
+   417→  return (
+   418→    <div className="min-h-screen flex">
+   419→      {/* Decorative Left Panel */}
+   420→      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden flex-col justify-between p-12">
+   421→        <div className="absolute inset-0 opacity-10">
+   422→          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-emerald-500 blur-3xl" />
+   423→          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-emerald-600 blur-3xl" />
+   424→        </div>
+   425→        <div className="relative z-10">
+   426→          <div className="flex items-center gap-3">
+   427→            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+   428→              <Truck className="w-6 h-6 text-white" />
+   429→            </div>
+   430→            <span className="text-2xl font-bold text-white">RTR 360</span>
+   431→          </div>
+   432→        </div>
+   433→        <div className="relative z-10 space-y-6">
+   434→          <h1 className="text-4xl font-bold text-white leading-tight">
+   435→            Fleet Technology<br />& Management<br />
+   436→            <span className="text-emerald-400">Platform</span>
+   437→          </h1>
+   438→          <p className="text-slate-400 text-lg max-w-md">
+   439→            Comprehensive fleet tracking, driver management, and operational analytics for the UAE market.
+   440→          </p>
+   441→          <div className="flex gap-8 pt-4">
+   442→            <div>
+   443→              <div className="text-3xl font-bold text-emerald-400">500+</div>
+   444→              <div className="text-slate-400 text-sm">Fleets Managed</div>
+   445→            </div>
+   446→            <div>
+   447→              <div className="text-3xl font-bold text-emerald-400">10K+</div>
+   448→              <div className="text-slate-400 text-sm">Vehicles Tracked</div>
+   449→            </div>
+   450→            <div>
+   451→              <div className="text-3xl font-bold text-emerald-400">7</div>
+   452→              <div className="text-slate-400 text-sm">Emirates Covered</div>
+   453→            </div>
+   454→          </div>
+   455→        </div>
+   456→        <div className="relative z-10 text-slate-500 text-sm">
+   457→          © 2025 RTR 360. All rights reserved.
+   458→        </div>
+   459→      </div>
+   460→
+   461→      {/* Login Form */}
+   462→      <div className="flex-1 flex items-center justify-center p-6 bg-[var(--rtr-bg)]">
+   463→        <motion.div
+   464→          initial={{ opacity: 0, y: 20 }}
+   465→          animate={{ opacity: 1, y: 0 }}
+   466→          transition={{ duration: 0.5 }}
+   467→          className="w-full max-w-md space-y-8"
+   468→        >
+   469→          {/* Mobile Logo */}
+   470→          <div className="lg:hidden flex items-center gap-3 mb-8">
+   471→            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+   472→              <Truck className="w-6 h-6 text-white" />
+   473→            </div>
+   474→            <span className="text-2xl font-bold text-slate-900">RTR 360</span>
+   475→          </div>
+   476→
+   477→          <div>
+   478→            <h2 className="text-3xl font-bold text-slate-900">Sign In</h2>
+   479→            <p className="text-slate-500 mt-2">Enter your credentials to access the dashboard</p>
+   480→          </div>
+   481→
+   482→          <form onSubmit={handleLogin} className="space-y-5">
+   483→            <div className="space-y-2">
+   484→              <Label htmlFor="email">Email</Label>
+   485→              <div className="relative">
+   486→                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+   487→                <Input
+   488→                  id="email"
+   489→                  type="email"
+   490→                  placeholder="admin@rtr.ae"
+   491→                  value={email}
+   492→                  onChange={(e) => setEmail(e.target.value)}
+   493→                  className="pl-10 h-11"
+   494→                />
+   495→              </div>
+   496→            </div>
+   497→            <div className="space-y-2">
+   498→              <Label htmlFor="password">Password</Label>
+   499→              <Input
+   500→                id="password"
+   501→                type="password"
+   502→                placeholder="Enter your password"
+   503→                value={password}
+   504→                onChange={(e) => setPassword(e.target.value)}
+   505→                className="h-11"
+   506→              />
+   507→            </div>
+   508→            <Button
+   509→              type="submit"
+   510→              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+   511→              disabled={loading}
+   512→            >
+   513→              {loading ? (
+   514→                <span className="flex items-center gap-2">
+   515→                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+   516→                  Signing in...
+   517→                </span>
+   518→              ) : (
+   519→                'Sign In'
+   520→              )}
+   521→            </Button>
+   522→          </form>
+   523→
+   524→          <div className="text-center text-xs text-slate-400 pt-4">
+   525→            Powered by <span className="font-semibold text-slate-500">Mianx.ai</span>
+   526→          </div>
+   527→        </motion.div>
+   528→      </div>
+   529→    </div>
+   530→  );
+   531→}
+   532→
+   533→// ────────────────────────────────────────
+   534→// Sidebar Content (shared between desktop & mobile)
+   535→// ────────────────────────────────────────
+   536→
+   537→function SidebarNav({
+   538→  currentView,
+   539→  onNavigate,
+   540→  onClose,
+   541→}: {
+   542→  currentView: ViewType;
+   543→  onNavigate: (view: ViewType) => void;
+   544→  onClose?: () => void;
+   545→}) {
+   546→  return (
+   547→    <div className="flex flex-col h-full">
+   548→      {/* Logo */}
+   549→      <div className="flex items-center gap-3 px-5 py-6">
+   550→        <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+   551→          <Truck className="w-5 h-5 text-white" />
+   552→        </div>
+   553→        <span className="text-xl font-bold text-white">RTR 360</span>
+   554→      </div>
+   555→
+   556→      <Separator className="bg-slate-700/50" />
+   557→
+   558→      {/* Navigation */}
+   559→      <nav className="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-6">
+   560→        {NAV_SECTIONS.map((section) => (
+   561→          <div key={section.label}>
+   562→            <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+   563→              {section.label}
+   564→            </div>
+   565→            <div className="space-y-1">
+   566→              {section.items.map((item) => {
+   567→                const Icon = item.icon;
+   568→                const isActive = currentView === item.id;
+   569→                return (
+   570→                  <button
+   571→                    key={item.id}
+   572→                    onClick={() => {
+   573→                      onNavigate(item.id);
+   574→                      onClose?.();
+   575→                    }}
+   576→                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+   577→                      isActive
+   578→                        ? 'bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-400'
+   579→                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border-l-2 border-transparent'
+   580→                    }`}
+   581→                  >
+   582→                    <Icon className="w-4 h-4 shrink-0" />
+   583→                    <span className="flex-1 text-left">{item.label}</span>
+   584→                    {item.badge && (
+   585→                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-700 text-slate-400 border-0">
+   586→                        {item.badge}
+   587→                      </Badge>
+   588→                    )}
+   589→                  </button>
+   590→                );
+   591→              })}
+   592→            </div>
+   593→          </div>
+   594→        ))}
+   595→      </nav>
+   596→
+   597→      {/* Footer */}
+   598→      <div className="px-5 py-4 border-t border-slate-700/50">
+   599→        <p className="text-[11px] text-slate-500">
+   600→          Powered by <span className="font-medium text-slate-400">Mianx.ai</span>
+   601→        </p>
+   602→      </div>
+   603→    </div>
+   604→  );
+   605→}
+   606→
+   607→// ────────────────────────────────────────
+   608→// DashboardView
+   609→// ────────────────────────────────────────
+   610→
+   611→function DashboardView() {
+   612→  const [stats, setStats] = useState<DashboardStats | null>(null);
+   613→  const [leads, setLeads] = useState<Lead[]>([]);
+   614→  const [alerts, setAlerts] = useState<Alert[]>([]);
+   615→  const [loading, setLoading] = useState(true);
+   616→
+   617→  useEffect(() => {
+   618→    const fetchData = async () => {
+   619→      try {
+   620→        const [statsRes, leadsRes, alertsRes] = await Promise.all([
+   621→          authFetch('/api/dashboard/stats'),
+   622→          authFetch('/api/leads?limit=5'),
+   623→          authFetch('/api/dashboard/alerts?limit=5'),
+   624→        ]);
+   625→        const statsData = await statsRes.json();
+   626→        if (statsRes.ok) setStats(statsData);
+   627→
+   628→        const leadsData = await leadsRes.json();
+   629→        if (leadsRes.ok) setLeads(leadsData.leads || []);
+   630→
+   631→        if (alertsRes.ok) {
+   632→          const alertsData = await alertsRes.json();
+   633→          setAlerts(alertsData.alerts || []);
+   634→        }
+   635→      } catch {
+   636→        // Silently fail for alerts — the endpoint may not exist
+   637→      } finally {
+   638→        setLoading(false);
+   639→      }
+   640→    };
+   641→    fetchData();
+   642→  }, []);
+   643→
+   644→  const kpiCards = stats
+   645→    ? [
+   646→        { icon: Truck, label: 'Total Vehicles', value: stats.totalVehicles, color: 'bg-emerald-100 text-emerald-600' },
+   647→        { icon: Activity, label: 'Active Vehicles', value: stats.activeVehicles, color: 'bg-green-100 text-green-600' },
+   648→        { icon: Users, label: 'Total Drivers', value: stats.totalDrivers, color: 'bg-teal-100 text-teal-600' },
+   649→        { icon: UserPlus, label: 'Open Leads', value: stats.totalLeads, color: 'bg-amber-100 text-amber-600' },
+   650→        { icon: AlertTriangle, label: 'Open Alerts', value: stats.openAlerts, color: 'bg-red-100 text-red-600' },
+   651→        { icon: Ticket, label: 'Open Tickets', value: stats.openTickets, color: 'bg-orange-100 text-orange-600' },
+   652→        { icon: Cpu, label: 'Total Devices', value: stats.totalDevices, color: 'bg-blue-100 text-blue-600' },
+   653→        { icon: Wrench, label: 'Pending Installs', value: stats.pendingInstallations, color: 'bg-purple-100 text-purple-600' },
+   654→        { icon: HardHat, label: 'Technicians', value: stats.activeTechnicians, color: 'bg-cyan-100 text-cyan-600' },
+   655→        { icon: Route, label: "Today's Trips", value: stats.todayTrips, color: 'bg-indigo-100 text-indigo-600' },
+   656→        { icon: Gauge, label: 'Total Distance (km)', value: stats.totalDistance.toLocaleString(), color: 'bg-pink-100 text-pink-600' },
+   657→      ]
+   658→    : [];
+   659→
+   660→  const timeAgo = (dateStr: string) => {
+   661→    const diff = Date.now() - new Date(dateStr).getTime();
+   662→    const mins = Math.floor(diff / 60000);
+   663→    if (mins < 60) return `${mins}m ago`;
+   664→    const hrs = Math.floor(mins / 60);
+   665→    if (hrs < 24) return `${hrs}h ago`;
+   666→    const days = Math.floor(hrs / 24);
+   667→    return `${days}d ago`;
+   668→  };
+   669→
+   670→  if (loading) {
+   671→    return (
+   672→      <div className="space-y-6">
+   673→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   674→          {Array.from({ length: 8 }).map((_, i) => (
+   675→            <Skeleton key={i} className="h-28 rounded-xl" />
+   676→          ))}
+   677→        </div>
+   678→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   679→          <Skeleton className="h-80 rounded-xl" />
+   680→          <Skeleton className="h-80 rounded-xl" />
+   681→        </div>
+   682→      </div>
+   683→    );
+   684→  }
+   685→
+   686→  return (
+   687→    <div className="space-y-6">
+   688→      {/* KPI Grid */}
+   689→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   690→        {kpiCards.map((kpi, i) => {
+   691→          const Icon = kpi.icon;
+   692→          return (
+   693→            <motion.div
+   694→              key={kpi.label}
+   695→              initial={{ opacity: 0, y: 20 }}
+   696→              animate={{ opacity: 1, y: 0 }}
+   697→              transition={{ delay: i * 0.05 }}
+   698→            >
+   699→              <Card className="rounded-xl border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+   700→                <CardContent className="p-4">
+   701→                  <div className="flex items-start justify-between">
+   702→                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
+   703→                      <Icon className="w-5 h-5" />
+   704→                    </div>
+   705→                    <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
+   706→                      {kpi.change}
+   707→                    </span>
+   708→                  </div>
+   709→                  <div className="mt-3">
+   710→                    <div className="text-2xl font-bold text-slate-900">{kpi.value}</div>
+   711→                    <div className="text-xs text-slate-500 mt-0.5">{kpi.label}</div>
+   712→                  </div>
+   713→                </CardContent>
+   714→              </Card>
+   715→            </motion.div>
+   716→          );
+   717→        })}
+   718→      </div>
+   719→
+   720→      {/* Recent Leads & Alerts */}
+   721→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   722→        {/* Recent Leads */}
+   723→        <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   724→          <CardHeader className="pb-3">
+   725→            <CardTitle className="text-base font-semibold text-slate-900">Recent Leads</CardTitle>
+   726→          </CardHeader>
+   727→          <CardContent className="p-0">
+   728→            {leads.length === 0 ? (
+   729→              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+   730→                <UserPlus className="w-8 h-8 mb-2" />
+   731→                <p className="text-sm">No leads yet</p>
+   732→              </div>
+   733→            ) : (
+   734→              <div className="overflow-x-auto">
+   735→                <Table>
+   736→                  <TableHeader>
+   737→                    <TableRow>
+   738→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
+   739→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Company</TableHead>
+   740→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+   741→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
+   742→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Date</TableHead>
+   743→                    </TableRow>
+   744→                  </TableHeader>
+   745→                  <TableBody>
+   746→                    {leads.map((lead) => (
+   747→                      <TableRow key={lead.id}>
+   748→                        <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+   749→                        <TableCell className="text-sm text-slate-600">{lead.company || '—'}</TableCell>
+   750→                        <TableCell>
+   751→                          <Badge className={`text-[11px] ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+   752→                            {lead.status}
+   753→                          </Badge>
+   754→                        </TableCell>
+   755→                        <TableCell>
+   756→                          <div className="flex items-center gap-1.5">
+   757→                            <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
+   758→                            <span className="text-xs text-slate-600 capitalize">{lead.priority}</span>
+   759→                          </div>
+   760→                        </TableCell>
+   761→                        <TableCell className="text-xs text-slate-500">
+   762→                          {new Date(lead.createdAt).toLocaleDateString()}
+   763→                        </TableCell>
+   764→                      </TableRow>
+   765→                    ))}
+   766→                  </TableBody>
+   767→                </Table>
+   768→              </div>
+   769→            )}
+   770→          </CardContent>
+   771→        </Card>
+   772→
+   773→        {/* Recent Alerts */}
+   774→        <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   775→          <CardHeader className="pb-3">
+   776→            <CardTitle className="text-base font-semibold text-slate-900">Recent Alerts</CardTitle>
+   777→          </CardHeader>
+   778→          <CardContent className="p-0">
+   779→            {alerts.length === 0 ? (
+   780→              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+   781→                <AlertTriangle className="w-8 h-8 mb-2" />
+   782→                <p className="text-sm">No recent alerts</p>
+   783→              </div>
+   784→            ) : (
+   785→              <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto custom-scrollbar">
+   786→                {alerts.map((alert) => {
+   787→                  const severityColor =
+   788→                    alert.severity === 'high'
+   789→                      ? 'text-red-500 bg-red-50'
+   790→                      : alert.severity === 'medium'
+   791→                        ? 'text-amber-500 bg-amber-50'
+   792→                        : 'text-slate-500 bg-slate-50';
+   793→                  return (
+   794→                    <div key={alert.id} className="flex items-start gap-3 px-4 py-3">
+   795→                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${severityColor}`}>
+   796→                        <AlertTriangle className="w-4 h-4" />
+   797→                      </div>
+   798→                      <div className="flex-1 min-w-0">
+   799→                        <p className="text-sm text-slate-800 truncate">{alert.message}</p>
+   800→                        <div className="flex items-center gap-2 mt-1">
+   801→                          {alert.vehiclePlate && (
+   802→                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+   803→                              {alert.vehiclePlate}
+   804→                            </Badge>
+   805→                          )}
+   806→                          <span className="text-[11px] text-slate-400">{timeAgo(alert.createdAt)}</span>
+   807→                        </div>
+   808→                      </div>
+   809→                    </div>
+   810→                  );
+   811→                })}
+   812→              </div>
+   813→            )}
+   814→          </CardContent>
+   815→        </Card>
+   816→      </div>
+   817→
+   818→      {/* Predictive Insights Widget */}
+   819→      <DashboardPredictiveInsights />
+   820→    </div>
+   821→  );
+   822→}
+   823→
+   824→// ────────────────────────────────────────
+   825→// Predictive Insights Widget (Phase 7)
+   826→// ────────────────────────────────────────
+   827→
+   828→function DashboardPredictiveInsights() {
+   829→  const [fleetData, setFleetData] = useState<any>(null);
+   830→  const [maintData, setMaintData] = useState<any>(null);
+   831→  const [loading, setLoading] = useState(true);
+   832→
+   833→  useEffect(() => {
+   834→    Promise.all([
+   835→      authFetch('/api/analytics/fleet-health').catch(() => null),
+   836→      authFetch('/api/analytics/maintenance-prediction').catch(() => null),
+   837→    ]).then(([fh, mp]) => {
+   838→      if (fh) setFleetData(fh);
+   839→      if (mp) setMaintData(mp);
+   840→      setLoading(false);
+   841→    });
+   842→  }, []);
+   843→
+   844→  if (loading) return <Skeleton className="h-40 rounded-xl" />;
+   845→
+   846→  const insights: { icon: any; color: string; bgColor: string; label: string; value: string; sub: string }[] = [];
+   847→
+   848→  if (fleetData) {
+   849→    const grade = fleetData.fleetGrade;
+   850→    const gradeColor = { A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', D: 'text-red-600' }[grade] || 'text-slate-600';
+   851→    insights.push({
+   852→      icon: Shield, color: gradeColor, bgColor: grade === 'A' ? 'bg-emerald-50' : grade === 'B' ? 'bg-blue-50' : grade === 'C' ? 'bg-amber-50' : 'bg-red-50',
+   853→      label: 'Fleet Health Score', value: `${fleetData.fleetScore}/100 (Grade ${grade})`,
+   854→      sub: `${fleetData.summary.criticalCount} critical, ${fleetData.summary.highRiskCount} high risk vehicles`,
+   855→    });
+   856→    if (fleetData.topIssues.length > 0) {
+   857→      insights.push({
+   858→        icon: AlertTriangle, color: 'text-red-600', bgColor: 'bg-red-50',
+   859→        label: 'Top Issue', value: fleetData.topIssues[0].message,
+   860→        sub: `${fleetData.topIssues[0].vehiclePlate} — ${fleetData.topIssues[0].severity} severity`,
+   861→      });
+   862→    }
+   863→  }
+   864→
+   865→  if (maintData) {
+   866→    if (maintData.summary.overdueCount > 0) {
+   867→      insights.push({
+   868→        icon: Wrench, color: 'text-red-600', bgColor: 'bg-red-50',
+   869→        label: 'Maintenance Overdue', value: `${maintData.summary.overdueCount} vehicle(s) overdue`,
+   870→        sub: `Predicted cost: AED ${maintData.summary.totalPredictedCost.toLocaleString()}`,
+   871→      });
+   872→    } else if (maintData.summary.highUrgencyCount > 0) {
+   873→      insights.push({
+   874→        icon: Wrench, color: 'text-amber-600', bgColor: 'bg-amber-50',
+   875→        label: 'Maintenance Due Soon', value: `${maintData.summary.highUrgencyCount} vehicle(s) within 7 days`,
+   876→        sub: `Avg ${maintData.summary.avgDaysUntilService} days to next service`,
+   877→      });
+   878→    } else {
+   879→      insights.push({
+   880→        icon: Shield, color: 'text-emerald-600', bgColor: 'bg-emerald-50',
+   881→        label: 'Maintenance Status', value: 'All vehicles on schedule',
+   882→        sub: `Next service avg: ${maintData.summary.avgDaysUntilService} days`,
+   883→      });
+   884→    }
+   885→  }
+   886→
+   887→  if (insights.length === 0) return null;
+   888→
+   889→  return (
+   890→    <Card className="rounded-xl border-slate-200/60 shadow-sm bg-gradient-to-r from-slate-50 to-white">
+   891→      <CardHeader className="pb-3">
+   892→        <CardTitle className="text-base font-semibold text-slate-900 flex items-center gap-2">
+   893→          <BrainCircuit className="w-4 h-4 text-emerald-600" />
+   894→          Predictive Insights
+   895→          <span className="text-[10px] font-normal text-slate-400 ml-1">Powered by Mianx.ai</span>
+   896→        </CardTitle>
+   897→      </CardHeader>
+   898→      <CardContent>
+   899→        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   900→          {insights.map((ins, i) => {
+   901→            const Icon = ins.icon;
+   902→            return (
+   903→              <motion.div
+   904→                key={i}
+   905→                initial={{ opacity: 0, y: 10 }}
+   906→                animate={{ opacity: 1, y: 0 }}
+   907→                transition={{ delay: i * 0.1 }}
+   908→                className={`p-3 rounded-lg ${ins.bgColor} border border-white/50`}
+   909→              >
+   910→                <div className="flex items-center gap-2 mb-1.5">
+   911→                  <Icon className={`w-4 h-4 ${ins.color}`} />
+   912→                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{ins.label}</span>
+   913→                </div>
+   914→                <div className={`text-sm font-semibold ${ins.color}`}>{ins.value}</div>
+   915→                <div className="text-[11px] text-slate-500 mt-0.5">{ins.sub}</div>
+   916→              </motion.div>
+   917→            );
+   918→          })}
+   919→        </div>
+   920→      </CardContent>
+   921→    </Card>
+   922→  );
+   923→}
+   924→
+   925→// ────────────────────────────────────────
+   926→// LeadsView
+   927→// ────────────────────────────────────────
+   928→
+   929→function LeadsView() {
+   930→  const [leads, setLeads] = useState<Lead[]>([]);
+   931→  const [totalPages, setTotalPages] = useState(1);
+   932→  const [page, setPage] = useState(1);
+   933→  const [search, setSearch] = useState('');
+   934→  const [statusFilter, setStatusFilter] = useState<string>('all');
+   935→  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+   936→  const [loading, setLoading] = useState(true);
+   937→  const [createOpen, setCreateOpen] = useState(false);
+   938→  const [submitting, setSubmitting] = useState(false);
+   939→
+   940→  // Pipeline counts
+   941→  const [pipelineCounts, setPipelineCounts] = useState<Record<string, number>>({});
+   942→
+   943→  // Create form
+   944→  const [form, setForm] = useState({
+   945→    name: '',
+   946→    email: '',
+   947→    phone: '',
+   948→    company: '',
+   949→    emirate: '',
+   950→    vehicleCount: '',
+   951→    vehicleType: '',
+   952→    requirement: '',
+   953→    source: '',
+   954→    priority: 'medium',
+   955→  });
+   956→
+   957→  const fetchLeads = useCallback(async () => {
+   958→    setLoading(true);
+   959→    try {
+   960→      const params = new URLSearchParams({ page: String(page), limit: '10' });
+   961→      if (search) params.set('search', search);
+   962→      if (statusFilter !== 'all') params.set('status', statusFilter);
+   963→      if (priorityFilter !== 'all') params.set('priority', priorityFilter);
+   964→
+   965→      const res = await authFetch(`/api/leads?${params.toString()}`);
+   966→      const data = await res.json();
+   967→      if (res.ok) {
+   968→        setLeads(data.leads || []);
+   969→        setTotalPages(data.pagination?.totalPages || 1);
+   970→
+   971→        // Calculate pipeline counts
+   972→        const counts: Record<string, number> = {};
+   973→        (data.leads || []).forEach((l: Lead) => {
+   974→          counts[l.status] = (counts[l.status] || 0) + 1;
+   975→        });
+   976→        setPipelineCounts(counts);
+   977→      }
+   978→    } catch {
+   979→      toast.error('Failed to load leads');
+   980→    } finally {
+   981→      setLoading(false);
+   982→    }
+   983→  }, [page, search, statusFilter, priorityFilter]);
+   984→
+   985→  useEffect(() => {
+   986→    fetchLeads();
+   987→  }, [fetchLeads]);
+   988→
+   989→  const handleCreate = async () => {
+   990→    if (!form.name.trim()) {
+   991→      toast.error('Lead name is required');
+   992→      return;
+   993→    }
+   994→    setSubmitting(true);
+   995→    try {
+   996→      const res = await authFetch('/api/leads', {
+   997→        method: 'POST',
+   998→        body: JSON.stringify({
+   999→          ...form,
+  1000→          vehicleCount: form.vehicleCount ? parseInt(form.vehicleCount) : null,
+  1001→        }),
+  1002→      });
+  1003→      const data = await res.json();
+  1004→      if (!res.ok) {
+  1005→        toast.error(data.error || 'Failed to create lead');
+  1006→        return;
+  1007→      }
+  1008→      toast.success('Lead created successfully');
+  1009→      setCreateOpen(false);
+  1010→      setForm({ name: '', email: '', phone: '', company: '', emirate: '', vehicleCount: '', vehicleType: '', requirement: '', source: '', priority: 'medium' });
+  1011→      fetchLeads();
+  1012→    } catch {
+  1013→      toast.error('Failed to create lead');
+  1014→    } finally {
+  1015→      setSubmitting(false);
+  1016→    }
+  1017→  };
+  1018→
+  1019→  const handleStatusUpdate = async (leadId: string, newStatus: string) => {
+  1020→    try {
+  1021→      const res = await authFetch(`/api/leads/${leadId}`, {
+  1022→        method: 'PATCH',
+  1023→        body: JSON.stringify({ status: newStatus }),
+  1024→      });
+  1025→      if (!res.ok) {
+  1026→        const data = await res.json();
+  1027→        toast.error(data.error || 'Failed to update status');
+  1028→        return;
+  1029→      }
+  1030→      toast.success(`Lead moved to ${newStatus}`);
+  1031→      fetchLeads();
+  1032→    } catch {
+  1033→      toast.error('Failed to update lead status');
+  1034→    }
+  1035→  };
+  1036→
+  1037→  const pipelineStatuses = ['new', 'contacted', 'qualified', 'demo', 'quotation', 'won', 'lost'];
+  1038→
+  1039→  return (
+  1040→    <div className="space-y-5">
+  1041→      {/* Header */}
+  1042→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  1043→        <div>
+  1044→          <h2 className="text-2xl font-bold text-slate-900">Leads</h2>
+  1045→          <p className="text-sm text-slate-500">Manage your sales pipeline</p>
+  1046→        </div>
+  1047→        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+  1048→          <DialogTrigger asChild>
+  1049→            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+  1050→              <Plus className="w-4 h-4" /> New Lead
+  1051→            </Button>
+  1052→          </DialogTrigger>
+  1053→          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
+  1054→            <DialogHeader>
+  1055→              <DialogTitle>Create New Lead</DialogTitle>
+  1056→            </DialogHeader>
+  1057→            <div className="grid gap-4 py-4">
+  1058→              <div className="grid grid-cols-2 gap-4">
+  1059→                <div className="space-y-2">
+  1060→                  <Label>Name *</Label>
+  1061→                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" />
+  1062→                </div>
+  1063→                <div className="space-y-2">
+  1064→                  <Label>Email</Label>
+  1065→                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
+  1066→                </div>
+  1067→              </div>
+  1068→              <div className="grid grid-cols-2 gap-4">
+  1069→                <div className="space-y-2">
+  1070→                  <Label>Phone</Label>
+  1071→                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+971 xx xxx xxxx" />
+  1072→                </div>
+  1073→                <div className="space-y-2">
+  1074→                  <Label>Company</Label>
+  1075→                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company name" />
+  1076→                </div>
+  1077→              </div>
+  1078→              <div className="grid grid-cols-2 gap-4">
+  1079→                <div className="space-y-2">
+  1080→                  <Label>Emirate</Label>
+  1081→                  <Select value={form.emirate} onValueChange={(v) => setForm({ ...form, emirate: v })}>
+  1082→                    <SelectTrigger><SelectValue placeholder="Select emirate" /></SelectTrigger>
+  1083→                    <SelectContent>{EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+  1084→                  </Select>
+  1085→                </div>
+  1086→                <div className="space-y-2">
+  1087→                  <Label>Vehicle Count</Label>
+  1088→                  <Input type="number" value={form.vehicleCount} onChange={(e) => setForm({ ...form, vehicleCount: e.target.value })} placeholder="e.g. 10" />
+  1089→                </div>
+  1090→              </div>
+  1091→              <div className="grid grid-cols-2 gap-4">
+  1092→                <div className="space-y-2">
+  1093→                  <Label>Vehicle Type</Label>
+  1094→                  <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v })}>
+  1095→                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+  1096→                    <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+  1097→                  </Select>
+  1098→                </div>
+  1099→                <div className="space-y-2">
+  1100→                  <Label>Source</Label>
+  1101→                  <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
+  1102→                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+  1103→                    <SelectContent>{LEAD_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+  1104→                  </Select>
+  1105→                </div>
+  1106→              </div>
+  1107→              <div className="space-y-2">
+  1108→                <Label>Requirement</Label>
+  1109→                <Textarea value={form.requirement} onChange={(e) => setForm({ ...form, requirement: e.target.value })} placeholder="Describe the requirement..." rows={3} />
+  1110→              </div>
+  1111→              <div className="space-y-2">
+  1112→                <Label>Priority</Label>
+  1113→                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+  1114→                  <SelectTrigger><SelectValue /></SelectTrigger>
+  1115→                  <SelectContent>
+  1116→                    <SelectItem value="low">Low</SelectItem>
+  1117→                    <SelectItem value="medium">Medium</SelectItem>
+  1118→                    <SelectItem value="high">High</SelectItem>
+  1119→                    <SelectItem value="urgent">Urgent</SelectItem>
+  1120→                  </SelectContent>
+  1121→                </Select>
+  1122→              </div>
+  1123→            </div>
+  1124→            <DialogFooter>
+  1125→              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+  1126→              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
+  1127→                {submitting ? 'Creating...' : 'Create Lead'}
+  1128→              </Button>
+  1129→            </DialogFooter>
+  1130→          </DialogContent>
+  1131→        </Dialog>
+  1132→      </div>
+  1133→
+  1134→      {/* Pipeline Summary */}
+  1135→      <div className="flex flex-wrap gap-2">
+  1136→        {pipelineStatuses.map((s) => (
+  1137→          <Badge key={s} variant="outline" className={`text-xs px-2.5 py-1 ${STATUS_COLORS[s] || ''} border-0`}
+  1138→          >
+  1139→            {s.charAt(0).toUpperCase() + s.slice(1)}: {pipelineCounts[s] || 0}
+  1140→          </Badge>
+  1141→        ))}
+  1142→      </div>
+  1143→
+  1144→      {/* Filters */}
+  1145→      <div className="flex flex-col sm:flex-row gap-3">
+  1146→        <div className="relative flex-1">
+  1147→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+  1148→          <Input
+  1149→            placeholder="Search leads..."
+  1150→            value={search}
+  1151→            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+  1152→            className="pl-10"
+  1153→          />
+  1154→        </div>
+  1155→        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+  1156→          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
+  1157→          <SelectContent>
+  1158→            <SelectItem value="all">All Status</SelectItem>
+  1159→            {VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+  1160→          </SelectContent>
+  1161→        </Select>
+  1162→        <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
+  1163→          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Priority" /></SelectTrigger>
+  1164→          <SelectContent>
+  1165→            <SelectItem value="all">All Priority</SelectItem>
+  1166→            <SelectItem value="low">Low</SelectItem>
+  1167→            <SelectItem value="medium">Medium</SelectItem>
+  1168→            <SelectItem value="high">High</SelectItem>
+  1169→            <SelectItem value="urgent">Urgent</SelectItem>
+  1170→          </SelectContent>
+  1171→        </Select>
+  1172→      </div>
+  1173→
+  1174→      {/* Table */}
+  1175→      <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden">
+  1176→        {loading ? (
+  1177→          <div className="p-6 space-y-3">
+  1178→            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+  1179→          </div>
+  1180→        ) : leads.length === 0 ? (
+  1181→          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+  1182→            <UserPlus className="w-10 h-10 mb-3" />
+  1183→            <p className="text-sm font-medium">No leads found</p>
+  1184→            <p className="text-xs mt-1">Create a new lead or adjust your filters</p>
+  1185→          </div>
+  1186→        ) : (
+  1187→          <>
+  1188→            <div className="overflow-x-auto">
+  1189→              <Table>
+  1190→                <TableHeader>
+  1191→                  <TableRow className="bg-slate-50/80">
+  1192→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
+  1193→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Company</TableHead>
+  1194→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden md:table-cell">Phone</TableHead>
+  1195→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Emirate</TableHead>
+  1196→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden sm:table-cell">Source</TableHead>
+  1197→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+  1198→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
+  1199→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Created</TableHead>
+  1200→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
+  1201→                  </TableRow>
+  1202→                </TableHeader>
+  1203→                <TableBody>
+  1204→                  {leads.map((lead) => (
+  1205→                    <TableRow key={lead.id} className="hover:bg-slate-50/50">
+  1206→                      <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+  1207→                      <TableCell className="text-sm text-slate-600">{lead.company || '—'}</TableCell>
+  1208→                      <TableCell className="text-sm text-slate-600 hidden md:table-cell">{lead.phone || '—'}</TableCell>
+  1209→                      <TableCell className="text-sm text-slate-600 hidden lg:table-cell">{lead.emirate || '—'}</TableCell>
+  1210→                      <TableCell className="hidden sm:table-cell">
+  1211→                        {lead.source ? (
+  1212→                          <Badge variant="secondary" className="text-[11px] bg-slate-100 text-slate-600 border-0">{lead.source}</Badge>
+  1213→                        ) : '—'}
+  1214→                      </TableCell>
+  1215→                      <TableCell>
+  1216→                        <Badge className={`text-[11px] ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1217→                          {lead.status}
+  1218→                        </Badge>
+  1219→                      </TableCell>
+  1220→                      <TableCell>
+  1221→                        <div className="flex items-center gap-1.5">
+  1222→                          <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
+  1223→                          <span className="text-xs text-slate-600 capitalize">{lead.priority}</span>
+  1224→                        </div>
+  1225→                      </TableCell>
+  1226→                      <TableCell className="text-xs text-slate-500 hidden lg:table-cell">
+  1227→                        {new Date(lead.createdAt).toLocaleDateString()}
+  1228→                      </TableCell>
+  1229→                      <TableCell>
+  1230→                        <Select onValueChange={(v) => handleStatusUpdate(lead.id, v)}>
+  1231→                          <SelectTrigger className="h-8 w-28 text-xs">
+  1232→                            <SelectValue placeholder="Move to..." />
+  1233→                          </SelectTrigger>
+  1234→                          <SelectContent>
+  1235→                            {VALID_LEAD_STATUSES.map((s) => (
+  1236→                              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+  1237→                            ))}
+  1238→                          </SelectContent>
+  1239→                        </Select>
+  1240→                      </TableCell>
+  1241→                    </TableRow>
+  1242→                  ))}
+  1243→                </TableBody>
+  1244→              </Table>
+  1245→            </div>
+  1246→
+  1247→            {/* Pagination */}
+  1248→            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+  1249→              <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
+  1250→              <div className="flex gap-2">
+  1251→                <Button
+  1252→                  variant="outline"
+  1253→                  size="sm"
+  1254→                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+  1255→                  disabled={page <= 1}
+  1256→                >
+  1257→                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+  1258→                </Button>
+  1259→                <Button
+  1260→                  variant="outline"
+  1261→                  size="sm"
+  1262→                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+  1263→                  disabled={page >= totalPages}
+  1264→                >
+  1265→                  Next <ChevronRight className="w-4 h-4 ml-1" />
+  1266→                </Button>
+  1267→              </div>
+  1268→            </div>
+  1269→          </>
+  1270→        )}
+  1271→      </Card>
+  1272→    </div>
+  1273→  );
+  1274→}
+  1275→
+  1276→// ────────────────────────────────────────
+  1277→// VehiclesView
+  1278→// ────────────────────────────────────────
+  1279→
+  1280→function VehiclesView() {
+  1281→  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  1282→  const [totalPages, setTotalPages] = useState(1);
+  1283→  const [total, setTotal] = useState(0);
+  1284→  const [page, setPage] = useState(1);
+  1285→  const [search, setSearch] = useState('');
+  1286→  const [statusFilter, setStatusFilter] = useState<string>('all');
+  1287→  const [loading, setLoading] = useState(true);
+  1288→  const [createOpen, setCreateOpen] = useState(false);
+  1289→  const [submitting, setSubmitting] = useState(false);
+  1290→
+  1291→  const [form, setForm] = useState({
+  1292→    plateNumber: '',
+  1293→    make: '',
+  1294→    model: '',
+  1295→    year: '',
+  1296→    vehicleType: '',
+  1297→    vin: '',
+  1298→    color: '',
+  1299→  });
+  1300→
+  1301→  const fetchVehicles = useCallback(async () => {
+  1302→    setLoading(true);
+  1303→    try {
+  1304→      const params = new URLSearchParams({ page: String(page), limit: '12' });
+  1305→      if (search) params.set('search', search);
+  1306→      if (statusFilter !== 'all') params.set('status', statusFilter);
+  1307→
+  1308→      const res = await authFetch(`/api/vehicles?${params.toString()}`);
+  1309→      const data = await res.json();
+  1310→      if (res.ok) {
+  1311→        setVehicles(data.vehicles || []);
+  1312→        setTotalPages(data.pagination?.totalPages || 1);
+  1313→        setTotal(data.pagination?.total || 0);
+  1314→      }
+  1315→    } catch {
+  1316→      toast.error('Failed to load vehicles');
+  1317→    } finally {
+  1318→      setLoading(false);
+  1319→    }
+  1320→  }, [page, search, statusFilter]);
+  1321→
+  1322→  useEffect(() => {
+  1323→    fetchVehicles();
+  1324→  }, [fetchVehicles]);
+  1325→
+  1326→  const handleCreate = async () => {
+  1327→    if (!form.plateNumber.trim()) {
+  1328→      toast.error('Plate number is required');
+  1329→      return;
+  1330→    }
+  1331→    setSubmitting(true);
+  1332→    try {
+  1333→      const res = await authFetch('/api/vehicles', {
+  1334→        method: 'POST',
+  1335→        body: JSON.stringify({
+  1336→          ...form,
+  1337→          year: form.year ? parseInt(form.year) : null,
+  1338→        }),
+  1339→      });
+  1340→      const data = await res.json();
+  1341→      if (!res.ok) {
+  1342→        toast.error(data.error || 'Failed to add vehicle');
+  1343→        return;
+  1344→      }
+  1345→      toast.success('Vehicle added successfully');
+  1346→      setCreateOpen(false);
+  1347→      setForm({ plateNumber: '', make: '', model: '', year: '', vehicleType: '', vin: '', color: '' });
+  1348→      fetchVehicles();
+  1349→    } catch {
+  1350→      toast.error('Failed to add vehicle');
+  1351→    } finally {
+  1352→      setSubmitting(false);
+  1353→    }
+  1354→  };
+  1355→
+  1356→  const VEHICLE_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
+  1357→
+  1358→  return (
+  1359→    <div className="space-y-5">
+  1360→      {/* Header */}
+  1361→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  1362→        <div className="flex items-center gap-3">
+  1363→          <div>
+  1364→            <h2 className="text-2xl font-bold text-slate-900">Vehicles</h2>
+  1365→            <p className="text-sm text-slate-500">Manage your fleet</p>
+  1366→          </div>
+  1367→          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">
+  1368→            {total}
+  1369→          </Badge>
+  1370→        </div>
+  1371→        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+  1372→          <DialogTrigger asChild>
+  1373→            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+  1374→              <Plus className="w-4 h-4" /> Add Vehicle
+  1375→            </Button>
+  1376→          </DialogTrigger>
+  1377→          <DialogContent className="max-w-lg">
+  1378→            <DialogHeader>
+  1379→              <DialogTitle>Add New Vehicle</DialogTitle>
+  1380→            </DialogHeader>
+  1381→            <div className="grid gap-4 py-4">
+  1382→              <div className="space-y-2">
+  1383→                <Label>Plate Number *</Label>
+  1384→                <Input value={form.plateNumber} onChange={(e) => setForm({ ...form, plateNumber: e.target.value })} placeholder="e.g. DXB A 12345" />
+  1385→              </div>
+  1386→              <div className="grid grid-cols-2 gap-4">
+  1387→                <div className="space-y-2">
+  1388→                  <Label>Make</Label>
+  1389→                  <Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} placeholder="e.g. Toyota" />
+  1390→                </div>
+  1391→                <div className="space-y-2">
+  1392→                  <Label>Model</Label>
+  1393→                  <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="e.g. Hilux" />
+  1394→                </div>
+  1395→              </div>
+  1396→              <div className="grid grid-cols-3 gap-4">
+  1397→                <div className="space-y-2">
+  1398→                  <Label>Year</Label>
+  1399→                  <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="2024" />
+  1400→                </div>
+  1401→                <div className="space-y-2">
+  1402→                  <Label>Type</Label>
+  1403→                  <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v })}>
+  1404→                    <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+  1405→                    <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+  1406→                  </Select>
+  1407→                </div>
+  1408→                <div className="space-y-2">
+  1409→                  <Label>Color</Label>
+  1410→                  <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="White" />
+  1411→                </div>
+  1412→              </div>
+  1413→              <div className="space-y-2">
+  1414→                <Label>VIN</Label>
+  1415→                <Input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value })} placeholder="Vehicle Identification Number" />
+  1416→              </div>
+  1417→            </div>
+  1418→            <DialogFooter>
+  1419→              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+  1420→              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
+  1421→                {submitting ? 'Adding...' : 'Add Vehicle'}
+  1422→              </Button>
+  1423→            </DialogFooter>
+  1424→          </DialogContent>
+  1425→        </Dialog>
+  1426→      </div>
+  1427→
+  1428→      {/* Filters */}
+  1429→      <div className="flex flex-col sm:flex-row gap-3">
+  1430→        <div className="relative flex-1">
+  1431→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+  1432→          <Input
+  1433→            placeholder="Search by plate, make, or model..."
+  1434→            value={search}
+  1435→            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+  1436→            className="pl-10"
+  1437→          />
+  1438→        </div>
+  1439→        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+  1440→          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+  1441→          <SelectContent>
+  1442→            <SelectItem value="all">All Status</SelectItem>
+  1443→            {VEHICLE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+  1444→          </SelectContent>
+  1445→        </Select>
+  1446→      </div>
+  1447→
+  1448→      {/* Vehicle Cards (Mobile) / Table (Desktop) */}
+  1449→      {loading ? (
+  1450→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1451→          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+  1452→        </div>
+  1453→      ) : vehicles.length === 0 ? (
+  1454→        <Card className="rounded-xl border-slate-200/60">
+  1455→          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+  1456→            <Truck className="w-10 h-10 mb-3" />
+  1457→            <p className="text-sm font-medium">No vehicles found</p>
+  1458→            <p className="text-xs mt-1">Add a vehicle or adjust your filters</p>
+  1459→          </div>
+  1460→        </Card>
+  1461→      ) : (
+  1462→        <>
+  1463→          {/* Mobile Cards */}
+  1464→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
+  1465→            {vehicles.map((v) => (
+  1466→              <motion.div
+  1467→                key={v.id}
+  1468→                initial={{ opacity: 0, y: 10 }}
+  1469→                animate={{ opacity: 1, y: 0 }}
+  1470→              >
+  1471→                <Card className="rounded-xl border-slate-200/60 shadow-sm">
+  1472→                  <CardContent className="p-4">
+  1473→                    <div className="flex items-start justify-between">
+  1474→                      <div className="text-lg font-bold text-slate-900">{v.plateNumber}</div>
+  1475→                      <Badge className={`text-[11px] ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1476→                        {v.status}
+  1477→                      </Badge>
+  1478→                    </div>
+  1479→                    <div className="mt-2 text-sm text-slate-600">
+  1480→                      {[v.make, v.model, v.year].filter(Boolean).join(' ') || 'No details'}
+  1481→                    </div>
+  1482→                    <div className="mt-3 space-y-1.5 text-xs text-slate-500">
+  1483→                      {v.driver && (
+  1484→                        <div className="flex items-center gap-1.5">
+  1485→                          <Users className="w-3.5 h-3.5" />
+  1486→                          <span>{v.driver.name}</span>
+  1487→                        </div>
+  1488→                      )}
+  1489→                      {v.device && (
+  1490→                        <div className="flex items-center gap-1.5">
+  1491→                          <Cpu className="w-3.5 h-3.5" />
+  1492→                          <span>IMEI: {v.device.imei}</span>
+  1493→                        </div>
+  1494→                      )}
+  1495→                      {v.mileage != null && (
+  1496→                        <div className="flex items-center gap-1.5">
+  1497→                          <Gauge className="w-3.5 h-3.5" />
+  1498→                          <span>{v.mileage.toLocaleString()} km</span>
+  1499→                        </div>
+  1500→                      )}
+  1501→                    </div>
+  1502→                  </CardContent>
+  1503→                </Card>
+  1504→              </motion.div>
+  1505→            ))}
+  1506→          </div>
+  1507→
+  1508→          {/* Desktop Table */}
+  1509→          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
+  1510→            <Table>
+  1511→              <TableHeader>
+  1512→                <TableRow className="bg-slate-50/80">
+  1513→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Plate Number</TableHead>
+  1514→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Make / Model / Year</TableHead>
+  1515→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+  1516→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Driver</TableHead>
+  1517→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Device IMEI</TableHead>
+  1518→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Mileage</TableHead>
+  1519→                </TableRow>
+  1520→              </TableHeader>
+  1521→              <TableBody>
+  1522→                {vehicles.map((v) => (
+  1523→                  <TableRow key={v.id} className="hover:bg-slate-50/50">
+  1524→                    <TableCell className="font-bold text-sm">{v.plateNumber}</TableCell>
+  1525→                    <TableCell className="text-sm text-slate-600">
+  1526→                      {[v.make, v.model, v.year].filter(Boolean).join(' ') || '—'}
+  1527→                    </TableCell>
+  1528→                    <TableCell>
+  1529→                      <Badge className={`text-[11px] ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1530→                        {v.status}
+  1531→                      </Badge>
+  1532→                    </TableCell>
+  1533→                    <TableCell className="text-sm text-slate-600">{v.driver?.name || '—'}</TableCell>
+  1534→                    <TableCell className="text-sm text-slate-600 font-mono text-xs">{v.device?.imei || '—'}</TableCell>
+  1535→                    <TableCell className="text-sm text-slate-600">
+  1536→                      {v.mileage != null ? `${v.mileage.toLocaleString()} km` : '—'}
+  1537→                    </TableCell>
+  1538→                  </TableRow>
+  1539→                ))}
+  1540→              </TableBody>
+  1541→            </Table>
+  1542→          </Card>
+  1543→
+  1544→          {/* Pagination */}
+  1545→          <div className="flex items-center justify-between">
+  1546→            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
+  1547→            <div className="flex gap-2">
+  1548→              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+  1549→                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+  1550→              </Button>
+  1551→              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+  1552→                Next <ChevronRight className="w-4 h-4 ml-1" />
+  1553→              </Button>
+  1554→            </div>
+  1555→          </div>
+  1556→        </>
+  1557→      )}
+  1558→    </div>
+  1559→  );
+  1560→}
+  1561→
+  1562→// ────────────────────────────────────────
+  1563→// Placeholder View for unimplemented pages
+  1564→// ────────────────────────────────────────
+  1565→
+  1566→function PlaceholderView({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
+  1567→  return (
+  1568→    <motion.div
+  1569→      initial={{ opacity: 0, y: 20 }}
+  1570→      animate={{ opacity: 1, y: 0 }}
+  1571→      className="flex flex-col items-center justify-center py-24 text-slate-400"
+  1572→    >
+  1573→      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+  1574→        <Icon className="w-8 h-8 text-slate-300" />
+  1575→      </div>
+  1576→      <h3 className="text-lg font-semibold text-slate-600">{title}</h3>
+  1577→      <p className="text-sm mt-1">This module is under development</p>
+  1578→    </motion.div>
+  1579→  );
+  1580→}
+  1581→
+  1582→// ────────────────────────────────────────
+  1583→// AdminDashboard
+  1584→// ────────────────────────────────────────
+  1585→
+  1586→function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () => void }) {
+  1587→  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  1588→  const [sidebarOpen, setSidebarOpen] = useState(false);
+  1589→  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  1590→  const [notifOpen, setNotifOpen] = useState(false);
+  1591→  const [notifList, setNotifList] = useState<any[]>([]);
+  1592→  const [notifCount, setNotifCount] = useState(0);
+  1593→
+  1594→  const fetchNotifPreview = useCallback(async () => {
+  1595→    try {
+  1596→      const token = localStorage.getItem('rtr_token');
+  1597→      const res = await fetch('/api/notifications?limit=8', {
+  1598→        headers: token ? { Authorization: `Bearer ${token}` } : {},
+  1599→      });
+  1600→      if (res.ok) {
+  1601→        const data = await res.json();
+  1602→        setNotifList(data.notifications || []);
+  1603→        setNotifCount(data.unreadCount || 0);
+  1604→      }
+  1605→    } catch { /* silent */ }
+  1606→  }, []);
+  1607→
+  1608→  useEffect(() => { fetchNotifPreview(); }, [fetchNotifPreview]);
+  1609→
+  1610→  const viewTitle: Record<ViewType, string> = {
+  1611→    dashboard: 'Dashboard',
+  1612→    analytics: 'Advanced Analytics',
+  1613→    reports: 'Reports & Analytics',
+  1614→    'live-tracking': 'Live Tracking',
+  1615→    'ai-assistant': 'AI Assistant',
+  1616→    vehicles: 'Vehicles',
+  1617→    drivers: 'Drivers',
+  1618→    devices: 'Devices',
+  1619→    trips: 'Trips',
+  1620→    installations: 'Installations',
+  1621→    technicians: 'Technicians',
+  1622→    maintenance: 'Maintenance',
+  1623→    pipeline: 'Sales Pipeline',
+  1624→    leads: 'Leads',
+  1625→    contacts: 'Contacts',
+  1626→    quotations: 'Quotations',
+  1627→    contracts: 'Contracts',
+  1628→    subscriptions: 'Subscriptions',
+  1629→    invoices: 'Invoices',
+  1630→    geofences: 'Geofences',
+  1631→    'alert-rules': 'Alert Rules',
+  1632→    tickets: 'Tickets',
+  1633→    notifications: 'Notifications',
+  1634→    users: 'User Management',
+  1635→    settings: 'Settings',
+  1636→    'audit-logs': 'Audit Logs',
+  1637→  };
+  1638→
+  1639→  const renderView = () => {
+  1640→    switch (currentView) {
+  1641→      case 'dashboard':
+  1642→        return <DashboardView />;
+  1643→      case 'pipeline':
+  1644→        return <PipelineView />;
+  1645→      case 'leads':
+  1646→        return <LeadsView />;
+  1647→      case 'contacts':
+  1648→        return <ContactsView />;
+  1649→      case 'quotations':
+  1650→        return <QuotationsView />;
+  1651→      case 'vehicles':
+  1652→        return <VehiclesView />;
+  1653→      case 'live-tracking':
+  1654→        return <LiveTrackingView />;
+  1655→      case 'drivers':
+  1656→        return <DriversView />;
+  1657→      case 'devices':
+  1658→        return <DevicesView />;
+  1659→      case 'installations':
+  1660→        return <InstallationsView />;
+  1661→      case 'technicians':
+  1662→        return <TechniciansView />;
+  1663→      case 'maintenance':
+  1664→        return <MaintenanceView />;
+  1665→      case 'subscriptions':
+  1666→        return <SubscriptionsView />;
+  1667→      case 'invoices':
+  1668→        return <InvoicesView />;
+  1669→      case 'tickets':
+  1670→        return <TicketsView />;
+  1671→      case 'analytics':
+  1672→        return <AnalyticsView />;
+  1673→      case 'reports':
+  1674→        return <ReportsView />;
+  1675→      case 'trips':
+  1676→        return <TripsView />;
+  1677→      case 'contracts':
+  1678→        return <ContractsView />;
+  1679→      case 'geofences':
+  1680→        return <GeofencesView />;
+  1681→      case 'alert-rules':
+  1682→        return <AlertRulesView />;
+  1683→      case 'notifications':
+  1684→        return <NotificationsView />;
+  1685→      case 'users':
+  1686→        return <UsersView />;
+  1687→      case 'settings':
+  1688→        return <SettingsView />;
+  1689→      case 'audit-logs':
+  1690→        return <AuditLogsView />;
+  1691→      case 'ai-assistant':
+  1692→        return <DashboardView />; // AI panel opens as overlay
+  1693→      default:
+  1694→        return <DashboardView />;
+  1695→    }
+  1696→  };
+  1697→
+  1698→  return (
+  1699→    <div className="min-h-screen flex bg-[var(--rtr-bg)]">
+  1700→      {/* Desktop Sidebar */}
+  1701→      <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 text-white shrink-0">
+  1702→        <SidebarNav currentView={currentView} onNavigate={setCurrentView} />
+  1703→      </aside>
+  1704→
+  1705→      {/* Mobile Sidebar */}
+  1706→      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+  1707→        <SheetContent side="left" className="w-72 p-0 bg-slate-900 text-white border-slate-700">
+  1708→          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+  1709→          <SidebarNav currentView={currentView} onNavigate={setCurrentView} onClose={() => setSidebarOpen(false)} />
+  1710→        </SheetContent>
+  1711→      </Sheet>
+  1712→
+  1713→      {/* Main Area */}
+  1714→      <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0">
+  1715→        {/* Top Header */}
+  1716→        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shrink-0">
+  1717→          <div className="flex items-center gap-3">
+  1718→            {/* Mobile menu button */}
+  1719→            <button
+  1720→              onClick={() => setSidebarOpen(true)}
+  1721→              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+  1722→              aria-label="Open menu"
+  1723→            >
+  1724→              <Menu className="w-5 h-5 text-slate-600" />
+  1725→            </button>
+  1726→            <h1 className="text-lg font-semibold text-slate-900">{viewTitle[currentView]}</h1>
+  1727→          </div>
+  1728→
+  1729→          <div className="flex items-center gap-3">
+  1730→            {/* AI Assistant Button */}
+  1731→            <button
+  1732→              onClick={() => setAiPanelOpen(true)}
+  1733→              className="relative p-2 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer group"
+  1734→              aria-label="AI Assistant"
+  1735→            >
+  1736→              <Bot className="w-5 h-5 text-slate-600 group-hover:text-emerald-600 transition-colors" />
+  1737→              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+  1738→            </button>
+  1739→
+  1740→            {/* Notification Bell */}
+  1741→            <div className="relative">
+  1742→              <button
+  1743→                onClick={() => { setNotifOpen(!notifOpen); fetchNotifPreview(); }}
+  1744→                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+  1745→                aria-label="Notifications"
+  1746→              >
+  1747→                <Bell className="w-5 h-5 text-slate-600" />
+  1748→                {notifCount > 0 && (
+  1749→                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+  1750→                    {notifCount > 99 ? '99+' : notifCount}
+  1751→                  </span>
+  1752→                )}
+  1753→              </button>
+  1754→              {/* Notification Dropdown */}
+  1755→              <AnimatePresence>
+  1756→                {notifOpen && (
+  1757→                  <motion.div
+  1758→                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+  1759→                    animate={{ opacity: 1, y: 0, scale: 1 }}
+  1760→                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+  1761→                    className="absolute right-0 top-12 w-80 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden"
+  1762→                  >
+  1763→                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+  1764→                      <h3 className="font-semibold text-sm text-slate-800">Notifications</h3>
+  1765→                      <div className="flex items-center gap-2">
+  1766→                        {notifCount > 0 && (
+  1767→                          <Badge className="bg-red-100 text-red-700 border-0 text-[10px]">{notifCount} new</Badge>
+  1768→                        )}
+  1769→                        <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer">
+  1770→                          View All <ExternalLink className="w-3 h-3" />
+  1771→                        </button>
+  1772→                      </div>
+  1773→                    </div>
+  1774→                    <ScrollArea className="max-h-72">
+  1775→                      {notifList.length === 0 ? (
+  1776→                        <div className="p-6 text-center text-slate-400 text-sm">No notifications</div>
+  1777→                      ) : (
+  1778→                        <div className="divide-y divide-slate-50">
+  1779→                          {notifList.slice(0, 8).map((n: any) => (
+  1780→                            <div key={n.id} className={`px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
+  1781→                              <p className={`text-xs ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
+  1782→                              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+  1783→                            </div>
+  1784→                          ))}
+  1785→                        </div>
+  1786→                      )}
+  1787→                    </ScrollArea>
+  1788→                    <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+  1789→                      <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold w-full text-center cursor-pointer">
+  1790→                        Open Notification Center
+  1791→                      </button>
+  1792→                    </div>
+  1793→                  </motion.div>
+  1794→                )}
+  1795→              </AnimatePresence>
+  1796→            </div>
+  1797→
+  1798→            {/* User Dropdown */}
+  1799→            <DropdownMenu>
+  1800→              <DropdownMenuTrigger asChild>
+  1801→                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+  1802→                  <Avatar className="w-8 h-8">
+  1803→                    <AvatarFallback className="bg-emerald-600 text-white text-xs font-semibold">
+  1804→                      {user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+  1805→                    </AvatarFallback>
+  1806→                  </Avatar>
+  1807→                  <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
+  1808→                    {user.name}
+  1809→                  </span>
+  1810→                </button>
+  1811→              </DropdownMenuTrigger>
+  1812→              <DropdownMenuContent align="end" className="w-48">
+  1813→                <div className="px-2 py-1.5">
+  1814→                  <p className="text-sm font-medium text-slate-900">{user.name}</p>
+  1815→                  <p className="text-xs text-slate-500">{user.email}</p>
+  1816→                </div>
+  1817→                <DropdownMenuSeparator />
+  1818→                <DropdownMenuItem>
+  1819→                  <Settings className="w-4 h-4 mr-2" /> Profile
+  1820→                </DropdownMenuItem>
+  1821→                <DropdownMenuItem>
+  1822→                  <Settings className="w-4 h-4 mr-2" /> Settings
+  1823→                </DropdownMenuItem>
+  1824→                <DropdownMenuSeparator />
+  1825→                <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
+  1826→                  <LogOut className="w-4 h-4 mr-2" /> Logout
+  1827→                </DropdownMenuItem>
+  1828→              </DropdownMenuContent>
+  1829→            </DropdownMenu>
+  1830→          </div>
+  1831→        </header>
+  1832→
+  1833→        {/* Main Content */}
+  1834→        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+  1835→          <AnimatePresence mode="wait">
+  1836→            <motion.div
+  1837→              key={currentView}
+  1838→              initial={{ opacity: 0, x: 10 }}
+  1839→              animate={{ opacity: 1, x: 0 }}
+  1840→              exit={{ opacity: 0, x: -10 }}
+  1841→              transition={{ duration: 0.2 }}
+  1842→            >
+  1843→              {renderView()}
+  1844→            </motion.div>
+  1845→          </AnimatePresence>
+  1846→        </main>
+  1847→      </div>
+  1848→
+  1849→      {/* AI Chat Panel Overlay */}
+  1850→      <AIChatPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+  1851→
+  1852→      {/* Phase 8: PWA & Real-Time */}
+  1853→      <MobileBottomNav currentView={currentView} onNavigate={setCurrentView} notifCount={notifCount} />
+  1854→      <PWAInstallPrompt />
+  1855→      <ConnectionStatus />
+  1856→      <RealtimeEventToasts enabled={currentView === 'live-tracking' || currentView === 'dashboard'} />
+  1857→
+  1858→      {/* Click-outside handler for notification dropdown */}
+  1859→      {notifOpen && <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />}
+  1860→    </div>
+  1861→  );
+  1862→}
+  1863→
+  1864→// ────────────────────────────────────────
+  1865→// Main Page Component
+  1866→// ────────────────────────────────────────
+  1867→
+  1868→export default function Home() {
+  1869→  const [user, setUser] = useState<UserSession | null>(null);
+  1870→  const [loading, setLoading] = useState(true);
+  1871→
+  1872→  useEffect(() => {
+  1873→    const checkAuth = async () => {
+  1874→      try {
+  1875→        const token = localStorage.getItem('rtr_token');
+  1876→        if (!token) {
+  1877→          return;
+  1878→        }
+  1879→        const res = await fetch('/api/auth/me', {
+  1880→          headers: { Authorization: `Bearer ${token}` },
+  1881→        });
+  1882→        if (!res.ok) throw new Error('Invalid token');
+  1883→        const data = await res.json();
+  1884→        setUser(data.user);
+  1885→      } catch {
+  1886→        localStorage.removeItem('rtr_token');
+  1887→        localStorage.removeItem('rtr_user');
+  1888→      } finally {
+  1889→        setLoading(false);
+  1890→      }
+  1891→    };
+  1892→
+  1893→    checkAuth();
+  1894→  }, []);
+  1895→
+  1896→  const handleLogin = (loggedInUser: UserSession, _token: string) => {
+  1897→    setUser(loggedInUser);
+  1898→  };
+  1899→
+  1900→  const handleLogout = () => {
+  1901→    const token = localStorage.getItem('rtr_token');
+  1902→    if (token) {
+  1903→      fetch('/api/auth/logout', {
+  1904→        method: 'POST',
+  1905→        headers: { Authorization: `Bearer ${token}` },
+  1906→      }).catch(() => {});
+  1907→    }
+  1908→    localStorage.removeItem('rtr_token');
+  1909→    localStorage.removeItem('rtr_user');
+  1910→    setUser(null);
+  1911→    toast.info('You have been logged out');
+  1912→  };
+  1913→
+  1914→  if (loading) {
+  1915→    return (
+  1916→      <div className="min-h-screen flex items-center justify-center bg-[var(--rtr-bg)]">
+  1917→        <div className="flex flex-col items-center gap-4">
+  1918→          <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
+  1919→            <Truck className="w-7 h-7 text-white" />
+  1920→          </div>
+  1921→          <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+  1922→        </div>
+  1923→      </div>
+  1924→    );
+  1925→  }
+  1926→
+  1927→  if (!user) {
+  1928→    return <LoginScreen onLogin={handleLogin} />;
+  1929→  }
+  1930→
+  1931→  return <AdminDashboard user={user} onLogout={handleLogout} />;
+  1932→}
+  1933→

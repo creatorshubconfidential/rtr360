@@ -34,6 +34,23 @@ model Organization {
   currency      String   @default("AED")
   timezone      String   @default("Asia/Dubai")
   locale        String   @default("en")
+  // White-label branding
+  primaryColor  String?  @map("primary_color")
+  accentColor   String?  @map("accent_color")
+  customLogo    String?  @map("custom_logo")
+  favicon       String?
+  loginBgImage  String?  @map("login_bg_image")
+  customDomain  String?  @map("custom_domain")
+  domainVerified Boolean  @default(false) @map("domain_verified")
+  whiteLabelEnabled Boolean @default(false) @map("white_label_enabled")
+  brandedAppName   String? @map("branded_app_name")
+  brandedFooter   String? @map("branded_footer")
+  hideMianxBranding Boolean @default(false) @map("hide_mianx_branding")
+  // Plan limits
+  planName      String?  @map("plan_name")
+  vehicleLimit  Int      @default(0) @map("vehicle_limit")
+  userLimit     Int      @default(0) @map("user_limit")
+  featureFlags  String?  @map("feature_flags")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -58,6 +75,7 @@ model Organization {
   installations  Installation[]
   maintenanceRecords MaintenanceRecord[]
   subscriptions  Subscription[]
+  apiKeys        ApiKey[]
 }
 
 model Branch {
@@ -98,6 +116,7 @@ model User {
   activities     Activity[]
   assignedLeads  Lead[] @relation("LeadAssigned")
   sessions       Session[]
+  apiKeys        ApiKey[]
 }
 
 model AuditLog {
@@ -638,6 +657,27 @@ model Setting {
   key   String @unique
   value String
   type  String @default("string")
+}
+
+// ----------------------
+// API KEYS (Phase 9)
+// ----------------------
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String
+  key            String   @unique
+  keyPrefix      String   @map("key_prefix")
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  permissions    String   @default("read")
+  expiresAt      DateTime? @map("expires_at")
+  lastUsedAt     DateTime? @map("last_used_at")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 // ----------------------
