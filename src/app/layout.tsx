@@ -16,7 +16,19 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RTR 360 — Fleet Technology Platform",
-  description: "Powered by Mianx.ai",
+  description: "Fleet Technology & Management Platform — Powered by Mianx.ai",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RTR 360",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -33,6 +45,8 @@ export default function RootLayout({
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossOrigin=""
         />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="theme-color" content="#059669" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
@@ -47,6 +61,18 @@ export default function RootLayout({
             {children}
           </div>
           <Toaster position="top-right" richColors closeButton />
+          {/* PWA Service Worker Registration */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function() {});
+                  });
+                }
+              `,
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

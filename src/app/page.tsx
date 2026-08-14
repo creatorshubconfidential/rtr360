@@ -117,6 +117,12 @@ import AuditLogsView from '@/components/views/AuditLogsView';
 // Phase 7 Advanced Analytics
 import AnalyticsView from '@/components/views/AnalyticsView';
 
+// Phase 8 PWA & Real-Time
+import MobileBottomNav from '@/components/MobileBottomNav';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import ConnectionStatus from '@/components/ConnectionStatus';
+import RealtimeEventToasts from '@/components/RealtimeEventToasts';
+
 // Phase 6 Intelligence & Admin Views
 import ReportsView from '@/components/views/ReportsView';
 import AlertRulesView from '@/components/views/AlertRulesView';
@@ -1705,7 +1711,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
       </Sheet>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0">
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shrink-0">
           <div className="flex items-center gap-3">
@@ -1842,6 +1848,12 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
 
       {/* AI Chat Panel Overlay */}
       <AIChatPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* Phase 8: PWA & Real-Time */}
+      <MobileBottomNav currentView={currentView} onNavigate={setCurrentView} notifCount={notifCount} />
+      <PWAInstallPrompt />
+      <ConnectionStatus />
+      <RealtimeEventToasts enabled={currentView === 'live-tracking' || currentView === 'dashboard'} />
 
       {/* Click-outside handler for notification dropdown */}
       {notifOpen && <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />}

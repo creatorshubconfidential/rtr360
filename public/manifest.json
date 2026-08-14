@@ -1,0 +1,30 @@
+{
+  "name": "RTR 360 — Fleet Technology Platform",
+  "short_name": "RTR 360",
+  "description": "Fleet Technology & Management Platform — Powered by Mianx.ai",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#059669",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "navigation", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "screenshots": [],
+  "prefer_related_applications": false
+}

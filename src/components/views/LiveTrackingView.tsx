@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Truck, Navigation, Clock, RefreshCw, Wifi, WifiOff, Gauge, MapPin
+  Truck, Navigation, Clock, RefreshCw, Wifi, WifiOff, Gauge, MapPin, Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,9 +68,11 @@ export default function LiveTrackingView() {
   const [selectedVehicle, setSelectedVehicle] = useState<VehiclePosition | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLive, setIsLive] = useState(true);
+  const [sseConnected, setSseConnected] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const esRef = useRef<EventSource | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Fetch vehicles
@@ -179,20 +181,88 @@ export default function LiveTrackingView() {
     mapRef.current.setView([selectedVehicle.lat, selectedVehicle.lng], 14, { animate: true });
   }, [selectedVehicle]);
 
-  // Live updates
+  // Real-time SSE connection (Phase 8)
   useEffect(() => {
-    if (!isLive || positions.length === 0) return;
-    const interval = setInterval(() => {
-      setPositions(prev => prev.map(p => ({
-        ...p,
-        lat: p.lat + (Math.random() - 0.5) * 0.002,
-        lng: p.lng + (Math.random() - 0.5) * 0.002,
-        speed: Math.max(0, Math.min(140, p.speed + Math.round((Math.random() - 0.5) * 10))),
-        lastUpdate: new Date().toISOString(),
-      })));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [isLive, positions.length]);
+    if (!isLive) {
+      esRef.current?.close();
+      esRef.current = null;
+      setSseConnected(false);
+      return;
+    }
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
+    if (!token) return;
+
+    const es = new EventSource(`/api/realtime/vehicles?token=${token}`);
+    esRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'init') {
+          // Server sends initial positions
+          const serverPositions: VehiclePosition[] = data.vehicles.map((v: any) => ({
+            id: v.id,
+            plateNumber: v.plateNumber,
+            make: v.make,
+            model: v.model,
+            driver: v.driver ? { id: '', name: v.driver, phone: null } : null,
+            device: v.imei ? { id: '', imei: v.imei, status: 'installed' } : null,
+            status: v.status,
+            lat: v.lat,
+            lng: v.lng,
+            speed: v.speed,
+            heading: v.heading,
+            lastUpdate: v.timestamp,
+          }));
+          setPositions(serverPositions);
+          setSseConnected(true);
+        } else if (data.type === 'update') {
+          // Incremental position updates from server
+          setPositions(prev => {
+            const updateMap = new Map(data.vehicles.map((v: any) => [v.id, v]));
+            return prev.map(p => {
+              const u = updateMap.get(p.id);
+              if (!u) return p;
+              return {
+                ...p,
+                lat: u.lat,
+                lng: u.lng,
+                speed: u.speed,
+                heading: u.heading,
+                status: u.status,
+                lastUpdate: u.timestamp,
+              };
+            });
+          });
+        }
+      } catch {}
+    };
+
+    es.onopen = () => setSseConnected(true);
+    es.onerror = () => {
+      setSseConnected(false);
+      // Fallback to polling if SSE fails
+      if (positions.length > 0) {
+        const fallbackInterval = setInterval(() => {
+          setPositions(prev => prev.map(p => ({
+            ...p,
+            lat: p.lat + (Math.random() - 0.5) * 0.002,
+            lng: p.lng + (Math.random() - 0.5) * 0.002,
+            speed: Math.max(0, Math.min(140, p.speed + Math.round((Math.random() - 0.5) * 10))),
+            lastUpdate: new Date().toISOString(),
+          })));
+        }, 3000);
+        return () => clearInterval(fallbackInterval);
+      }
+    };
+
+    return () => {
+      es.close();
+      esRef.current = null;
+      setSseConnected(false);
+    };
+  }, [isLive]);
 
   const filteredPositions = positions.filter(p => {
     if (statusFilter === 'all') return true;
@@ -260,7 +330,11 @@ export default function LiveTrackingView() {
               {isLive ? 'LIVE' : 'PAUSED'}
             </Button>
             <Button variant="outline" size="sm" onClick={fetchVehicles}><RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh</Button>
-            <span className="text-xs text-slate-400 ml-auto">{filteredPositions.length} vehicles</span>
+            <span className={`text-xs ml-auto flex items-center gap-1 ${sseConnected ? 'text-emerald-500' : 'text-slate-400'}`}>
+              <Radio className={`w-3 h-3 ${sseConnected ? 'animate-pulse' : ''}`} />
+              {sseConnected ? 'SSE' : 'Polling'}
+            </span>
+            <span className="text-xs text-slate-400">{filteredPositions.length}</span>
           </div>
 
           {/* Vehicle List */}

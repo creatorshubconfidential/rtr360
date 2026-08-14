@@ -31,7 +31,7 @@ The platform serves the **UAE market** with support for AED currency, Dubai time
 | Phase 5 | Maintenance, Billing, Support, Settings | ✅ Complete |
 | Phase 6 | AI Intelligence & Platform Polish | ✅ Complete |
 | Phase 7 | Advanced Analytics & Predictive Intelligence | ✅ Complete |
-| Phase 8 | Mobile-First PWA & Real-Time WebSocket | 🔲 Upcoming |
+| Phase 8 | Mobile-First PWA & Real-Time WebSocket | ✅ Complete |
 | Phase 9 | Multi-Org Super Admin & White-Label | 🔲 Upcoming |
 | Phase 10 | API Gateway, Webhooks & Integrations | 🔲 Upcoming |
 
@@ -388,6 +388,10 @@ npm run dev
 - `GET /api/audit-logs` — Audit trail
 - `GET /api/notifications` — Notification list
 - `GET /api/reports` — Analytics data
+
+### Real-Time (2)
+- `GET /api/realtime/vehicles` — SSE vehicle position stream (3s updates)
+- `GET /api/realtime/events` — SSE fleet event stream (alerts, violations)
 
 ### AI (3)
 - `POST /api/ai/chat` — Send message to AI assistant
