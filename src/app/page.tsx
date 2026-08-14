@@ -93,6 +93,14 @@ import DevicesView from '@/components/views/DevicesView';
 import InstallationsView from '@/components/views/InstallationsView';
 import TechniciansView from '@/components/views/TechniciansView';
 
+// Phase 5 Views
+import MaintenanceView from '@/components/views/MaintenanceView';
+import SubscriptionsView from '@/components/views/SubscriptionsView';
+import InvoicesView from '@/components/views/InvoicesView';
+import TicketsView from '@/components/views/TicketsView';
+import SettingsView from '@/components/views/SettingsView';
+import AuditLogsView from '@/components/views/AuditLogsView';
+
 // Phase 4 FleetOS Views
 import dynamic from 'next/dynamic';
 const LiveTrackingView = dynamic(() => import('@/components/views/LiveTrackingView'), {
@@ -1466,17 +1474,17 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
       case 'technicians':
         return <TechniciansView />;
       case 'maintenance':
-        return <PlaceholderView title="Maintenance" icon={Settings} />;
+        return <MaintenanceView />;
       case 'subscriptions':
-        return <PlaceholderView title="Subscriptions" icon={CreditCard} />;
+        return <SubscriptionsView />;
       case 'invoices':
-        return <PlaceholderView title="Invoices" icon={FileText} />;
+        return <InvoicesView />;
       case 'tickets':
-        return <PlaceholderView title="Tickets" icon={Ticket} />;
+        return <TicketsView />;
       case 'settings':
-        return <PlaceholderView title="Settings" icon={Settings} />;
+        return <SettingsView />;
       case 'audit-logs':
-        return <PlaceholderView title="Audit Logs" icon={Shield} />;
+        return <AuditLogsView />;
       default:
         return <DashboardView />;
     }

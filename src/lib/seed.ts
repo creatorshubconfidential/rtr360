@@ -1154,6 +1154,271 @@ async function main() {
 
   console.log(`  ✅ Created 3 quotations`);
 
+  // ========================================
+  // 17. MAINTENANCE RECORDS (Phase 5)
+  // ========================================
+  console.log('\n🔧 Creating maintenance records...');
+
+  // Get the vehicles for maintenance records
+  const allVehicles = await db.vehicle.findMany({ where: { organizationId: customerOrg.id } });
+
+  await Promise.all([
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[0]?.id || '',
+        type: 'oil_change',
+        description: 'Regular oil change with synthetic 5W-30. Filter replaced.',
+        triggerType: 'mileage',
+        triggerValue: 10000,
+        scheduledDate: new Date('2025-07-15'),
+        completedDate: new Date('2025-07-16'),
+        cost: 450,
+        status: 'completed',
+        organizationId: customerOrg.id,
+      },
+    }),
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[1]?.id || '',
+        type: 'tire_rotation',
+        description: 'Full tire rotation and wheel alignment check.',
+        triggerType: 'mileage',
+        triggerValue: 20000,
+        scheduledDate: new Date('2025-08-20'),
+        cost: 350,
+        status: 'upcoming',
+        organizationId: customerOrg.id,
+      },
+    }),
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[2]?.id || '',
+        type: 'brake_service',
+        description: 'Front and rear brake pad replacement. Brake fluid flush.',
+        triggerType: 'manual',
+        scheduledDate: new Date('2025-08-05'),
+        completedDate: new Date('2025-08-06'),
+        cost: 1200,
+        status: 'completed',
+        organizationId: customerOrg.id,
+      },
+    }),
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[0]?.id || '',
+        type: 'ac_service',
+        description: 'AC compressor service and gas refill for UAE summer.',
+        triggerType: 'date',
+        scheduledDate: new Date('2025-06-01'),
+        cost: 800,
+        status: 'scheduled',
+        organizationId: customerOrg.id,
+      },
+    }),
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[3]?.id || '',
+        type: 'general_service',
+        description: '30,000 km full service. All fluids, filters, and belts checked.',
+        triggerType: 'mileage',
+        triggerValue: 30000,
+        scheduledDate: new Date('2025-09-10'),
+        cost: 2500,
+        status: 'upcoming',
+        organizationId: customerOrg.id,
+      },
+    }),
+    db.maintenanceRecord.create({
+      data: {
+        vehicleId: allVehicles[4]?.id || '',
+        type: 'inspection',
+        description: 'Annual vehicle inspection for registration renewal.',
+        triggerType: 'date',
+        scheduledDate: new Date('2025-08-01'),
+        completedDate: new Date('2025-08-01'),
+        cost: 500,
+        status: 'completed',
+        organizationId: customerOrg.id,
+      },
+    }),
+  ]);
+  console.log('  ✅ Created 6 maintenance records');
+
+  // ========================================
+  // 18. SUBSCRIPTIONS & INVOICES (Phase 5)
+  // ========================================
+  console.log('\n💳 Creating subscriptions & invoices...');
+
+  // Create subscription for customer org
+  const premiumPlanRef = premiumPlan; // Already defined above
+
+  if (premiumPlanRef) {
+    const custSubscription = await db.subscription.upsert({
+      where: { organizationId: customerOrg.id },
+      update: { planId: premiumPlanRef.id, vehicleCount: 5, status: 'active', startsAt: new Date('2025-01-01'), endsAt: new Date('2025-12-31') },
+      create: {
+        organizationId: customerOrg.id,
+        planId: premiumPlanRef.id,
+        status: 'active',
+        vehicleCount: 5,
+        startsAt: new Date('2025-01-01'),
+        endsAt: new Date('2025-12-31'),
+      },
+    });
+
+    // Create invoices for this subscription
+    await Promise.all([
+      db.invoice.create({
+        data: {
+          invoiceNumber: 'INV-20250101-001',
+          organizationId: customerOrg.id,
+          subscriptionId: custSubscription.id,
+          amount: 6250,
+          tax: 312.5,
+          total: 6562.5,
+          status: 'paid',
+          dueDate: new Date('2025-01-15'),
+          paidAt: new Date('2025-01-10'),
+          notes: 'January 2025 — Premium Plan (5 vehicles)',
+        },
+      }),
+      db.invoice.create({
+        data: {
+          invoiceNumber: 'INV-20250201-001',
+          organizationId: customerOrg.id,
+          subscriptionId: custSubscription.id,
+          amount: 6250,
+          tax: 312.5,
+          total: 6562.5,
+          status: 'paid',
+          dueDate: new Date('2025-02-15'),
+          paidAt: new Date('2025-02-12'),
+          notes: 'February 2025 — Premium Plan (5 vehicles)',
+        },
+      }),
+      db.invoice.create({
+        data: {
+          invoiceNumber: 'INV-20250701-001',
+          organizationId: customerOrg.id,
+          subscriptionId: custSubscription.id,
+          amount: 6250,
+          tax: 312.5,
+          total: 6562.5,
+          status: 'pending',
+          dueDate: new Date('2025-07-15'),
+          notes: 'July 2025 — Premium Plan (5 vehicles)',
+        },
+      }),
+      db.invoice.create({
+        data: {
+          invoiceNumber: 'INV-20250801-001',
+          organizationId: customerOrg.id,
+          subscriptionId: custSubscription.id,
+          amount: 6250,
+          tax: 312.5,
+          total: 6562.5,
+          status: 'pending',
+          dueDate: new Date('2025-08-15'),
+          notes: 'August 2025 — Premium Plan (5 vehicles)',
+        },
+      }),
+    ]);
+    console.log('  ✅ Created 1 subscription + 4 invoices');
+  } else {
+    console.log('  ⚠️ Plans not found, skipping subscription seed');
+  }
+
+  // ========================================
+  // 19. SUPPORT TICKETS (Phase 5)
+  // ========================================
+  console.log('\n🎫 Creating support tickets...');
+
+  await Promise.all([
+    db.ticket.create({
+      data: {
+        ticketNumber: 'TKT-20250810-001',
+        organizationId: customerOrg.id,
+        subject: 'GPS device offline — DXB-A-12345',
+        description: 'Vehicle DXB-A-12345 GPS tracker has not reported since yesterday afternoon. Last known location was near Al Quoz industrial area. Please check device connectivity.',
+        priority: 'high',
+        status: 'in_progress',
+        vehiclePlate: 'DXB-A-12345',
+        createdAt: new Date('2025-08-10T09:30:00'),
+      },
+    }),
+    db.ticket.create({
+      data: {
+        ticketNumber: 'TKT-20250811-001',
+        organizationId: customerOrg.id,
+        subject: 'Request for additional 10 tracking devices',
+        description: 'We are expanding our fleet by 10 vehicles next month. Please prepare a quotation for GPS devices, SIM cards, and installation for the new vehicles.',
+        priority: 'medium',
+        status: 'open',
+        createdAt: new Date('2025-08-11T14:15:00'),
+      },
+    }),
+    db.ticket.create({
+      data: {
+        ticketNumber: 'TKT-20250812-001',
+        organizationId: customerOrg.id,
+        subject: 'Geofence alert not triggering for Jebel Ali warehouse',
+        description: 'Configured a geofence around our Jebel Ali warehouse but exit alerts are not being triggered. Vehicles leave the area without any notification.',
+        priority: 'medium',
+        status: 'open',
+        vehiclePlate: 'DXB-C-67890',
+        createdAt: new Date('2025-08-12T10:00:00'),
+      },
+    }),
+    db.ticket.create({
+      data: {
+        ticketNumber: 'TKT-20250813-001',
+        organizationId: customerOrg.id,
+        subject: 'Driver app login issue for Mohammed Al Rashid',
+        description: 'Driver Mohammed Al Rashid (DRV-001) is unable to login to the driver mobile app. Reset password did not resolve the issue.',
+        priority: 'low',
+        status: 'resolved',
+        resolvedAt: new Date('2025-08-13T16:00:00'),
+        createdAt: new Date('2025-08-13T11:00:00'),
+      },
+    }),
+    db.ticket.create({
+      data: {
+        ticketNumber: 'TKT-20250814-001',
+        organizationId: rtrOrg.id,
+        subject: 'Monthly invoice discrepancy — July billing',
+        description: 'The July invoice shows 5 vehicles but we only have 4 active devices. One device was removed in mid-June. Please correct the billing amount.',
+        priority: 'urgent',
+        status: 'open',
+        createdAt: new Date('2025-08-14T08:45:00'),
+      },
+    }),
+  ]);
+  console.log('  ✅ Created 5 support tickets');
+
+  // ========================================
+  // 20. PLATFORM SETTINGS (Phase 5)
+  // ========================================
+  console.log('\n⚙️ Creating platform settings...');
+
+  await Promise.all([
+    db.setting.upsert({ where: { key: 'org_name' }, update: { value: 'RTR 360' }, create: { key: 'org_name', value: 'RTR 360' } }),
+    db.setting.upsert({ where: { key: 'org_email' }, update: { value: 'info@rtr.ae' }, create: { key: 'org_email', value: 'info@rtr.ae' } }),
+    db.setting.upsert({ where: { key: 'org_phone' }, update: { value: '+971-4-123-4567' }, create: { key: 'org_phone', value: '+971-4-123-4567' } }),
+    db.setting.upsert({ where: { key: 'org_website' }, update: { value: 'https://rtr360.ae' }, create: { key: 'org_website', value: 'https://rtr360.ae' } }),
+    db.setting.upsert({ where: { key: 'org_address' }, update: { value: 'Office 1205, Aspect Tower, Business Bay, Dubai, UAE' }, create: { key: 'org_address', value: 'Office 1205, Aspect Tower, Business Bay, Dubai, UAE' } }),
+    db.setting.upsert({ where: { key: 'org_emirate' }, update: { value: 'Dubai' }, create: { key: 'org_emirate', value: 'Dubai' } }),
+    db.setting.upsert({ where: { key: 'notify_email' }, update: { value: 'true' }, create: { key: 'notify_email', value: 'true' } }),
+    db.setting.upsert({ where: { key: 'notify_sms' }, update: { value: 'false' }, create: { key: 'notify_sms', value: 'false' } }),
+    db.setting.upsert({ where: { key: 'notify_whatsapp' }, update: { value: 'true' }, create: { key: 'notify_whatsapp', value: 'true' } }),
+    db.setting.upsert({ where: { key: 'alert_overspeed' }, update: { value: 'true' }, create: { key: 'alert_overspeed', value: 'true' } }),
+    db.setting.upsert({ where: { key: 'alert_geofence' }, update: { value: 'true' }, create: { key: 'alert_geofence', value: 'true' } }),
+    db.setting.upsert({ where: { key: 'alert_sos' }, update: { value: 'true' }, create: { key: 'alert_sos', value: 'true' } }),
+    db.setting.upsert({ where: { key: 'gps_update_interval' }, update: { value: '30' }, create: { key: 'gps_update_interval', value: '30' } }),
+    db.setting.upsert({ where: { key: 'gps_idle_timeout' }, update: { value: '300' }, create: { key: 'gps_idle_timeout', value: '300' } }),
+    db.setting.upsert({ where: { key: 'gps_speed_threshold' }, update: { value: '120' }, create: { key: 'gps_speed_threshold', value: '120' } }),
+  ]);
+  console.log('  ✅ Created 15 platform settings');
+
   console.log('\n' + '='.repeat(50));
   console.log('🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
@@ -1166,11 +1431,15 @@ async function main() {
   console.log(`   Contacts: 4`);
   console.log(`   Activities: 6`);
   console.log(`   Quotations: 3`);
+  console.log(`   Maintenance Records: 6`);
+  console.log(`   Subscriptions: 1`);
+  console.log(`   Invoices: 4`);
+  console.log(`   Tickets: 5`);
   console.log(`   Alerts: 5`);
-  console.log(`   Tickets: 2`);
   console.log(`   Trips: 3`);
   console.log(`   Plans: 2`);
   console.log(`   Geofences: 2`);
+  console.log(`   Settings: 15`);
   console.log('\n🔑 Test credentials:');
   console.log(`   Super Admin: admin@rtr.ae / REDACTED_DEMO_PASSWORD`);
   console.log(`   Ops Manager: ahmed.ops@rtr.ae / REDACTED_DEMO_PASSWORD`);

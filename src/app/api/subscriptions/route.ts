@@ -1,0 +1,110 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { getAuthUser } from '@/lib/auth';
+
+const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
+
+export async function GET(request: Request) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
+    const status = searchParams.get('status');
+
+    const where: Record<string, unknown> = {};
+
+    // Tenant isolation
+    if (user.role !== 'super_admin' && user.organizationId) {
+      where.organizationId = user.organizationId;
+    }
+
+    if (status && VALID_STATUSES.includes(status)) {
+      where.status = status;
+    }
+
+    const [subscriptions, total] = await Promise.all([
+      db.subscription.findMany({
+        where,
+        include: {
+          plan: true,
+          organization: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.subscription.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      subscriptions,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    console.error('Subscriptions GET error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    const body = await request.json();
+    const { organizationId, planId, startsAt, endsAt } = body;
+
+    if (!planId) {
+      return NextResponse.json({ error: 'planId is required' }, { status: 400 });
+    }
+
+    if (!startsAt) {
+      return NextResponse.json({ error: 'startsAt is required' }, { status: 400 });
+    }
+
+    // Verify the plan exists
+    const plan = await db.plan.findUnique({ where: { id: planId } });
+    if (!plan) {
+      return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
+    }
+
+    // Determine the organization
+    const orgId = organizationId || user.organizationId;
+
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization context required' }, { status: 400 });
+    }
+
+    // Check if the organization already has a subscription
+    const existing = await db.subscription.findUnique({
+      where: { organizationId: orgId },
+    });
+
+    if (existing) {
+      return NextResponse.json({ error: 'Organization already has a subscription' }, { status: 409 });
+    }
+
+    const subscription = await db.subscription.create({
+      data: {
+        organizationId: orgId,
+        planId,
+        status: 'active',
+        vehicleCount: 0,
+        startsAt: new Date(startsAt),
+        endsAt: endsAt ? new Date(endsAt) : null,
+      },
+      include: {
+        plan: true,
+        organization: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json({ subscription }, { status: 201 });
+  } catch (error) {
+    console.error('Subscriptions POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
