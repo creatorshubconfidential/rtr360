@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   MapPin,
+  BrainCircuit,
   Truck,
   Users,
   UserPlus,
@@ -113,6 +114,9 @@ import TicketsView from '@/components/views/TicketsView';
 import SettingsView from '@/components/views/SettingsView';
 import AuditLogsView from '@/components/views/AuditLogsView';
 
+// Phase 7 Advanced Analytics
+import AnalyticsView from '@/components/views/AnalyticsView';
+
 // Phase 6 Intelligence & Admin Views
 import ReportsView from '@/components/views/ReportsView';
 import AlertRulesView from '@/components/views/AlertRulesView';
@@ -197,6 +201,7 @@ interface Alert {
 
 type ViewType =
   | 'dashboard'
+  | 'analytics'
   | 'live-tracking'
   | 'vehicles'
   | 'drivers'
@@ -283,6 +288,7 @@ const NAV_SECTIONS = [
     label: 'MAIN',
     items: [
       { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
+      { id: 'analytics' as ViewType, icon: BrainCircuit, label: 'Analytics AI' },
       { id: 'reports' as ViewType, icon: BarChart3, label: 'Reports' },
       { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
       { id: 'ai-assistant' as ViewType, icon: Bot, label: 'AI Assistant' },
@@ -802,7 +808,111 @@ function DashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Predictive Insights Widget */}
+      <DashboardPredictiveInsights />
     </div>
+  );
+}
+
+// ────────────────────────────────────────
+// Predictive Insights Widget (Phase 7)
+// ────────────────────────────────────────
+
+function DashboardPredictiveInsights() {
+  const [fleetData, setFleetData] = useState<any>(null);
+  const [maintData, setMaintData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      authFetch('/api/analytics/fleet-health').catch(() => null),
+      authFetch('/api/analytics/maintenance-prediction').catch(() => null),
+    ]).then(([fh, mp]) => {
+      if (fh) setFleetData(fh);
+      if (mp) setMaintData(mp);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Skeleton className="h-40 rounded-xl" />;
+
+  const insights: { icon: any; color: string; bgColor: string; label: string; value: string; sub: string }[] = [];
+
+  if (fleetData) {
+    const grade = fleetData.fleetGrade;
+    const gradeColor = { A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', D: 'text-red-600' }[grade] || 'text-slate-600';
+    insights.push({
+      icon: Shield, color: gradeColor, bgColor: grade === 'A' ? 'bg-emerald-50' : grade === 'B' ? 'bg-blue-50' : grade === 'C' ? 'bg-amber-50' : 'bg-red-50',
+      label: 'Fleet Health Score', value: `${fleetData.fleetScore}/100 (Grade ${grade})`,
+      sub: `${fleetData.summary.criticalCount} critical, ${fleetData.summary.highRiskCount} high risk vehicles`,
+    });
+    if (fleetData.topIssues.length > 0) {
+      insights.push({
+        icon: AlertTriangle, color: 'text-red-600', bgColor: 'bg-red-50',
+        label: 'Top Issue', value: fleetData.topIssues[0].message,
+        sub: `${fleetData.topIssues[0].vehiclePlate} — ${fleetData.topIssues[0].severity} severity`,
+      });
+    }
+  }
+
+  if (maintData) {
+    if (maintData.summary.overdueCount > 0) {
+      insights.push({
+        icon: Wrench, color: 'text-red-600', bgColor: 'bg-red-50',
+        label: 'Maintenance Overdue', value: `${maintData.summary.overdueCount} vehicle(s) overdue`,
+        sub: `Predicted cost: AED ${maintData.summary.totalPredictedCost.toLocaleString()}`,
+      });
+    } else if (maintData.summary.highUrgencyCount > 0) {
+      insights.push({
+        icon: Wrench, color: 'text-amber-600', bgColor: 'bg-amber-50',
+        label: 'Maintenance Due Soon', value: `${maintData.summary.highUrgencyCount} vehicle(s) within 7 days`,
+        sub: `Avg ${maintData.summary.avgDaysUntilService} days to next service`,
+      });
+    } else {
+      insights.push({
+        icon: Shield, color: 'text-emerald-600', bgColor: 'bg-emerald-50',
+        label: 'Maintenance Status', value: 'All vehicles on schedule',
+        sub: `Next service avg: ${maintData.summary.avgDaysUntilService} days`,
+      });
+    }
+  }
+
+  if (insights.length === 0) return null;
+
+  return (
+    <Card className="rounded-xl border-slate-200/60 shadow-sm bg-gradient-to-r from-slate-50 to-white">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold text-slate-900 flex items-center gap-2">
+          <BrainCircuit className="w-4 h-4 text-emerald-600" />
+          Predictive Insights
+          <span className="text-[10px] font-normal text-slate-400 ml-1">Powered by Mianx.ai</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {insights.map((ins, i) => {
+            const Icon = ins.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`p-3 rounded-lg ${ins.bgColor} border border-white/50`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Icon className={`w-4 h-4 ${ins.color}`} />
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{ins.label}</span>
+                </div>
+                <div className={`text-sm font-semibold ${ins.color}`}>{ins.value}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{ins.sub}</div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1493,6 +1603,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
 
   const viewTitle: Record<ViewType, string> = {
     dashboard: 'Dashboard',
+    analytics: 'Advanced Analytics',
     reports: 'Reports & Analytics',
     'live-tracking': 'Live Tracking',
     'ai-assistant': 'AI Assistant',
@@ -1551,6 +1662,8 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
         return <InvoicesView />;
       case 'tickets':
         return <TicketsView />;
+      case 'analytics':
+        return <AnalyticsView />;
       case 'reports':
         return <ReportsView />;
       case 'trips':

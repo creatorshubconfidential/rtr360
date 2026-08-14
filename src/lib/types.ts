@@ -138,6 +138,7 @@ export interface PipelineSummary {
 
 export type ViewType =
   | 'dashboard'
+  | 'analytics'
   | 'live-tracking'
   | 'vehicles'
   | 'drivers'

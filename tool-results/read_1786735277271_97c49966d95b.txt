@@ -1,0 +1,1816 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { toast } from 'sonner';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import {
+     7→  LayoutDashboard,
+     8→  MapPin,
+     9→  BrainCircuit,
+    10→  Truck,
+    11→  Users,
+    12→  UserPlus,
+    13→  AlertTriangle,
+    14→  Ticket,
+    15→  Route,
+    16→  Gauge,
+    17→  Wrench,
+    18→  Cpu,
+    19→  CreditCard,
+    20→  FileText,
+    21→  Settings,
+    22→  LogOut,
+    23→  Bell,
+    24→  Search,
+    25→  Plus,
+    26→  ChevronLeft,
+    27→  ChevronRight,
+    28→  Filter,
+    29→  Activity,
+    30→  Shield,
+    31→  Building2,
+    32→  Phone,
+    33→  Mail,
+    34→  Globe,
+    35→  Menu,
+    36→  Kanban,
+    37→  HardHat,
+    38→  BarChart3,
+    39→  BellRing,
+    40→  MapPinned,
+    41→  UserCog,
+    42→  FileSignature,
+    43→  Route as RouteIcon,
+    44→  Bot,
+    45→  ExternalLink,
+    46→} from 'lucide-react';
+    47→
+    48→import { Button } from '@/components/ui/button';
+    49→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    50→import { Input } from '@/components/ui/input';
+    51→import { Label } from '@/components/ui/label';
+    52→import { Badge } from '@/components/ui/badge';
+    53→import {
+    54→  Dialog,
+    55→  DialogContent,
+    56→  DialogHeader,
+    57→  DialogTitle,
+    58→  DialogTrigger,
+    59→  DialogFooter,
+    60→} from '@/components/ui/dialog';
+    61→import {
+    62→  Select,
+    63→  SelectContent,
+    64→  SelectItem,
+    65→  SelectTrigger,
+    66→  SelectValue,
+    67→} from '@/components/ui/select';
+    68→import {
+    69→  Sheet,
+    70→  SheetContent,
+    71→  SheetTrigger,
+    72→  SheetTitle,
+    73→} from '@/components/ui/sheet';
+    74→import {
+    75→  Table,
+    76→  TableBody,
+    77→  TableCell,
+    78→  TableHead,
+    79→  TableHeader,
+    80→  TableRow,
+    81→} from '@/components/ui/table';
+    82→import {
+    83→  DropdownMenu,
+    84→  DropdownMenuContent,
+    85→  DropdownMenuItem,
+    86→  DropdownMenuSeparator,
+    87→  DropdownMenuTrigger,
+    88→} from '@/components/ui/dropdown-menu';
+    89→import { Textarea } from '@/components/ui/textarea';
+    90→import { Skeleton } from '@/components/ui/skeleton';
+    91→import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+    92→import { Separator } from '@/components/ui/separator';
+    93→import { ScrollArea } from '@/components/ui/scroll-area';
+    94→
+    95→// AI Assistant
+    96→import AIChatPanel from '@/components/AIChatPanel';
+    97→
+    98→// Phase 2 CRM Views
+    99→import PipelineView from '@/components/views/PipelineView';
+   100→import QuotationsView from '@/components/views/QuotationsView';
+   101→import ContactsView from '@/components/views/ContactsView';
+   102→
+   103→// Phase 3 Operations Views
+   104→import DriversView from '@/components/views/DriversView';
+   105→import DevicesView from '@/components/views/DevicesView';
+   106→import InstallationsView from '@/components/views/InstallationsView';
+   107→import TechniciansView from '@/components/views/TechniciansView';
+   108→
+   109→// Phase 5 Views
+   110→import MaintenanceView from '@/components/views/MaintenanceView';
+   111→import SubscriptionsView from '@/components/views/SubscriptionsView';
+   112→import InvoicesView from '@/components/views/InvoicesView';
+   113→import TicketsView from '@/components/views/TicketsView';
+   114→import SettingsView from '@/components/views/SettingsView';
+   115→import AuditLogsView from '@/components/views/AuditLogsView';
+   116→
+   117→// Phase 7 Advanced Analytics
+   118→import AnalyticsView from '@/components/views/AnalyticsView';
+   119→
+   120→// Phase 6 Intelligence & Admin Views
+   121→import ReportsView from '@/components/views/ReportsView';
+   122→import AlertRulesView from '@/components/views/AlertRulesView';
+   123→import GeofencesView from '@/components/views/GeofencesView';
+   124→import UsersView from '@/components/views/UsersView';
+   125→import ContractsView from '@/components/views/ContractsView';
+   126→import TripsView from '@/components/views/TripsView';
+   127→import NotificationsView from '@/components/views/NotificationsView';
+   128→
+   129→// Phase 4 FleetOS Views
+   130→import dynamic from 'next/dynamic';
+   131→const LiveTrackingView = dynamic(() => import('@/components/views/LiveTrackingView'), {
+   132→  ssr: false,
+   133→  loading: () => <div className="h-[calc(100vh-8rem)] flex items-center justify-center bg-slate-50 rounded-xl"><div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>,
+   134→});
+   135→
+   136→// ────────────────────────────────────────
+   137→// Types
+   138→// ────────────────────────────────────────
+   139→
+   140→interface UserSession {
+   141→  id: string;
+   142→  email: string;
+   143→  name: string;
+   144→  role: string;
+   145→  organizationId: string | null;
+   146→}
+   147→
+   148→interface DashboardStats {
+   149→  totalVehicles: number;
+   150→  activeVehicles: number;
+   151→  totalDrivers: number;
+   152→  totalLeads: number;
+   153→  openAlerts: number;
+   154→  openTickets: number;
+   155→  todayTrips: number;
+   156→  totalDistance: number;
+   157→  totalDevices: number;
+   158→  pendingInstallations: number;
+   159→  activeTechnicians: number;
+   160→}
+   161→
+   162→interface Lead {
+   163→  id: string;
+   164→  name: string;
+   165→  email: string | null;
+   166→  phone: string | null;
+   167→  company: string | null;
+   168→  emirate: string | null;
+   169→  vehicleCount: number | null;
+   170→  vehicleType: string | null;
+   171→  source: string | null;
+   172→  status: string;
+   173→  priority: string;
+   174→  createdAt: string;
+   175→}
+   176→
+   177→interface Vehicle {
+   178→  id: string;
+   179→  plateNumber: string;
+   180→  make: string | null;
+   181→  model: string | null;
+   182→  year: number | null;
+   183→  vehicleType: string | null;
+   184→  vin: string | null;
+   185→  color: string | null;
+   186→  status: string;
+   187→  mileage: number | null;
+   188→  driver: { id: string; name: string; phone: string | null } | null;
+   189→  device: { id: string; imei: string; status: string } | null;
+   190→  createdAt: string;
+   191→}
+   192→
+   193→interface Alert {
+   194→  id: string;
+   195→  type: string;
+   196→  severity: string;
+   197→  vehiclePlate: string | null;
+   198→  message: string;
+   199→  createdAt: string;
+   200→}
+   201→
+   202→type ViewType =
+   203→  | 'dashboard'
+   204→  | 'live-tracking'
+   205→  | 'vehicles'
+   206→  | 'drivers'
+   207→  | 'devices'
+   208→  | 'installations'
+   209→  | 'maintenance'
+   210→  | 'technicians'
+   211→  | 'pipeline'
+   212→  | 'leads'
+   213→  | 'contacts'
+   214→  | 'quotations'
+   215→  | 'subscriptions'
+   216→  | 'invoices'
+   217→  | 'tickets'
+   218→  | 'reports'
+   219→  | 'alert-rules'
+   220→  | 'geofences'
+   221→  | 'trips'
+   222→  | 'users'
+   223→  | 'contracts'
+   224→  | 'notifications'
+   225→  | 'settings'
+   226→  | 'audit-logs'
+   227→  | 'ai-assistant';
+   228→
+   229→// ────────────────────────────────────────
+   230→// Constants
+   231→// ────────────────────────────────────────
+   232→
+   233→const STATUS_COLORS: Record<string, string> = {
+   234→  new: 'bg-blue-100 text-blue-700',
+   235→  contacted: 'bg-yellow-100 text-yellow-700',
+   236→  qualified: 'bg-purple-100 text-purple-700',
+   237→  demo: 'bg-cyan-100 text-cyan-700',
+   238→  proposal: 'bg-orange-100 text-orange-700',
+   239→  quotation: 'bg-orange-100 text-orange-700',
+   240→  negotiation: 'bg-amber-100 text-amber-700',
+   241→  won: 'bg-emerald-100 text-emerald-700',
+   242→  lost: 'bg-red-100 text-red-700',
+   243→  closed: 'bg-slate-100 text-slate-700',
+   244→  active: 'bg-emerald-100 text-emerald-700',
+   245→  inactive: 'bg-slate-100 text-slate-600',
+   246→  maintenance: 'bg-amber-100 text-amber-700',
+   247→  decommissioned: 'bg-red-100 text-red-700',
+   248→};
+   249→
+   250→const PRIORITY_COLORS: Record<string, string> = {
+   251→  low: 'bg-slate-300',
+   252→  medium: 'bg-amber-400',
+   253→  high: 'bg-orange-500',
+   254→  urgent: 'bg-red-500',
+   255→};
+   256→
+   257→const EMIRATES = [
+   258→  'Dubai',
+   259→  'Abu Dhabi',
+   260→  'Sharjah',
+   261→  'Ajman',
+   262→  'UAQ',
+   263→  'RAK',
+   264→  'Fujairah',
+   265→];
+   266→
+   267→const VEHICLE_TYPES = [
+   268→  'Sedan',
+   269→  'SUV',
+   270→  'Truck',
+   271→  'Van',
+   272→  'Bus',
+   273→  'Heavy Equipment',
+   274→];
+   275→
+   276→const LEAD_SOURCES = [
+   277→  'Website',
+   278→  'WhatsApp',
+   279→  'Referral',
+   280→  'Google Ads',
+   281→  'Meta',
+   282→  'Walk-in',
+   283→];
+   284→
+   285→const NAV_SECTIONS = [
+   286→  {
+   287→    label: 'MAIN',
+   288→    items: [
+   289→      { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
+   290→      { id: 'analytics' as ViewType, icon: BrainCircuit, label: 'Analytics AI' },
+   291→      { id: 'reports' as ViewType, icon: BarChart3, label: 'Reports' },
+   292→      { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
+   293→      { id: 'ai-assistant' as ViewType, icon: Bot, label: 'AI Assistant' },
+   294→    ],
+   295→  },
+   296→  {
+   297→    label: 'FLEET',
+   298→    items: [
+   299→      { id: 'vehicles' as ViewType, icon: Truck, label: 'Vehicles' },
+   300→      { id: 'drivers' as ViewType, icon: Users, label: 'Drivers' },
+   301→      { id: 'devices' as ViewType, icon: Cpu, label: 'Devices' },
+   302→      { id: 'trips' as ViewType, icon: RouteIcon, label: 'Trips' },
+   303→    ],
+   304→  },
+   305→  {
+   306→    label: 'OPERATIONS',
+   307→    items: [
+   308→      { id: 'installations' as ViewType, icon: Wrench, label: 'Installations' },
+   309→      { id: 'technicians' as ViewType, icon: HardHat, label: 'Technicians' },
+   310→      { id: 'maintenance' as ViewType, icon: Settings, label: 'Maintenance' },
+   311→    ],
+   312→  },
+   313→  {
+   314→    label: 'CRM',
+   315→    items: [
+   316→      { id: 'pipeline' as ViewType, icon: Kanban, label: 'Pipeline' },
+   317→      { id: 'leads' as ViewType, icon: UserPlus, label: 'Leads' },
+   318→      { id: 'contacts' as ViewType, icon: Users, label: 'Contacts' },
+   319→      { id: 'quotations' as ViewType, icon: FileText, label: 'Quotations' },
+   320→      { id: 'contracts' as ViewType, icon: FileSignature, label: 'Contracts' },
+   321→    ],
+   322→  },
+   323→  {
+   324→    label: 'FINANCE',
+   325→    items: [
+   326→      { id: 'subscriptions' as ViewType, icon: CreditCard, label: 'Subscriptions' },
+   327→      { id: 'invoices' as ViewType, icon: FileText, label: 'Invoices' },
+   328→    ],
+   329→  },
+   330→  {
+   331→    label: 'INTELLIGENCE',
+   332→    items: [
+   333→      { id: 'geofences' as ViewType, icon: MapPinned, label: 'Geofences' },
+   334→      { id: 'alert-rules' as ViewType, icon: BellRing, label: 'Alert Rules' },
+   335→    ],
+   336→  },
+   337→  {
+   338→    label: 'SUPPORT',
+   339→    items: [
+   340→      { id: 'tickets' as ViewType, icon: Ticket, label: 'Tickets' },
+   341→      { id: 'notifications' as ViewType, icon: Bell, label: 'Notifications' },
+   342→    ],
+   343→  },
+   344→  {
+   345→    label: 'ADMIN',
+   346→    items: [
+   347→      { id: 'users' as ViewType, icon: UserCog, label: 'Users' },
+   348→      { id: 'settings' as ViewType, icon: Settings, label: 'Settings' },
+   349→      { id: 'audit-logs' as ViewType, icon: Shield, label: 'Audit Logs' },
+   350→    ],
+   351→  },
+   352→];
+   353→
+   354→const VALID_LEAD_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
+   355→
+   356→// ────────────────────────────────────────
+   357→// Helper: Auth fetch
+   358→// ────────────────────────────────────────
+   359→
+   360→function authFetch(url: string, options: RequestInit = {}) {
+   361→  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
+   362→  return fetch(url, {
+   363→    ...options,
+   364→    headers: {
+   365→      'Content-Type': 'application/json',
+   366→      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+   367→      ...options.headers,
+   368→    },
+   369→  });
+   370→}
+   371→
+   372→// ────────────────────────────────────────
+   373→// LoginScreen
+   374→// ────────────────────────────────────────
+   375→
+   376→function LoginScreen({ onLogin }: { onLogin: (user: UserSession, token: string) => void }) {
+   377→  const [email, setEmail] = useState('');
+   378→  const [password, setPassword] = useState('');
+   379→  const [loading, setLoading] = useState(false);
+   380→
+   381→  const handleLogin = async (e: React.FormEvent) => {
+   382→    e.preventDefault();
+   383→    if (!email || !password) {
+   384→      toast.error('Please enter email and password');
+   385→      return;
+   386→    }
+   387→    setLoading(true);
+   388→    try {
+   389→      const res = await fetch('/api/auth/login', {
+   390→        method: 'POST',
+   391→        headers: { 'Content-Type': 'application/json' },
+   392→        body: JSON.stringify({ email, password }),
+   393→      });
+   394→      const data = await res.json();
+   395→      if (!res.ok) {
+   396→        toast.error(data.error || 'Login failed');
+   397→        return;
+   398→      }
+   399→      localStorage.setItem('rtr_token', data.token);
+   400→      localStorage.setItem('rtr_user', JSON.stringify(data.user));
+   401→      onLogin(data.user, data.token);
+   402→      toast.success('Welcome back!');
+   403→    } catch {
+   404→      toast.error('Network error. Please try again.');
+   405→    } finally {
+   406→      setLoading(false);
+   407→    }
+   408→  };
+   409→
+   410→  return (
+   411→    <div className="min-h-screen flex">
+   412→      {/* Decorative Left Panel */}
+   413→      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden flex-col justify-between p-12">
+   414→        <div className="absolute inset-0 opacity-10">
+   415→          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-emerald-500 blur-3xl" />
+   416→          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-emerald-600 blur-3xl" />
+   417→        </div>
+   418→        <div className="relative z-10">
+   419→          <div className="flex items-center gap-3">
+   420→            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+   421→              <Truck className="w-6 h-6 text-white" />
+   422→            </div>
+   423→            <span className="text-2xl font-bold text-white">RTR 360</span>
+   424→          </div>
+   425→        </div>
+   426→        <div className="relative z-10 space-y-6">
+   427→          <h1 className="text-4xl font-bold text-white leading-tight">
+   428→            Fleet Technology<br />& Management<br />
+   429→            <span className="text-emerald-400">Platform</span>
+   430→          </h1>
+   431→          <p className="text-slate-400 text-lg max-w-md">
+   432→            Comprehensive fleet tracking, driver management, and operational analytics for the UAE market.
+   433→          </p>
+   434→          <div className="flex gap-8 pt-4">
+   435→            <div>
+   436→              <div className="text-3xl font-bold text-emerald-400">500+</div>
+   437→              <div className="text-slate-400 text-sm">Fleets Managed</div>
+   438→            </div>
+   439→            <div>
+   440→              <div className="text-3xl font-bold text-emerald-400">10K+</div>
+   441→              <div className="text-slate-400 text-sm">Vehicles Tracked</div>
+   442→            </div>
+   443→            <div>
+   444→              <div className="text-3xl font-bold text-emerald-400">7</div>
+   445→              <div className="text-slate-400 text-sm">Emirates Covered</div>
+   446→            </div>
+   447→          </div>
+   448→        </div>
+   449→        <div className="relative z-10 text-slate-500 text-sm">
+   450→          © 2025 RTR 360. All rights reserved.
+   451→        </div>
+   452→      </div>
+   453→
+   454→      {/* Login Form */}
+   455→      <div className="flex-1 flex items-center justify-center p-6 bg-[var(--rtr-bg)]">
+   456→        <motion.div
+   457→          initial={{ opacity: 0, y: 20 }}
+   458→          animate={{ opacity: 1, y: 0 }}
+   459→          transition={{ duration: 0.5 }}
+   460→          className="w-full max-w-md space-y-8"
+   461→        >
+   462→          {/* Mobile Logo */}
+   463→          <div className="lg:hidden flex items-center gap-3 mb-8">
+   464→            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+   465→              <Truck className="w-6 h-6 text-white" />
+   466→            </div>
+   467→            <span className="text-2xl font-bold text-slate-900">RTR 360</span>
+   468→          </div>
+   469→
+   470→          <div>
+   471→            <h2 className="text-3xl font-bold text-slate-900">Sign In</h2>
+   472→            <p className="text-slate-500 mt-2">Enter your credentials to access the dashboard</p>
+   473→          </div>
+   474→
+   475→          <form onSubmit={handleLogin} className="space-y-5">
+   476→            <div className="space-y-2">
+   477→              <Label htmlFor="email">Email</Label>
+   478→              <div className="relative">
+   479→                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+   480→                <Input
+   481→                  id="email"
+   482→                  type="email"
+   483→                  placeholder="admin@rtr.ae"
+   484→                  value={email}
+   485→                  onChange={(e) => setEmail(e.target.value)}
+   486→                  className="pl-10 h-11"
+   487→                />
+   488→              </div>
+   489→            </div>
+   490→            <div className="space-y-2">
+   491→              <Label htmlFor="password">Password</Label>
+   492→              <Input
+   493→                id="password"
+   494→                type="password"
+   495→                placeholder="Enter your password"
+   496→                value={password}
+   497→                onChange={(e) => setPassword(e.target.value)}
+   498→                className="h-11"
+   499→              />
+   500→            </div>
+   501→            <Button
+   502→              type="submit"
+   503→              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+   504→              disabled={loading}
+   505→            >
+   506→              {loading ? (
+   507→                <span className="flex items-center gap-2">
+   508→                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+   509→                  Signing in...
+   510→                </span>
+   511→              ) : (
+   512→                'Sign In'
+   513→              )}
+   514→            </Button>
+   515→          </form>
+   516→
+   517→          <div className="text-center text-xs text-slate-400 pt-4">
+   518→            Powered by <span className="font-semibold text-slate-500">Mianx.ai</span>
+   519→          </div>
+   520→        </motion.div>
+   521→      </div>
+   522→    </div>
+   523→  );
+   524→}
+   525→
+   526→// ────────────────────────────────────────
+   527→// Sidebar Content (shared between desktop & mobile)
+   528→// ────────────────────────────────────────
+   529→
+   530→function SidebarNav({
+   531→  currentView,
+   532→  onNavigate,
+   533→  onClose,
+   534→}: {
+   535→  currentView: ViewType;
+   536→  onNavigate: (view: ViewType) => void;
+   537→  onClose?: () => void;
+   538→}) {
+   539→  return (
+   540→    <div className="flex flex-col h-full">
+   541→      {/* Logo */}
+   542→      <div className="flex items-center gap-3 px-5 py-6">
+   543→        <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+   544→          <Truck className="w-5 h-5 text-white" />
+   545→        </div>
+   546→        <span className="text-xl font-bold text-white">RTR 360</span>
+   547→      </div>
+   548→
+   549→      <Separator className="bg-slate-700/50" />
+   550→
+   551→      {/* Navigation */}
+   552→      <nav className="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-6">
+   553→        {NAV_SECTIONS.map((section) => (
+   554→          <div key={section.label}>
+   555→            <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+   556→              {section.label}
+   557→            </div>
+   558→            <div className="space-y-1">
+   559→              {section.items.map((item) => {
+   560→                const Icon = item.icon;
+   561→                const isActive = currentView === item.id;
+   562→                return (
+   563→                  <button
+   564→                    key={item.id}
+   565→                    onClick={() => {
+   566→                      onNavigate(item.id);
+   567→                      onClose?.();
+   568→                    }}
+   569→                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+   570→                      isActive
+   571→                        ? 'bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-400'
+   572→                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border-l-2 border-transparent'
+   573→                    }`}
+   574→                  >
+   575→                    <Icon className="w-4 h-4 shrink-0" />
+   576→                    <span className="flex-1 text-left">{item.label}</span>
+   577→                    {item.badge && (
+   578→                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-700 text-slate-400 border-0">
+   579→                        {item.badge}
+   580→                      </Badge>
+   581→                    )}
+   582→                  </button>
+   583→                );
+   584→              })}
+   585→            </div>
+   586→          </div>
+   587→        ))}
+   588→      </nav>
+   589→
+   590→      {/* Footer */}
+   591→      <div className="px-5 py-4 border-t border-slate-700/50">
+   592→        <p className="text-[11px] text-slate-500">
+   593→          Powered by <span className="font-medium text-slate-400">Mianx.ai</span>
+   594→        </p>
+   595→      </div>
+   596→    </div>
+   597→  );
+   598→}
+   599→
+   600→// ────────────────────────────────────────
+   601→// DashboardView
+   602→// ────────────────────────────────────────
+   603→
+   604→function DashboardView() {
+   605→  const [stats, setStats] = useState<DashboardStats | null>(null);
+   606→  const [leads, setLeads] = useState<Lead[]>([]);
+   607→  const [alerts, setAlerts] = useState<Alert[]>([]);
+   608→  const [loading, setLoading] = useState(true);
+   609→
+   610→  useEffect(() => {
+   611→    const fetchData = async () => {
+   612→      try {
+   613→        const [statsRes, leadsRes, alertsRes] = await Promise.all([
+   614→          authFetch('/api/dashboard/stats'),
+   615→          authFetch('/api/leads?limit=5'),
+   616→          authFetch('/api/dashboard/alerts?limit=5'),
+   617→        ]);
+   618→        const statsData = await statsRes.json();
+   619→        if (statsRes.ok) setStats(statsData);
+   620→
+   621→        const leadsData = await leadsRes.json();
+   622→        if (leadsRes.ok) setLeads(leadsData.leads || []);
+   623→
+   624→        if (alertsRes.ok) {
+   625→          const alertsData = await alertsRes.json();
+   626→          setAlerts(alertsData.alerts || []);
+   627→        }
+   628→      } catch {
+   629→        // Silently fail for alerts — the endpoint may not exist
+   630→      } finally {
+   631→        setLoading(false);
+   632→      }
+   633→    };
+   634→    fetchData();
+   635→  }, []);
+   636→
+   637→  const kpiCards = stats
+   638→    ? [
+   639→        { icon: Truck, label: 'Total Vehicles', value: stats.totalVehicles, color: 'bg-emerald-100 text-emerald-600' },
+   640→        { icon: Activity, label: 'Active Vehicles', value: stats.activeVehicles, color: 'bg-green-100 text-green-600' },
+   641→        { icon: Users, label: 'Total Drivers', value: stats.totalDrivers, color: 'bg-teal-100 text-teal-600' },
+   642→        { icon: UserPlus, label: 'Open Leads', value: stats.totalLeads, color: 'bg-amber-100 text-amber-600' },
+   643→        { icon: AlertTriangle, label: 'Open Alerts', value: stats.openAlerts, color: 'bg-red-100 text-red-600' },
+   644→        { icon: Ticket, label: 'Open Tickets', value: stats.openTickets, color: 'bg-orange-100 text-orange-600' },
+   645→        { icon: Cpu, label: 'Total Devices', value: stats.totalDevices, color: 'bg-blue-100 text-blue-600' },
+   646→        { icon: Wrench, label: 'Pending Installs', value: stats.pendingInstallations, color: 'bg-purple-100 text-purple-600' },
+   647→        { icon: HardHat, label: 'Technicians', value: stats.activeTechnicians, color: 'bg-cyan-100 text-cyan-600' },
+   648→        { icon: Route, label: "Today's Trips", value: stats.todayTrips, color: 'bg-indigo-100 text-indigo-600' },
+   649→        { icon: Gauge, label: 'Total Distance (km)', value: stats.totalDistance.toLocaleString(), color: 'bg-pink-100 text-pink-600' },
+   650→      ]
+   651→    : [];
+   652→
+   653→  const timeAgo = (dateStr: string) => {
+   654→    const diff = Date.now() - new Date(dateStr).getTime();
+   655→    const mins = Math.floor(diff / 60000);
+   656→    if (mins < 60) return `${mins}m ago`;
+   657→    const hrs = Math.floor(mins / 60);
+   658→    if (hrs < 24) return `${hrs}h ago`;
+   659→    const days = Math.floor(hrs / 24);
+   660→    return `${days}d ago`;
+   661→  };
+   662→
+   663→  if (loading) {
+   664→    return (
+   665→      <div className="space-y-6">
+   666→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   667→          {Array.from({ length: 8 }).map((_, i) => (
+   668→            <Skeleton key={i} className="h-28 rounded-xl" />
+   669→          ))}
+   670→        </div>
+   671→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   672→          <Skeleton className="h-80 rounded-xl" />
+   673→          <Skeleton className="h-80 rounded-xl" />
+   674→        </div>
+   675→      </div>
+   676→    );
+   677→  }
+   678→
+   679→  return (
+   680→    <div className="space-y-6">
+   681→      {/* KPI Grid */}
+   682→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   683→        {kpiCards.map((kpi, i) => {
+   684→          const Icon = kpi.icon;
+   685→          return (
+   686→            <motion.div
+   687→              key={kpi.label}
+   688→              initial={{ opacity: 0, y: 20 }}
+   689→              animate={{ opacity: 1, y: 0 }}
+   690→              transition={{ delay: i * 0.05 }}
+   691→            >
+   692→              <Card className="rounded-xl border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+   693→                <CardContent className="p-4">
+   694→                  <div className="flex items-start justify-between">
+   695→                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
+   696→                      <Icon className="w-5 h-5" />
+   697→                    </div>
+   698→                    <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
+   699→                      {kpi.change}
+   700→                    </span>
+   701→                  </div>
+   702→                  <div className="mt-3">
+   703→                    <div className="text-2xl font-bold text-slate-900">{kpi.value}</div>
+   704→                    <div className="text-xs text-slate-500 mt-0.5">{kpi.label}</div>
+   705→                  </div>
+   706→                </CardContent>
+   707→              </Card>
+   708→            </motion.div>
+   709→          );
+   710→        })}
+   711→      </div>
+   712→
+   713→      {/* Recent Leads & Alerts */}
+   714→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   715→        {/* Recent Leads */}
+   716→        <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   717→          <CardHeader className="pb-3">
+   718→            <CardTitle className="text-base font-semibold text-slate-900">Recent Leads</CardTitle>
+   719→          </CardHeader>
+   720→          <CardContent className="p-0">
+   721→            {leads.length === 0 ? (
+   722→              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+   723→                <UserPlus className="w-8 h-8 mb-2" />
+   724→                <p className="text-sm">No leads yet</p>
+   725→              </div>
+   726→            ) : (
+   727→              <div className="overflow-x-auto">
+   728→                <Table>
+   729→                  <TableHeader>
+   730→                    <TableRow>
+   731→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
+   732→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Company</TableHead>
+   733→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+   734→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
+   735→                      <TableHead className="text-xs uppercase tracking-wide text-slate-500">Date</TableHead>
+   736→                    </TableRow>
+   737→                  </TableHeader>
+   738→                  <TableBody>
+   739→                    {leads.map((lead) => (
+   740→                      <TableRow key={lead.id}>
+   741→                        <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+   742→                        <TableCell className="text-sm text-slate-600">{lead.company || '—'}</TableCell>
+   743→                        <TableCell>
+   744→                          <Badge className={`text-[11px] ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+   745→                            {lead.status}
+   746→                          </Badge>
+   747→                        </TableCell>
+   748→                        <TableCell>
+   749→                          <div className="flex items-center gap-1.5">
+   750→                            <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
+   751→                            <span className="text-xs text-slate-600 capitalize">{lead.priority}</span>
+   752→                          </div>
+   753→                        </TableCell>
+   754→                        <TableCell className="text-xs text-slate-500">
+   755→                          {new Date(lead.createdAt).toLocaleDateString()}
+   756→                        </TableCell>
+   757→                      </TableRow>
+   758→                    ))}
+   759→                  </TableBody>
+   760→                </Table>
+   761→              </div>
+   762→            )}
+   763→          </CardContent>
+   764→        </Card>
+   765→
+   766→        {/* Recent Alerts */}
+   767→        <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   768→          <CardHeader className="pb-3">
+   769→            <CardTitle className="text-base font-semibold text-slate-900">Recent Alerts</CardTitle>
+   770→          </CardHeader>
+   771→          <CardContent className="p-0">
+   772→            {alerts.length === 0 ? (
+   773→              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+   774→                <AlertTriangle className="w-8 h-8 mb-2" />
+   775→                <p className="text-sm">No recent alerts</p>
+   776→              </div>
+   777→            ) : (
+   778→              <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto custom-scrollbar">
+   779→                {alerts.map((alert) => {
+   780→                  const severityColor =
+   781→                    alert.severity === 'high'
+   782→                      ? 'text-red-500 bg-red-50'
+   783→                      : alert.severity === 'medium'
+   784→                        ? 'text-amber-500 bg-amber-50'
+   785→                        : 'text-slate-500 bg-slate-50';
+   786→                  return (
+   787→                    <div key={alert.id} className="flex items-start gap-3 px-4 py-3">
+   788→                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${severityColor}`}>
+   789→                        <AlertTriangle className="w-4 h-4" />
+   790→                      </div>
+   791→                      <div className="flex-1 min-w-0">
+   792→                        <p className="text-sm text-slate-800 truncate">{alert.message}</p>
+   793→                        <div className="flex items-center gap-2 mt-1">
+   794→                          {alert.vehiclePlate && (
+   795→                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+   796→                              {alert.vehiclePlate}
+   797→                            </Badge>
+   798→                          )}
+   799→                          <span className="text-[11px] text-slate-400">{timeAgo(alert.createdAt)}</span>
+   800→                        </div>
+   801→                      </div>
+   802→                    </div>
+   803→                  );
+   804→                })}
+   805→              </div>
+   806→            )}
+   807→          </CardContent>
+   808→        </Card>
+   809→      </div>
+   810→    </div>
+   811→  );
+   812→}
+   813→
+   814→// ────────────────────────────────────────
+   815→// LeadsView
+   816→// ────────────────────────────────────────
+   817→
+   818→function LeadsView() {
+   819→  const [leads, setLeads] = useState<Lead[]>([]);
+   820→  const [totalPages, setTotalPages] = useState(1);
+   821→  const [page, setPage] = useState(1);
+   822→  const [search, setSearch] = useState('');
+   823→  const [statusFilter, setStatusFilter] = useState<string>('all');
+   824→  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+   825→  const [loading, setLoading] = useState(true);
+   826→  const [createOpen, setCreateOpen] = useState(false);
+   827→  const [submitting, setSubmitting] = useState(false);
+   828→
+   829→  // Pipeline counts
+   830→  const [pipelineCounts, setPipelineCounts] = useState<Record<string, number>>({});
+   831→
+   832→  // Create form
+   833→  const [form, setForm] = useState({
+   834→    name: '',
+   835→    email: '',
+   836→    phone: '',
+   837→    company: '',
+   838→    emirate: '',
+   839→    vehicleCount: '',
+   840→    vehicleType: '',
+   841→    requirement: '',
+   842→    source: '',
+   843→    priority: 'medium',
+   844→  });
+   845→
+   846→  const fetchLeads = useCallback(async () => {
+   847→    setLoading(true);
+   848→    try {
+   849→      const params = new URLSearchParams({ page: String(page), limit: '10' });
+   850→      if (search) params.set('search', search);
+   851→      if (statusFilter !== 'all') params.set('status', statusFilter);
+   852→      if (priorityFilter !== 'all') params.set('priority', priorityFilter);
+   853→
+   854→      const res = await authFetch(`/api/leads?${params.toString()}`);
+   855→      const data = await res.json();
+   856→      if (res.ok) {
+   857→        setLeads(data.leads || []);
+   858→        setTotalPages(data.pagination?.totalPages || 1);
+   859→
+   860→        // Calculate pipeline counts
+   861→        const counts: Record<string, number> = {};
+   862→        (data.leads || []).forEach((l: Lead) => {
+   863→          counts[l.status] = (counts[l.status] || 0) + 1;
+   864→        });
+   865→        setPipelineCounts(counts);
+   866→      }
+   867→    } catch {
+   868→      toast.error('Failed to load leads');
+   869→    } finally {
+   870→      setLoading(false);
+   871→    }
+   872→  }, [page, search, statusFilter, priorityFilter]);
+   873→
+   874→  useEffect(() => {
+   875→    fetchLeads();
+   876→  }, [fetchLeads]);
+   877→
+   878→  const handleCreate = async () => {
+   879→    if (!form.name.trim()) {
+   880→      toast.error('Lead name is required');
+   881→      return;
+   882→    }
+   883→    setSubmitting(true);
+   884→    try {
+   885→      const res = await authFetch('/api/leads', {
+   886→        method: 'POST',
+   887→        body: JSON.stringify({
+   888→          ...form,
+   889→          vehicleCount: form.vehicleCount ? parseInt(form.vehicleCount) : null,
+   890→        }),
+   891→      });
+   892→      const data = await res.json();
+   893→      if (!res.ok) {
+   894→        toast.error(data.error || 'Failed to create lead');
+   895→        return;
+   896→      }
+   897→      toast.success('Lead created successfully');
+   898→      setCreateOpen(false);
+   899→      setForm({ name: '', email: '', phone: '', company: '', emirate: '', vehicleCount: '', vehicleType: '', requirement: '', source: '', priority: 'medium' });
+   900→      fetchLeads();
+   901→    } catch {
+   902→      toast.error('Failed to create lead');
+   903→    } finally {
+   904→      setSubmitting(false);
+   905→    }
+   906→  };
+   907→
+   908→  const handleStatusUpdate = async (leadId: string, newStatus: string) => {
+   909→    try {
+   910→      const res = await authFetch(`/api/leads/${leadId}`, {
+   911→        method: 'PATCH',
+   912→        body: JSON.stringify({ status: newStatus }),
+   913→      });
+   914→      if (!res.ok) {
+   915→        const data = await res.json();
+   916→        toast.error(data.error || 'Failed to update status');
+   917→        return;
+   918→      }
+   919→      toast.success(`Lead moved to ${newStatus}`);
+   920→      fetchLeads();
+   921→    } catch {
+   922→      toast.error('Failed to update lead status');
+   923→    }
+   924→  };
+   925→
+   926→  const pipelineStatuses = ['new', 'contacted', 'qualified', 'demo', 'quotation', 'won', 'lost'];
+   927→
+   928→  return (
+   929→    <div className="space-y-5">
+   930→      {/* Header */}
+   931→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+   932→        <div>
+   933→          <h2 className="text-2xl font-bold text-slate-900">Leads</h2>
+   934→          <p className="text-sm text-slate-500">Manage your sales pipeline</p>
+   935→        </div>
+   936→        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+   937→          <DialogTrigger asChild>
+   938→            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+   939→              <Plus className="w-4 h-4" /> New Lead
+   940→            </Button>
+   941→          </DialogTrigger>
+   942→          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
+   943→            <DialogHeader>
+   944→              <DialogTitle>Create New Lead</DialogTitle>
+   945→            </DialogHeader>
+   946→            <div className="grid gap-4 py-4">
+   947→              <div className="grid grid-cols-2 gap-4">
+   948→                <div className="space-y-2">
+   949→                  <Label>Name *</Label>
+   950→                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" />
+   951→                </div>
+   952→                <div className="space-y-2">
+   953→                  <Label>Email</Label>
+   954→                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
+   955→                </div>
+   956→              </div>
+   957→              <div className="grid grid-cols-2 gap-4">
+   958→                <div className="space-y-2">
+   959→                  <Label>Phone</Label>
+   960→                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+971 xx xxx xxxx" />
+   961→                </div>
+   962→                <div className="space-y-2">
+   963→                  <Label>Company</Label>
+   964→                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company name" />
+   965→                </div>
+   966→              </div>
+   967→              <div className="grid grid-cols-2 gap-4">
+   968→                <div className="space-y-2">
+   969→                  <Label>Emirate</Label>
+   970→                  <Select value={form.emirate} onValueChange={(v) => setForm({ ...form, emirate: v })}>
+   971→                    <SelectTrigger><SelectValue placeholder="Select emirate" /></SelectTrigger>
+   972→                    <SelectContent>{EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+   973→                  </Select>
+   974→                </div>
+   975→                <div className="space-y-2">
+   976→                  <Label>Vehicle Count</Label>
+   977→                  <Input type="number" value={form.vehicleCount} onChange={(e) => setForm({ ...form, vehicleCount: e.target.value })} placeholder="e.g. 10" />
+   978→                </div>
+   979→              </div>
+   980→              <div className="grid grid-cols-2 gap-4">
+   981→                <div className="space-y-2">
+   982→                  <Label>Vehicle Type</Label>
+   983→                  <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v })}>
+   984→                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+   985→                    <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+   986→                  </Select>
+   987→                </div>
+   988→                <div className="space-y-2">
+   989→                  <Label>Source</Label>
+   990→                  <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
+   991→                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+   992→                    <SelectContent>{LEAD_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+   993→                  </Select>
+   994→                </div>
+   995→              </div>
+   996→              <div className="space-y-2">
+   997→                <Label>Requirement</Label>
+   998→                <Textarea value={form.requirement} onChange={(e) => setForm({ ...form, requirement: e.target.value })} placeholder="Describe the requirement..." rows={3} />
+   999→              </div>
+  1000→              <div className="space-y-2">
+  1001→                <Label>Priority</Label>
+  1002→                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+  1003→                  <SelectTrigger><SelectValue /></SelectTrigger>
+  1004→                  <SelectContent>
+  1005→                    <SelectItem value="low">Low</SelectItem>
+  1006→                    <SelectItem value="medium">Medium</SelectItem>
+  1007→                    <SelectItem value="high">High</SelectItem>
+  1008→                    <SelectItem value="urgent">Urgent</SelectItem>
+  1009→                  </SelectContent>
+  1010→                </Select>
+  1011→              </div>
+  1012→            </div>
+  1013→            <DialogFooter>
+  1014→              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+  1015→              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
+  1016→                {submitting ? 'Creating...' : 'Create Lead'}
+  1017→              </Button>
+  1018→            </DialogFooter>
+  1019→          </DialogContent>
+  1020→        </Dialog>
+  1021→      </div>
+  1022→
+  1023→      {/* Pipeline Summary */}
+  1024→      <div className="flex flex-wrap gap-2">
+  1025→        {pipelineStatuses.map((s) => (
+  1026→          <Badge key={s} variant="outline" className={`text-xs px-2.5 py-1 ${STATUS_COLORS[s] || ''} border-0`}
+  1027→          >
+  1028→            {s.charAt(0).toUpperCase() + s.slice(1)}: {pipelineCounts[s] || 0}
+  1029→          </Badge>
+  1030→        ))}
+  1031→      </div>
+  1032→
+  1033→      {/* Filters */}
+  1034→      <div className="flex flex-col sm:flex-row gap-3">
+  1035→        <div className="relative flex-1">
+  1036→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+  1037→          <Input
+  1038→            placeholder="Search leads..."
+  1039→            value={search}
+  1040→            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+  1041→            className="pl-10"
+  1042→          />
+  1043→        </div>
+  1044→        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+  1045→          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
+  1046→          <SelectContent>
+  1047→            <SelectItem value="all">All Status</SelectItem>
+  1048→            {VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+  1049→          </SelectContent>
+  1050→        </Select>
+  1051→        <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
+  1052→          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Priority" /></SelectTrigger>
+  1053→          <SelectContent>
+  1054→            <SelectItem value="all">All Priority</SelectItem>
+  1055→            <SelectItem value="low">Low</SelectItem>
+  1056→            <SelectItem value="medium">Medium</SelectItem>
+  1057→            <SelectItem value="high">High</SelectItem>
+  1058→            <SelectItem value="urgent">Urgent</SelectItem>
+  1059→          </SelectContent>
+  1060→        </Select>
+  1061→      </div>
+  1062→
+  1063→      {/* Table */}
+  1064→      <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden">
+  1065→        {loading ? (
+  1066→          <div className="p-6 space-y-3">
+  1067→            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+  1068→          </div>
+  1069→        ) : leads.length === 0 ? (
+  1070→          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+  1071→            <UserPlus className="w-10 h-10 mb-3" />
+  1072→            <p className="text-sm font-medium">No leads found</p>
+  1073→            <p className="text-xs mt-1">Create a new lead or adjust your filters</p>
+  1074→          </div>
+  1075→        ) : (
+  1076→          <>
+  1077→            <div className="overflow-x-auto">
+  1078→              <Table>
+  1079→                <TableHeader>
+  1080→                  <TableRow className="bg-slate-50/80">
+  1081→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
+  1082→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Company</TableHead>
+  1083→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden md:table-cell">Phone</TableHead>
+  1084→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Emirate</TableHead>
+  1085→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden sm:table-cell">Source</TableHead>
+  1086→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+  1087→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
+  1088→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Created</TableHead>
+  1089→                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
+  1090→                  </TableRow>
+  1091→                </TableHeader>
+  1092→                <TableBody>
+  1093→                  {leads.map((lead) => (
+  1094→                    <TableRow key={lead.id} className="hover:bg-slate-50/50">
+  1095→                      <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+  1096→                      <TableCell className="text-sm text-slate-600">{lead.company || '—'}</TableCell>
+  1097→                      <TableCell className="text-sm text-slate-600 hidden md:table-cell">{lead.phone || '—'}</TableCell>
+  1098→                      <TableCell className="text-sm text-slate-600 hidden lg:table-cell">{lead.emirate || '—'}</TableCell>
+  1099→                      <TableCell className="hidden sm:table-cell">
+  1100→                        {lead.source ? (
+  1101→                          <Badge variant="secondary" className="text-[11px] bg-slate-100 text-slate-600 border-0">{lead.source}</Badge>
+  1102→                        ) : '—'}
+  1103→                      </TableCell>
+  1104→                      <TableCell>
+  1105→                        <Badge className={`text-[11px] ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1106→                          {lead.status}
+  1107→                        </Badge>
+  1108→                      </TableCell>
+  1109→                      <TableCell>
+  1110→                        <div className="flex items-center gap-1.5">
+  1111→                          <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
+  1112→                          <span className="text-xs text-slate-600 capitalize">{lead.priority}</span>
+  1113→                        </div>
+  1114→                      </TableCell>
+  1115→                      <TableCell className="text-xs text-slate-500 hidden lg:table-cell">
+  1116→                        {new Date(lead.createdAt).toLocaleDateString()}
+  1117→                      </TableCell>
+  1118→                      <TableCell>
+  1119→                        <Select onValueChange={(v) => handleStatusUpdate(lead.id, v)}>
+  1120→                          <SelectTrigger className="h-8 w-28 text-xs">
+  1121→                            <SelectValue placeholder="Move to..." />
+  1122→                          </SelectTrigger>
+  1123→                          <SelectContent>
+  1124→                            {VALID_LEAD_STATUSES.map((s) => (
+  1125→                              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+  1126→                            ))}
+  1127→                          </SelectContent>
+  1128→                        </Select>
+  1129→                      </TableCell>
+  1130→                    </TableRow>
+  1131→                  ))}
+  1132→                </TableBody>
+  1133→              </Table>
+  1134→            </div>
+  1135→
+  1136→            {/* Pagination */}
+  1137→            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+  1138→              <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
+  1139→              <div className="flex gap-2">
+  1140→                <Button
+  1141→                  variant="outline"
+  1142→                  size="sm"
+  1143→                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+  1144→                  disabled={page <= 1}
+  1145→                >
+  1146→                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+  1147→                </Button>
+  1148→                <Button
+  1149→                  variant="outline"
+  1150→                  size="sm"
+  1151→                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+  1152→                  disabled={page >= totalPages}
+  1153→                >
+  1154→                  Next <ChevronRight className="w-4 h-4 ml-1" />
+  1155→                </Button>
+  1156→              </div>
+  1157→            </div>
+  1158→          </>
+  1159→        )}
+  1160→      </Card>
+  1161→    </div>
+  1162→  );
+  1163→}
+  1164→
+  1165→// ────────────────────────────────────────
+  1166→// VehiclesView
+  1167→// ────────────────────────────────────────
+  1168→
+  1169→function VehiclesView() {
+  1170→  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  1171→  const [totalPages, setTotalPages] = useState(1);
+  1172→  const [total, setTotal] = useState(0);
+  1173→  const [page, setPage] = useState(1);
+  1174→  const [search, setSearch] = useState('');
+  1175→  const [statusFilter, setStatusFilter] = useState<string>('all');
+  1176→  const [loading, setLoading] = useState(true);
+  1177→  const [createOpen, setCreateOpen] = useState(false);
+  1178→  const [submitting, setSubmitting] = useState(false);
+  1179→
+  1180→  const [form, setForm] = useState({
+  1181→    plateNumber: '',
+  1182→    make: '',
+  1183→    model: '',
+  1184→    year: '',
+  1185→    vehicleType: '',
+  1186→    vin: '',
+  1187→    color: '',
+  1188→  });
+  1189→
+  1190→  const fetchVehicles = useCallback(async () => {
+  1191→    setLoading(true);
+  1192→    try {
+  1193→      const params = new URLSearchParams({ page: String(page), limit: '12' });
+  1194→      if (search) params.set('search', search);
+  1195→      if (statusFilter !== 'all') params.set('status', statusFilter);
+  1196→
+  1197→      const res = await authFetch(`/api/vehicles?${params.toString()}`);
+  1198→      const data = await res.json();
+  1199→      if (res.ok) {
+  1200→        setVehicles(data.vehicles || []);
+  1201→        setTotalPages(data.pagination?.totalPages || 1);
+  1202→        setTotal(data.pagination?.total || 0);
+  1203→      }
+  1204→    } catch {
+  1205→      toast.error('Failed to load vehicles');
+  1206→    } finally {
+  1207→      setLoading(false);
+  1208→    }
+  1209→  }, [page, search, statusFilter]);
+  1210→
+  1211→  useEffect(() => {
+  1212→    fetchVehicles();
+  1213→  }, [fetchVehicles]);
+  1214→
+  1215→  const handleCreate = async () => {
+  1216→    if (!form.plateNumber.trim()) {
+  1217→      toast.error('Plate number is required');
+  1218→      return;
+  1219→    }
+  1220→    setSubmitting(true);
+  1221→    try {
+  1222→      const res = await authFetch('/api/vehicles', {
+  1223→        method: 'POST',
+  1224→        body: JSON.stringify({
+  1225→          ...form,
+  1226→          year: form.year ? parseInt(form.year) : null,
+  1227→        }),
+  1228→      });
+  1229→      const data = await res.json();
+  1230→      if (!res.ok) {
+  1231→        toast.error(data.error || 'Failed to add vehicle');
+  1232→        return;
+  1233→      }
+  1234→      toast.success('Vehicle added successfully');
+  1235→      setCreateOpen(false);
+  1236→      setForm({ plateNumber: '', make: '', model: '', year: '', vehicleType: '', vin: '', color: '' });
+  1237→      fetchVehicles();
+  1238→    } catch {
+  1239→      toast.error('Failed to add vehicle');
+  1240→    } finally {
+  1241→      setSubmitting(false);
+  1242→    }
+  1243→  };
+  1244→
+  1245→  const VEHICLE_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
+  1246→
+  1247→  return (
+  1248→    <div className="space-y-5">
+  1249→      {/* Header */}
+  1250→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  1251→        <div className="flex items-center gap-3">
+  1252→          <div>
+  1253→            <h2 className="text-2xl font-bold text-slate-900">Vehicles</h2>
+  1254→            <p className="text-sm text-slate-500">Manage your fleet</p>
+  1255→          </div>
+  1256→          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">
+  1257→            {total}
+  1258→          </Badge>
+  1259→        </div>
+  1260→        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+  1261→          <DialogTrigger asChild>
+  1262→            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+  1263→              <Plus className="w-4 h-4" /> Add Vehicle
+  1264→            </Button>
+  1265→          </DialogTrigger>
+  1266→          <DialogContent className="max-w-lg">
+  1267→            <DialogHeader>
+  1268→              <DialogTitle>Add New Vehicle</DialogTitle>
+  1269→            </DialogHeader>
+  1270→            <div className="grid gap-4 py-4">
+  1271→              <div className="space-y-2">
+  1272→                <Label>Plate Number *</Label>
+  1273→                <Input value={form.plateNumber} onChange={(e) => setForm({ ...form, plateNumber: e.target.value })} placeholder="e.g. DXB A 12345" />
+  1274→              </div>
+  1275→              <div className="grid grid-cols-2 gap-4">
+  1276→                <div className="space-y-2">
+  1277→                  <Label>Make</Label>
+  1278→                  <Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} placeholder="e.g. Toyota" />
+  1279→                </div>
+  1280→                <div className="space-y-2">
+  1281→                  <Label>Model</Label>
+  1282→                  <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="e.g. Hilux" />
+  1283→                </div>
+  1284→              </div>
+  1285→              <div className="grid grid-cols-3 gap-4">
+  1286→                <div className="space-y-2">
+  1287→                  <Label>Year</Label>
+  1288→                  <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="2024" />
+  1289→                </div>
+  1290→                <div className="space-y-2">
+  1291→                  <Label>Type</Label>
+  1292→                  <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v })}>
+  1293→                    <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+  1294→                    <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+  1295→                  </Select>
+  1296→                </div>
+  1297→                <div className="space-y-2">
+  1298→                  <Label>Color</Label>
+  1299→                  <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="White" />
+  1300→                </div>
+  1301→              </div>
+  1302→              <div className="space-y-2">
+  1303→                <Label>VIN</Label>
+  1304→                <Input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value })} placeholder="Vehicle Identification Number" />
+  1305→              </div>
+  1306→            </div>
+  1307→            <DialogFooter>
+  1308→              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+  1309→              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
+  1310→                {submitting ? 'Adding...' : 'Add Vehicle'}
+  1311→              </Button>
+  1312→            </DialogFooter>
+  1313→          </DialogContent>
+  1314→        </Dialog>
+  1315→      </div>
+  1316→
+  1317→      {/* Filters */}
+  1318→      <div className="flex flex-col sm:flex-row gap-3">
+  1319→        <div className="relative flex-1">
+  1320→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+  1321→          <Input
+  1322→            placeholder="Search by plate, make, or model..."
+  1323→            value={search}
+  1324→            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+  1325→            className="pl-10"
+  1326→          />
+  1327→        </div>
+  1328→        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+  1329→          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+  1330→          <SelectContent>
+  1331→            <SelectItem value="all">All Status</SelectItem>
+  1332→            {VEHICLE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+  1333→          </SelectContent>
+  1334→        </Select>
+  1335→      </div>
+  1336→
+  1337→      {/* Vehicle Cards (Mobile) / Table (Desktop) */}
+  1338→      {loading ? (
+  1339→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1340→          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+  1341→        </div>
+  1342→      ) : vehicles.length === 0 ? (
+  1343→        <Card className="rounded-xl border-slate-200/60">
+  1344→          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+  1345→            <Truck className="w-10 h-10 mb-3" />
+  1346→            <p className="text-sm font-medium">No vehicles found</p>
+  1347→            <p className="text-xs mt-1">Add a vehicle or adjust your filters</p>
+  1348→          </div>
+  1349→        </Card>
+  1350→      ) : (
+  1351→        <>
+  1352→          {/* Mobile Cards */}
+  1353→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
+  1354→            {vehicles.map((v) => (
+  1355→              <motion.div
+  1356→                key={v.id}
+  1357→                initial={{ opacity: 0, y: 10 }}
+  1358→                animate={{ opacity: 1, y: 0 }}
+  1359→              >
+  1360→                <Card className="rounded-xl border-slate-200/60 shadow-sm">
+  1361→                  <CardContent className="p-4">
+  1362→                    <div className="flex items-start justify-between">
+  1363→                      <div className="text-lg font-bold text-slate-900">{v.plateNumber}</div>
+  1364→                      <Badge className={`text-[11px] ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1365→                        {v.status}
+  1366→                      </Badge>
+  1367→                    </div>
+  1368→                    <div className="mt-2 text-sm text-slate-600">
+  1369→                      {[v.make, v.model, v.year].filter(Boolean).join(' ') || 'No details'}
+  1370→                    </div>
+  1371→                    <div className="mt-3 space-y-1.5 text-xs text-slate-500">
+  1372→                      {v.driver && (
+  1373→                        <div className="flex items-center gap-1.5">
+  1374→                          <Users className="w-3.5 h-3.5" />
+  1375→                          <span>{v.driver.name}</span>
+  1376→                        </div>
+  1377→                      )}
+  1378→                      {v.device && (
+  1379→                        <div className="flex items-center gap-1.5">
+  1380→                          <Cpu className="w-3.5 h-3.5" />
+  1381→                          <span>IMEI: {v.device.imei}</span>
+  1382→                        </div>
+  1383→                      )}
+  1384→                      {v.mileage != null && (
+  1385→                        <div className="flex items-center gap-1.5">
+  1386→                          <Gauge className="w-3.5 h-3.5" />
+  1387→                          <span>{v.mileage.toLocaleString()} km</span>
+  1388→                        </div>
+  1389→                      )}
+  1390→                    </div>
+  1391→                  </CardContent>
+  1392→                </Card>
+  1393→              </motion.div>
+  1394→            ))}
+  1395→          </div>
+  1396→
+  1397→          {/* Desktop Table */}
+  1398→          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
+  1399→            <Table>
+  1400→              <TableHeader>
+  1401→                <TableRow className="bg-slate-50/80">
+  1402→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Plate Number</TableHead>
+  1403→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Make / Model / Year</TableHead>
+  1404→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
+  1405→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Driver</TableHead>
+  1406→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Device IMEI</TableHead>
+  1407→                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Mileage</TableHead>
+  1408→                </TableRow>
+  1409→              </TableHeader>
+  1410→              <TableBody>
+  1411→                {vehicles.map((v) => (
+  1412→                  <TableRow key={v.id} className="hover:bg-slate-50/50">
+  1413→                    <TableCell className="font-bold text-sm">{v.plateNumber}</TableCell>
+  1414→                    <TableCell className="text-sm text-slate-600">
+  1415→                      {[v.make, v.model, v.year].filter(Boolean).join(' ') || '—'}
+  1416→                    </TableCell>
+  1417→                    <TableCell>
+  1418→                      <Badge className={`text-[11px] ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+  1419→                        {v.status}
+  1420→                      </Badge>
+  1421→                    </TableCell>
+  1422→                    <TableCell className="text-sm text-slate-600">{v.driver?.name || '—'}</TableCell>
+  1423→                    <TableCell className="text-sm text-slate-600 font-mono text-xs">{v.device?.imei || '—'}</TableCell>
+  1424→                    <TableCell className="text-sm text-slate-600">
+  1425→                      {v.mileage != null ? `${v.mileage.toLocaleString()} km` : '—'}
+  1426→                    </TableCell>
+  1427→                  </TableRow>
+  1428→                ))}
+  1429→              </TableBody>
+  1430→            </Table>
+  1431→          </Card>
+  1432→
+  1433→          {/* Pagination */}
+  1434→          <div className="flex items-center justify-between">
+  1435→            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
+  1436→            <div className="flex gap-2">
+  1437→              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+  1438→                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+  1439→              </Button>
+  1440→              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+  1441→                Next <ChevronRight className="w-4 h-4 ml-1" />
+  1442→              </Button>
+  1443→            </div>
+  1444→          </div>
+  1445→        </>
+  1446→      )}
+  1447→    </div>
+  1448→  );
+  1449→}
+  1450→
+  1451→// ────────────────────────────────────────
+  1452→// Placeholder View for unimplemented pages
+  1453→// ────────────────────────────────────────
+  1454→
+  1455→function PlaceholderView({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
+  1456→  return (
+  1457→    <motion.div
+  1458→      initial={{ opacity: 0, y: 20 }}
+  1459→      animate={{ opacity: 1, y: 0 }}
+  1460→      className="flex flex-col items-center justify-center py-24 text-slate-400"
+  1461→    >
+  1462→      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+  1463→        <Icon className="w-8 h-8 text-slate-300" />
+  1464→      </div>
+  1465→      <h3 className="text-lg font-semibold text-slate-600">{title}</h3>
+  1466→      <p className="text-sm mt-1">This module is under development</p>
+  1467→    </motion.div>
+  1468→  );
+  1469→}
+  1470→
+  1471→// ────────────────────────────────────────
+  1472→// AdminDashboard
+  1473→// ────────────────────────────────────────
+  1474→
+  1475→function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () => void }) {
+  1476→  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  1477→  const [sidebarOpen, setSidebarOpen] = useState(false);
+  1478→  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  1479→  const [notifOpen, setNotifOpen] = useState(false);
+  1480→  const [notifList, setNotifList] = useState<any[]>([]);
+  1481→  const [notifCount, setNotifCount] = useState(0);
+  1482→
+  1483→  const fetchNotifPreview = useCallback(async () => {
+  1484→    try {
+  1485→      const token = localStorage.getItem('rtr_token');
+  1486→      const res = await fetch('/api/notifications?limit=8', {
+  1487→        headers: token ? { Authorization: `Bearer ${token}` } : {},
+  1488→      });
+  1489→      if (res.ok) {
+  1490→        const data = await res.json();
+  1491→        setNotifList(data.notifications || []);
+  1492→        setNotifCount(data.unreadCount || 0);
+  1493→      }
+  1494→    } catch { /* silent */ }
+  1495→  }, []);
+  1496→
+  1497→  useEffect(() => { fetchNotifPreview(); }, [fetchNotifPreview]);
+  1498→
+  1499→  const viewTitle: Record<ViewType, string> = {
+  1500→    dashboard: 'Dashboard',
+  1501→    analytics: 'Advanced Analytics',
+  1502→    reports: 'Reports & Analytics',
+  1503→    'live-tracking': 'Live Tracking',
+  1504→    'ai-assistant': 'AI Assistant',
+  1505→    vehicles: 'Vehicles',
+  1506→    drivers: 'Drivers',
+  1507→    devices: 'Devices',
+  1508→    trips: 'Trips',
+  1509→    installations: 'Installations',
+  1510→    technicians: 'Technicians',
+  1511→    maintenance: 'Maintenance',
+  1512→    pipeline: 'Sales Pipeline',
+  1513→    leads: 'Leads',
+  1514→    contacts: 'Contacts',
+  1515→    quotations: 'Quotations',
+  1516→    contracts: 'Contracts',
+  1517→    subscriptions: 'Subscriptions',
+  1518→    invoices: 'Invoices',
+  1519→    geofences: 'Geofences',
+  1520→    'alert-rules': 'Alert Rules',
+  1521→    tickets: 'Tickets',
+  1522→    notifications: 'Notifications',
+  1523→    users: 'User Management',
+  1524→    settings: 'Settings',
+  1525→    'audit-logs': 'Audit Logs',
+  1526→  };
+  1527→
+  1528→  const renderView = () => {
+  1529→    switch (currentView) {
+  1530→      case 'dashboard':
+  1531→        return <DashboardView />;
+  1532→      case 'pipeline':
+  1533→        return <PipelineView />;
+  1534→      case 'leads':
+  1535→        return <LeadsView />;
+  1536→      case 'contacts':
+  1537→        return <ContactsView />;
+  1538→      case 'quotations':
+  1539→        return <QuotationsView />;
+  1540→      case 'vehicles':
+  1541→        return <VehiclesView />;
+  1542→      case 'live-tracking':
+  1543→        return <LiveTrackingView />;
+  1544→      case 'drivers':
+  1545→        return <DriversView />;
+  1546→      case 'devices':
+  1547→        return <DevicesView />;
+  1548→      case 'installations':
+  1549→        return <InstallationsView />;
+  1550→      case 'technicians':
+  1551→        return <TechniciansView />;
+  1552→      case 'maintenance':
+  1553→        return <MaintenanceView />;
+  1554→      case 'subscriptions':
+  1555→        return <SubscriptionsView />;
+  1556→      case 'invoices':
+  1557→        return <InvoicesView />;
+  1558→      case 'tickets':
+  1559→        return <TicketsView />;
+  1560→      case 'analytics':
+  1561→        return <AnalyticsView />;
+  1562→      case 'reports':
+  1563→        return <ReportsView />;
+  1564→      case 'trips':
+  1565→        return <TripsView />;
+  1566→      case 'contracts':
+  1567→        return <ContractsView />;
+  1568→      case 'geofences':
+  1569→        return <GeofencesView />;
+  1570→      case 'alert-rules':
+  1571→        return <AlertRulesView />;
+  1572→      case 'notifications':
+  1573→        return <NotificationsView />;
+  1574→      case 'users':
+  1575→        return <UsersView />;
+  1576→      case 'settings':
+  1577→        return <SettingsView />;
+  1578→      case 'audit-logs':
+  1579→        return <AuditLogsView />;
+  1580→      case 'ai-assistant':
+  1581→        return <DashboardView />; // AI panel opens as overlay
+  1582→      default:
+  1583→        return <DashboardView />;
+  1584→    }
+  1585→  };
+  1586→
+  1587→  return (
+  1588→    <div className="min-h-screen flex bg-[var(--rtr-bg)]">
+  1589→      {/* Desktop Sidebar */}
+  1590→      <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 text-white shrink-0">
+  1591→        <SidebarNav currentView={currentView} onNavigate={setCurrentView} />
+  1592→      </aside>
+  1593→
+  1594→      {/* Mobile Sidebar */}
+  1595→      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+  1596→        <SheetContent side="left" className="w-72 p-0 bg-slate-900 text-white border-slate-700">
+  1597→          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+  1598→          <SidebarNav currentView={currentView} onNavigate={setCurrentView} onClose={() => setSidebarOpen(false)} />
+  1599→        </SheetContent>
+  1600→      </Sheet>
+  1601→
+  1602→      {/* Main Area */}
+  1603→      <div className="flex-1 flex flex-col min-w-0">
+  1604→        {/* Top Header */}
+  1605→        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shrink-0">
+  1606→          <div className="flex items-center gap-3">
+  1607→            {/* Mobile menu button */}
+  1608→            <button
+  1609→              onClick={() => setSidebarOpen(true)}
+  1610→              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+  1611→              aria-label="Open menu"
+  1612→            >
+  1613→              <Menu className="w-5 h-5 text-slate-600" />
+  1614→            </button>
+  1615→            <h1 className="text-lg font-semibold text-slate-900">{viewTitle[currentView]}</h1>
+  1616→          </div>
+  1617→
+  1618→          <div className="flex items-center gap-3">
+  1619→            {/* AI Assistant Button */}
+  1620→            <button
+  1621→              onClick={() => setAiPanelOpen(true)}
+  1622→              className="relative p-2 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer group"
+  1623→              aria-label="AI Assistant"
+  1624→            >
+  1625→              <Bot className="w-5 h-5 text-slate-600 group-hover:text-emerald-600 transition-colors" />
+  1626→              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+  1627→            </button>
+  1628→
+  1629→            {/* Notification Bell */}
+  1630→            <div className="relative">
+  1631→              <button
+  1632→                onClick={() => { setNotifOpen(!notifOpen); fetchNotifPreview(); }}
+  1633→                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+  1634→                aria-label="Notifications"
+  1635→              >
+  1636→                <Bell className="w-5 h-5 text-slate-600" />
+  1637→                {notifCount > 0 && (
+  1638→                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+  1639→                    {notifCount > 99 ? '99+' : notifCount}
+  1640→                  </span>
+  1641→                )}
+  1642→              </button>
+  1643→              {/* Notification Dropdown */}
+  1644→              <AnimatePresence>
+  1645→                {notifOpen && (
+  1646→                  <motion.div
+  1647→                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+  1648→                    animate={{ opacity: 1, y: 0, scale: 1 }}
+  1649→                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+  1650→                    className="absolute right-0 top-12 w-80 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden"
+  1651→                  >
+  1652→                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+  1653→                      <h3 className="font-semibold text-sm text-slate-800">Notifications</h3>
+  1654→                      <div className="flex items-center gap-2">
+  1655→                        {notifCount > 0 && (
+  1656→                          <Badge className="bg-red-100 text-red-700 border-0 text-[10px]">{notifCount} new</Badge>
+  1657→                        )}
+  1658→                        <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer">
+  1659→                          View All <ExternalLink className="w-3 h-3" />
+  1660→                        </button>
+  1661→                      </div>
+  1662→                    </div>
+  1663→                    <ScrollArea className="max-h-72">
+  1664→                      {notifList.length === 0 ? (
+  1665→                        <div className="p-6 text-center text-slate-400 text-sm">No notifications</div>
+  1666→                      ) : (
+  1667→                        <div className="divide-y divide-slate-50">
+  1668→                          {notifList.slice(0, 8).map((n: any) => (
+  1669→                            <div key={n.id} className={`px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
+  1670→                              <p className={`text-xs ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
+  1671→                              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+  1672→                            </div>
+  1673→                          ))}
+  1674→                        </div>
+  1675→                      )}
+  1676→                    </ScrollArea>
+  1677→                    <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+  1678→                      <button onClick={() => { setCurrentView('notifications'); setNotifOpen(false); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold w-full text-center cursor-pointer">
+  1679→                        Open Notification Center
+  1680→                      </button>
+  1681→                    </div>
+  1682→                  </motion.div>
+  1683→                )}
+  1684→              </AnimatePresence>
+  1685→            </div>
+  1686→
+  1687→            {/* User Dropdown */}
+  1688→            <DropdownMenu>
+  1689→              <DropdownMenuTrigger asChild>
+  1690→                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+  1691→                  <Avatar className="w-8 h-8">
+  1692→                    <AvatarFallback className="bg-emerald-600 text-white text-xs font-semibold">
+  1693→                      {user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+  1694→                    </AvatarFallback>
+  1695→                  </Avatar>
+  1696→                  <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
+  1697→                    {user.name}
+  1698→                  </span>
+  1699→                </button>
+  1700→              </DropdownMenuTrigger>
+  1701→              <DropdownMenuContent align="end" className="w-48">
+  1702→                <div className="px-2 py-1.5">
+  1703→                  <p className="text-sm font-medium text-slate-900">{user.name}</p>
+  1704→                  <p className="text-xs text-slate-500">{user.email}</p>
+  1705→                </div>
+  1706→                <DropdownMenuSeparator />
+  1707→                <DropdownMenuItem>
+  1708→                  <Settings className="w-4 h-4 mr-2" /> Profile
+  1709→                </DropdownMenuItem>
+  1710→                <DropdownMenuItem>
+  1711→                  <Settings className="w-4 h-4 mr-2" /> Settings
+  1712→                </DropdownMenuItem>
+  1713→                <DropdownMenuSeparator />
+  1714→                <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
+  1715→                  <LogOut className="w-4 h-4 mr-2" /> Logout
+  1716→                </DropdownMenuItem>
+  1717→              </DropdownMenuContent>
+  1718→            </DropdownMenu>
+  1719→          </div>
+  1720→        </header>
+  1721→
+  1722→        {/* Main Content */}
+  1723→        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+  1724→          <AnimatePresence mode="wait">
+  1725→            <motion.div
+  1726→              key={currentView}
+  1727→              initial={{ opacity: 0, x: 10 }}
+  1728→              animate={{ opacity: 1, x: 0 }}
+  1729→              exit={{ opacity: 0, x: -10 }}
+  1730→              transition={{ duration: 0.2 }}
+  1731→            >
+  1732→              {renderView()}
+  1733→            </motion.div>
+  1734→          </AnimatePresence>
+  1735→        </main>
+  1736→      </div>
+  1737→
+  1738→      {/* AI Chat Panel Overlay */}
+  1739→      <AIChatPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+  1740→
+  1741→      {/* Click-outside handler for notification dropdown */}
+  1742→      {notifOpen && <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />}
+  1743→    </div>
+  1744→  );
+  1745→}
+  1746→
+  1747→// ────────────────────────────────────────
+  1748→// Main Page Component
+  1749→// ────────────────────────────────────────
+  1750→
+  1751→export default function Home() {
+  1752→  const [user, setUser] = useState<UserSession | null>(null);
+  1753→  const [loading, setLoading] = useState(true);
+  1754→
+  1755→  useEffect(() => {
+  1756→    const checkAuth = async () => {
+  1757→      try {
+  1758→        const token = localStorage.getItem('rtr_token');
+  1759→        if (!token) {
+  1760→          return;
+  1761→        }
+  1762→        const res = await fetch('/api/auth/me', {
+  1763→          headers: { Authorization: `Bearer ${token}` },
+  1764→        });
+  1765→        if (!res.ok) throw new Error('Invalid token');
+  1766→        const data = await res.json();
+  1767→        setUser(data.user);
+  1768→      } catch {
+  1769→        localStorage.removeItem('rtr_token');
+  1770→        localStorage.removeItem('rtr_user');
+  1771→      } finally {
+  1772→        setLoading(false);
+  1773→      }
+  1774→    };
+  1775→
+  1776→    checkAuth();
+  1777→  }, []);
+  1778→
+  1779→  const handleLogin = (loggedInUser: UserSession, _token: string) => {
+  1780→    setUser(loggedInUser);
+  1781→  };
+  1782→
+  1783→  const handleLogout = () => {
+  1784→    const token = localStorage.getItem('rtr_token');
+  1785→    if (token) {
+  1786→      fetch('/api/auth/logout', {
+  1787→        method: 'POST',
+  1788→        headers: { Authorization: `Bearer ${token}` },
+  1789→      }).catch(() => {});
+  1790→    }
+  1791→    localStorage.removeItem('rtr_token');
+  1792→    localStorage.removeItem('rtr_user');
+  1793→    setUser(null);
+  1794→    toast.info('You have been logged out');
+  1795→  };
+  1796→
+  1797→  if (loading) {
+  1798→    return (
+  1799→      <div className="min-h-screen flex items-center justify-center bg-[var(--rtr-bg)]">
+  1800→        <div className="flex flex-col items-center gap-4">
+  1801→          <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
+  1802→            <Truck className="w-7 h-7 text-white" />
+  1803→          </div>
+  1804→          <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+  1805→        </div>
+  1806→      </div>
+  1807→    );
+  1808→  }
+  1809→
+  1810→  if (!user) {
+  1811→    return <LoginScreen onLogin={handleLogin} />;
+  1812→  }
+  1813→
+  1814→  return <AdminDashboard user={user} onLogout={handleLogout} />;
+  1815→}
+  1816→

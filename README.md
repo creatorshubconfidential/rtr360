@@ -30,7 +30,7 @@ The platform serves the **UAE market** with support for AED currency, Dubai time
 | Phase 4 | FleetOS (Live GPS Map, Vehicle Tracking) | ✅ Complete |
 | Phase 5 | Maintenance, Billing, Support, Settings | ✅ Complete |
 | Phase 6 | AI Intelligence & Platform Polish | ✅ Complete |
-| Phase 7 | Advanced Analytics & Predictive Intelligence | 🔲 Upcoming |
+| Phase 7 | Advanced Analytics & Predictive Intelligence | ✅ Complete |
 | Phase 8 | Mobile-First PWA & Real-Time WebSocket | 🔲 Upcoming |
 | Phase 9 | Multi-Org Super Admin & White-Label | 🔲 Upcoming |
 | Phase 10 | API Gateway, Webhooks & Integrations | 🔲 Upcoming |
@@ -376,8 +376,12 @@ npm run dev
 - `GET/POST /api/contracts` — List/Create contracts
 - `GET/PATCH /api/contracts/[id]` — Detail/Update contract
 
-### Admin (5)
+### Admin (9)
 - `GET /api/dashboard/stats` — Dashboard KPIs
+- `GET /api/analytics/fleet-health` — Fleet health scoring (0-100, grades A-D)
+- `GET /api/analytics/driver-trends` — Driver behavior analytics
+- `GET /api/analytics/maintenance-prediction` — Predictive maintenance
+- `GET /api/analytics/revenue-forecast` — Revenue forecasting
 - `GET/POST /api/users` — List/Create users
 - `GET/PATCH /api/users/[id]` — Update user
 - `GET/PUT /api/settings` — Get/Update settings
