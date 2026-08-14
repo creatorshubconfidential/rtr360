@@ -1,0 +1,572 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// RTR 360 — Fleet Technology & Management Platform
+// Powered by Mianx.ai | Multi-tenant SaaS Architecture
+// ============================================================
+
+// ----------------------
+// TENANT & ORGANIZATION
+// ----------------------
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  tradeName     String?  @map("trade_name")
+  legalName     String?  @map("legal_name")
+  industry      String?
+  email         String?
+  phone         String?
+  website       String?
+  emirate       String?
+  address       String?
+  city          String?
+  country       String   @default("AE")
+  logo          String?
+  status        String   @default("active")
+  currency      String   @default("AED")
+  timezone      String   @default("Asia/Dubai")
+  locale        String   @default("en")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  branches       Branch[]
+  users          User[]
+  vehicles       Vehicle[]
+  drivers        Driver[]
+  devices        Device[]
+  leads          Lead[]
+  contacts       Contact[]
+  opportunities  Opportunity[]
+  geofences      Geofence[]
+  alertRules     AlertRule[]
+  alerts         Alert[]
+  tickets        Ticket[]
+  contracts      Contract[]
+  invoices       Invoice[]
+  documents      Document[]
+  notifications  Notification[]
+  installations  Installation[]
+  maintenanceRecords MaintenanceRecord[]
+  subscriptions  Subscription[]
+}
+
+model Branch {
+  id             String   @id @default(cuid())
+  name           String
+  address        String?
+  emirate        String?
+  phone          String?
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicles       Vehicle[]
+}
+
+// ----------------------
+// AUTH, USERS & ROLES
+// ----------------------
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String?  @map("password_hash")
+  name           String
+  phone          String?
+  avatar         String?
+  role           String   @default("viewer")
+  organizationId String?  @map("organization_id")
+  status         String   @default("active")
+  lastLoginAt    DateTime? @map("last_login_at")
+  emailVerified  Boolean  @default(false) @map("email_verified")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  auditLogs      AuditLog[]
+  activities     Activity[]
+  sessions       Session[]
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?  @map("user_id")
+  action        String
+  entity        String
+  entityId      String?  @map("entity_id")
+  metadata      String?
+  ipAddress     String?  @map("ip_address")
+  organizationId String?  @map("organization_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User?    @relation(fields: [userId], references: [id])
+}
+
+// ----------------------
+// CRM — LEADS & CONTACTS
+// ----------------------
+
+model Lead {
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  emirate        String?
+  vehicleCount   Int?     @map("vehicle_count")
+  vehicleType    String?  @map("vehicle_type")
+  requirement    String?
+  source         String?
+  campaign       String?
+  landingPage    String?  @map("landing_page")
+  utmSource      String?  @map("utm_source")
+  utmMedium      String?  @map("utm_medium")
+  utmCampaign    String?  @map("utm_campaign")
+  status         String   @default("new")
+  priority       String   @default("medium")
+  assignedToId   String?  @map("assigned_to_id")
+  organizationId String?  @map("organization_id")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  activities     Activity[]
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  position       String?
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Opportunity {
+  id             String   @id @default(cuid())
+  name           String
+  value          Float?
+  stage          String   @default("new")
+  leadId         String?  @map("lead_id")
+  organizationId String   @map("organization_id")
+  assignedToId   String?  @map("assigned_to_id")
+  expectedClose  DateTime? @map("expected_close")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  activities     Activity[]
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  type           String
+  title          String
+  description    String?
+  dueDate        DateTime? @map("due_date")
+  completed      Boolean  @default(false)
+  userId         String?  @map("user_id")
+  leadId         String?  @map("lead_id")
+  opportunityId  String?  @map("opportunity_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User?       @relation(fields: [userId], references: [id])
+  lead           Lead?       @relation(fields: [leadId], references: [id])
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+}
+
+// ----------------------
+// FLEET — VEHICLES
+// ----------------------
+
+model Vehicle {
+  id             String   @id @default(cuid())
+  internalId     String?  @map("internal_id")
+  plateNumber    String   @map("plate_number")
+  make           String?
+  model          String?
+  year           Int?
+  vehicleType    String?  @map("vehicle_type")
+  vin            String?
+  color          String?
+  organizationId String   @map("organization_id")
+  branchId       String?  @map("branch_id")
+  driverId       String?  @map("driver_id")
+  deviceId       String?  @map("device_id")
+  status         String   @default("active")
+  mileage        Float?
+  engineHours    Float?  @map("engine_hours")
+  installDate    DateTime? @map("install_date")
+  warrantyExpiry DateTime? @map("warranty_expiry")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch?    @relation(fields: [branchId], references: [id])
+  driver         Driver?    @relation(fields: [driverId], references: [id])
+  device         Device?    @relation(fields: [deviceId], references: [id])
+  trips          Trip[]
+  maintenanceRecords MaintenanceRecord[]
+}
+
+// ----------------------
+// FLEET — DRIVERS
+// ----------------------
+
+model Driver {
+  id             String   @id @default(cuid())
+  name           String
+  employeeId     String?  @map("employee_id")
+  phone          String?
+  email          String?
+  licenseNumber  String?  @map("license_number")
+  licenseExpiry  DateTime? @map("license_expiry")
+  organizationId String   @map("organization_id")
+  status         String   @default("active")
+  score          Float    @default(100)
+  totalTrips     Int      @default(0) @map("total_trips")
+  totalDistance   Float?   @map("total_distance")
+  totalViolations Int     @default(0) @map("total_violations")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicles       Vehicle[]
+}
+
+// ----------------------
+// FLEET — DEVICES & SIMS
+// ----------------------
+
+model Device {
+  id             String   @id @default(cuid())
+  imei           String   @unique
+  serialNumber   String?  @map("serial_number")
+  model          String?
+  manufacturer   String?
+  phoneNumber    String?
+  firmware       String?
+  organizationId String?  @map("organization_id")
+  warehouse      String?
+  status         String   @default("warehouse")
+  installDate    DateTime? @map("install_date")
+  warrantyExpiry DateTime? @map("warranty_expiry")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  vehicles       Vehicle[]
+}
+
+model SIM {
+  id             String   @id @default(cuid())
+  number         String   @unique
+  provider       String?
+  status         String   @default("available")
+  organizationId String?  @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+}
+
+// ----------------------
+// OPERATIONS — INSTALLATIONS
+// ----------------------
+
+model Installation {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  vehicleId      String   @map("vehicle_id")
+  deviceId       String   @map("device_id")
+  technicianId   String?  @map("technician_id")
+  status         String   @default("scheduled")
+  scheduledAt    DateTime? @map("scheduled_at")
+  completedAt    DateTime? @map("completed_at")
+  location       String?
+  photos         String?
+  testResult     String?  @map("test_result")
+  signature      String?
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// FLEETOS — TRIPS
+// ----------------------
+
+model Trip {
+  id             String   @id @default(cuid())
+  vehicleId      String   @map("vehicle_id")
+  driverName     String?
+  startTime      DateTime @map("start_time")
+  endTime        DateTime? @map("end_time")
+  distance       Float?
+  duration       Int?
+  maxSpeed       Float?   @map("max_speed")
+  avgSpeed       Float?   @map("avg_speed")
+  idleTime       Int?     @map("idle_time")
+  overspeedCount Int?     @map("overspeed_count")
+  harshBrakes    Int?     @map("harsh_brakes")
+  harshAccel     Int?     @map("harsh_accel")
+  status         String   @default("in_progress")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+}
+
+// ----------------------
+// FLEETOS — GEOFENCES
+// ----------------------
+
+model Geofence {
+  id             String   @id @default(cuid())
+  name           String
+  type           String   @default("circle")
+  centerLat      Float?   @map("center_lat")
+  centerLng      Float?   @map("center_lng")
+  radius         Float?
+  polygonPoints  String?  @map("polygon_points")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// FLEETOS — ALERTS
+// ----------------------
+
+model AlertRule {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  conditions     String?
+  channels       String?  @default("in_app")
+  organizationId String   @map("organization_id")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id             String   @id @default(cuid())
+  type           String
+  severity       String   @default("medium")
+  vehicleId      String?  @map("vehicle_id")
+  driverName     String?
+  vehiclePlate   String?
+  message        String
+  metadata       String?
+  status         String   @default("open")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  resolvedAt     DateTime? @map("resolved_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// MAINTENANCE
+// ----------------------
+
+model MaintenanceRecord {
+  id             String   @id @default(cuid())
+  vehicleId      String   @map("vehicle_id")
+  type           String
+  description    String?
+  triggerType    String?  @map("trigger_type")
+  triggerValue   Float?
+  scheduledDate  DateTime? @map("scheduled_date")
+  completedDate  DateTime? @map("completed_date")
+  cost           Float?
+  status         String   @default("upcoming")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
+}
+
+// ----------------------
+// BILLING & SUBSCRIPTIONS
+// ----------------------
+
+model Plan {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  priceMonthly   Float    @map("price_monthly")
+  priceAnnual    Float?   @map("price_annual")
+  vehicleLimit   Int      @default(0) @map("vehicle_limit")
+  features       String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  subscriptions  Subscription[]
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  organizationId String   @unique @map("organization_id")
+  planId         String   @map("plan_id")
+  status         String   @default("active")
+  vehicleCount   Int      @default(0) @map("vehicle_count")
+  startsAt       DateTime @map("starts_at")
+  endsAt         DateTime? @map("ends_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  plan           Plan       @relation(fields: [planId], references: [id])
+  invoices       Invoice[]
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  invoiceNumber  String   @unique @map("invoice_number")
+  organizationId String   @map("organization_id")
+  subscriptionId String?  @map("subscription_id")
+  amount         Float
+  tax            Float    @default(0)
+  total          Float
+  status         String   @default("pending")
+  dueDate        DateTime @map("due_date")
+  paidAt         DateTime? @map("paid_at")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+// ----------------------
+// SUPPORT / TICKETING
+// ----------------------
+
+model Ticket {
+  id             String   @id @default(cuid())
+  ticketNumber   String   @unique @map("ticket_number")
+  organizationId String   @map("organization_id")
+  subject        String
+  description    String?
+  priority       String   @default("medium")
+  status         String   @default("open")
+  vehiclePlate   String?
+  assignedToId   String?  @map("assigned_to_id")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// CONTRACTS
+// ----------------------
+
+model Contract {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  title          String
+  startDate      DateTime @map("start_date")
+  endDate        DateTime? @map("end_date")
+  status         String   @default("active")
+  terms          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// DOCUMENTS
+// ----------------------
+
+model Document {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  fileUrl        String   @map("file_url")
+  mimeType       String?  @map("mime_type")
+  size           Int?
+  organizationId String   @map("organization_id")
+  uploadedBy     String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------
+// NOTIFICATIONS
+// ----------------------
+
+model Notification {
+  id             String   @id @default(cuid())
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  type           String
+  title          String
+  body           String?
+  read           Boolean  @default(false)
+  metadata       String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+}
+
+// ----------------------
+// PLATFORM SETTINGS
+// ----------------------
+
+model Session {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  userId         String   @map("user_id")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("string")
+}
+
+// ----------------------
+// AI CONVERSATIONS
+// ----------------------
+
+model AIConversation {
+  id             String   @id @default(cuid())
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  type           String   @default("fleet_assistant")
+  messages       String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+}
