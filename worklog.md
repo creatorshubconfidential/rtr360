@@ -305,3 +305,57 @@ Stage Summary:
 - LiveTrackingView upgraded: SSE primary, polling fallback
 - Total: 52 API routes, 22 views + 4 Phase 8 components + AI panel
 - Build: 0 errors
+
+---
+Task ID: 9
+Agent: Super Z (Main)
+Task: Phase 9 — Multi-Org Super Admin & White-Label
+
+Work Log:
+- Created 5 new Super Admin API routes:
+  - /api/admin/platform-stats GET — Platform-wide stats (total orgs, users, vehicles, revenue, white-label count, monthly org growth)
+  - /api/admin/organizations GET — List all orgs with usage stats, search, status/emirate/plan filters, status/plan distribution counts
+  - /api/admin/organizations POST — Create new org + admin user (transaction), auto-creates default branch, email uniqueness check
+  - /api/admin/organizations/[id] GET — Full org detail with branches, users, all entity counts, invoice stats (total/paid/overdue), utilization bars
+  - /api/admin/organizations/[id] PATCH — Update plan, vehicle/user limits, status
+  - /api/admin/organizations/[id] DELETE — Soft-deactivate org + cascade user deactivation
+  - /api/admin/organizations/[id]/branding GET+PUT — White-label branding (colors, app name, footer, toggle, Mianx branding hide)
+  - /api/admin/organizations/[id]/usage GET — Per-org usage analytics (30d/90d): vehicle/user utilization, trips, leads, revenue, feature usage, daily activity, recent logins
+- Built comprehensive SuperAdminView.tsx with 3 tabs:
+  - Overview: 8 KPI cards (orgs, users, vehicles, revenue, invoices, overdue, white-label), org growth bar chart, top organizations list
+  - Organizations: Search + status filter, mobile cards + desktop table, status summary badges, detail dialog (info grid, utilization bars, entity counts, revenue summary, users list, branches), edit dialog (plan, limits, status), white-label branding dialog (color picker, preview, toggle), usage analytics dialog (utilization, trip stats, feature usage, daily activity bar chart, recent logins), deactivate action
+  - Onboard New: 3-step wizard (Organization Info → Admin User → Plan & Branding), form validation, live color preview
+- Updated page.tsx:
+  - Added Crown icon import
+  - Added 'super-admin' to ViewType union
+  - Added PLATFORM nav section with superAdminOnly flag (visible only for super_admin role)
+  - Added userRole prop to SidebarNav component with filter logic
+  - Passed userRole to both desktop and mobile SidebarNav instances
+  - Added 'super-admin' case in renderView switch
+  - Added 'Super Admin' to viewTitle record
+- Updated seed.ts:
+  - Added 4 new organizations: Gulf Transit LLC (Sharjah), Emirates Fleet Services (Ajman, white-label), National Cargo Co. (RAK), ADNOC Distribution (Abu Dhabi, white-label, Enterprise), Desert Express (Inactive)
+  - Set planName/vehicleLimit/userLimit on all existing orgs
+  - Changed super_admin user to have NO organizationId (sees all orgs)
+  - Changed customer user role from 'admin' to 'org_owner'
+  - Updated summary counts (7 orgs, 8 devices)
+- Updated AGENTS.md: Phase 8+9 marked complete, route/view/model counts updated, Phase 9 details listed
+- Updated README.md: Phase 9 marked complete, 26 modules, 57 API routes, updated demo credentials, added Phase 7/8/9 feature sections, added Super Admin API routes section
+- Production build: 57 routes (5 new admin), 0 errors
+- API tested: platform stats (8 orgs, 7 active, 2 white-label), org list (correct status/plan distribution), org detail (users, invoice stats, revenue), forbidden test (non-super-admin correctly rejected with 403)
+- Git push successful
+
+Stage Summary:
+- Phase 9 Multi-Org Super Admin & White-Label COMPLETE
+- 5 new API routes (platform-stats, organizations CRUD, branding, usage)
+- 1 new view component (SuperAdminView.tsx) with 3 tabs, 6 dialogs
+- Platform overview: 8 KPI cards, org growth chart, top orgs
+- Organization management: list, search, filter, detail, edit, deactivate
+- 3-step onboarding wizard with live color preview
+- White-label branding: color picker, app name, footer, enable/disable toggle
+- Per-org usage analytics: utilization bars, trips, leads, revenue, feature usage, daily activity
+- Role-based navigation: PLATFORM section visible only for super_admin
+- 7 demo organizations (2 white-label, 1 inactive, 4 plans)
+- Total: 57 API routes, 23 view components + AI panel + 4 Phase 8 components
+- Build: 0 errors
+- Git pushed to main
