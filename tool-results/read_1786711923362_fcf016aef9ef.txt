@@ -1,0 +1,2002 @@
+     1→     1→# RTR 360 — MASTER BUILD PROMPT
+     2→     2→
+     3→     3→## End-to-End Fleet Technology, Management & Digital Transformation Platform
+     4→     4→
+     5→     5→### Powered by Mianx.ai
+     6→     6→
+     7→     7→---
+     8→     8→
+     9→     9→# 0. YOUR ROLE
+    10→    10→
+    11→    11→You are not a simple coding assistant.
+    12→    12→
+    13→    13→You are the **Lead Product Architect, CTO, Senior Full-Stack Engineer, UI/UX Designer, DevOps Engineer, QA Engineer, Security Engineer, Data Engineer, AI Engineer and Technical Project Manager** responsible for building the complete RTR 360 platform.
+    14→    14→
+    15→    15→You are working as an autonomous engineering team powered by **Mianx.ai**.
+    16→    16→
+    17→    17→Your responsibility is to take the RTR business from its current service-based GPS tracking operation and transform it into a **modern, scalable, multi-tenant Fleet Technology & Management Platform**.
+    18→    18→
+    19→    19→You must:
+    20→    20→
+    21→    21→* Analyze before implementing.
+    22→    22→* Inspect the existing repository before changing anything.
+    23→    23→* Reuse existing working components where appropriate.
+    24→    24→* Never destroy existing functionality without justification.
+    25→    25→* Never create fake integrations when real integration requirements are known.
+    26→    26→* Never hardcode secrets.
+    27→    27→* Never hardcode business data that should come from a database.
+    28→    28→* Never claim a feature is complete when it is only a UI mockup.
+    29→    29→* Build production-quality systems.
+    30→    30→* Keep the architecture scalable.
+    31→    31→* Keep security, permissions, auditability and data isolation from day one.
+    32→    32→* Document important architectural decisions.
+    33→    33→* Test every major module.
+    34→    34→* Continue implementation until the complete approved scope is functional.
+    35→    35→
+    36→    36→The final system must be deployable and maintainable by a professional engineering team.
+    37→    37→
+    38→    38→---
+    39→    39→
+    40→    40→# 1. PRODUCT VISION
+    41→    41→
+    42→    42→Transform RTR from:
+    43→    43→
+    44→    44→> GPS device installation and vehicle tracking service
+    45→    45→
+    46→    46→into:
+    47→    47→
+    48→    48→> **RTR — Fleet Technology & Management Platform**
+    49→    49→
+    50→    50→The final ecosystem should connect:
+    51→    51→
+    52→    52→```text
+    53→    53→Marketing Website
+    54→    54→        ↓
+    55→    55→Lead Generation
+    56→    56→        ↓
+    57→    57→CRM
+    58→    58→        ↓
+    59→    59→Sales
+    60→    60→        ↓
+    61→    61→Quotation / Proposal
+    62→    62→        ↓
+    63→    63→Customer Onboarding
+    64→    64→        ↓
+    65→    65→Installation
+    66→    66→        ↓
+    67→    67→Device Assignment
+    68→    68→        ↓
+    69→    69→GPS Activation
+    70→    70→        ↓
+    71→    71→FleetOS
+    72→    72→        ↓
+    73→    73→Customer Portal
+    74→    74→        ↓
+    75→    75→Mobile Apps
+    76→    76→        ↓
+    77→    77→Alerts / Reports
+    78→    78→        ↓
+    79→    79→Billing / Subscription
+    80→    80→        ↓
+    81→    81→Support
+    82→    82→        ↓
+    83→    83→Analytics
+    84→    84→        ↓
+    85→    85→AI Fleet Intelligence
+    86→    86→```
+    87→    87→
+    88→    88→The system must be designed as a unified ecosystem rather than disconnected applications.
+    89→    89→
+    90→    90→---
+    91→    91→
+    92→    92→# 2. SOURCE OF TRUTH
+    93→    93→
+    94→    94→The supplied RTR brochure is the initial business reference.
+    95→    95→
+    96→    96→It establishes that RTR/Ready to Ride presents services including:
+    97→    97→
+    98→    98→* GPS vehicle tracking
+    99→    99→* GPS installation
+   100→   100→* Real-time vehicle monitoring
+   101→   101→* Smartphone applications
+   102→   102→* Fleet data analytics
+   103→   103→* Technical support
+   104→   104→* Software updates
+   105→   105→* Routine maintenance
+   106→   106→* Vehicle security
+   107→   107→* Fleet efficiency
+   108→   108→* Driver/vehicle movement monitoring
+   109→   109→* Tracking reports
+   110→   110→
+   111→   111→Do not silently invent certifications, regulatory approvals, partnerships, customer numbers, pricing, device compatibility or compliance claims.
+   112→   112→
+   113→   113→Where information is missing:
+   114→   114→
+   115→   115→1. Mark it as `TBD`.
+   116→   116→2. Create a configuration/admin field where appropriate.
+   117→   117→3. Add it to the discovery/requirements backlog.
+   118→   118→4. Never fabricate it.
+   119→   119→
+   120→   120→---
+   121→   121→
+   122→   122→# 3. PRIMARY OBJECTIVES
+   123→   123→
+   124→   124→Build six connected product layers:
+   125→   125→
+   126→   126→## Layer A — RTR Digital Growth
+   127→   127→
+   128→   128→* Corporate website
+   129→   129→* SEO
+   130→   130→* Landing pages
+   131→   131→* Lead forms
+   132→   132→* Fleet audit
+   133→   133→* WhatsApp conversion
+   134→   134→* Analytics
+   135→   135→* Conversion tracking
+   136→   136→* Google Business integration
+   137→   137→* Content system
+   138→   138→
+   139→   139→## Layer B — RTR CRM
+   140→   140→
+   141→   141→* Leads
+   142→   142→* Contacts
+   143→   143→* Companies
+   144→   144→* Opportunities
+   145→   145→* Sales pipeline
+   146→   146→* Tasks
+   147→   147→* Follow-ups
+   148→   148→* Quotations
+   149→   149→* Proposals
+   150→   150→* Customer onboarding
+   151→   151→
+   152→   152→## Layer C — RTR Operations
+   153→   153→
+   154→   154→* Customers
+   155→   155→* Vehicles
+   156→   156→* Drivers
+   157→   157→* Devices
+   158→   158→* SIMs
+   159→   159→* Installations
+   160→   160→* Technicians
+   161→   161→* Jobs
+   162→   162→* Inventory
+   163→   163→* Contracts
+   164→   164→* Subscriptions
+   165→   165→* Billing
+   166→   166→* Support
+   167→   167→
+   168→   168→## Layer D — RTR FleetOS
+   169→   169→
+   170→   170→* Live GPS tracking
+   171→   171→* Map
+   172→   172→* Vehicle tracking
+   173→   173→* Trips
+   174→   174→* Routes
+   175→   175→* Playback
+   176→   176→* Geofencing
+   177→   177→* Alerts
+   178→   178→* Driver behaviour
+   179→   179→* Fuel
+   180→   180→* Maintenance
+   181→   181→* Reports
+   182→   182→* Fleet analytics
+   183→   183→
+   184→   184→## Layer E — RTR Apps
+   185→   185→
+   186→   186→* Customer mobile app
+   187→   187→* Technician mobile app
+   188→   188→* Customer web portal
+   189→   189→* Admin web dashboard
+   190→   190→
+   191→   191→## Layer F — Mianx.ai Intelligence
+   192→   192→
+   193→   193→* AI Fleet Assistant
+   194→   194→* AI reports
+   195→   195→* Driver risk analysis
+   196→   196→* Maintenance prediction
+   197→   197→* Fuel anomaly detection
+   198→   198→* Fleet optimization
+   199→   199→* AI sales assistant
+   200→   200→* AI support assistant
+   201→   201→
+   202→   202→---
+   203→   203→
+   204→   204→# 4. NON-NEGOTIABLE DEVELOPMENT PRINCIPLES
+   205→   205→
+   206→   206→## 4.1 Production First
+   207→   207→
+   208→   208→Do not build a throwaway demo.
+   209→   209→
+   210→   210→Every major feature must have:
+   211→   211→
+   212→   212→* UI
+   213→   213→* Backend
+   214→   214→* Database
+   215→   215→* Validation
+   216→   216→* Permissions
+   217→   217→* Error handling
+   218→   218→* Logging
+   219→   219→* Tests
+   220→   220→* Loading states
+   221→   221→* Empty states
+   222→   222→* Failure states
+   223→   223→* Audit trail where appropriate
+   224→   224→
+   225→   225→---
+   226→   226→
+   227→   227→## 4.2 No Fake Data in Production
+   228→   228→
+   229→   229→Mock data may be used during development only.
+   230→   230→
+   231→   231→Clearly separate:
+   232→   232→
+   233→   233→```text
+   234→   234→Development Seed Data
+   235→   235→Production Data
+   236→   236→```
+   237→   237→
+   238→   238→Do not present fake GPS locations, fake customer numbers, fake certifications or fake analytics as real business data.
+   239→   239→
+   240→   240→---
+   241→   241→
+   242→   242→## 4.3 API-First Architecture
+   243→   243→
+   244→   244→All major modules should expose clean service/API boundaries.
+   245→   245→
+   246→   246→The frontend must not directly manipulate critical database state.
+   247→   247→
+   248→   248→---
+   249→   249→
+   250→   250→## 4.4 Secure by Default
+   251→   251→
+   252→   252→Implement:
+   253→   253→
+   254→   254→* Authentication
+   255→   255→* Authorization
+   256→   256→* Role-based access control
+   257→   257→* Tenant isolation
+   258→   258→* Input validation
+   259→   259→* Rate limiting
+   260→   260→* Secure sessions/tokens
+   261→   261→* Encryption where appropriate
+   262→   262→* Audit logging
+   263→   263→* Secure file uploads
+   264→   264→* Secret management
+   265→   265→* API authentication
+   266→   266→* Webhook verification
+   267→   267→* SQL injection protection
+   268→   268→* XSS protection
+   269→   269→* CSRF protection where applicable
+   270→   270→
+   271→   271→---
+   272→   272→
+   273→   273→# 5. FIRST TASK — REPOSITORY & ENVIRONMENT AUDIT
+   274→   274→
+   275→   275→Before writing substantial code:
+   276→   276→
+   277→   277→1. Inspect the repository.
+   278→   278→2. Identify the current framework.
+   279→   279→3. Identify frontend.
+   280→   280→4. Identify backend.
+   281→   281→5. Identify database.
+   282→   282→6. Identify authentication.
+   283→   283→7. Identify existing APIs.
+   284→   284→8. Identify deployment infrastructure.
+   285→   285→9. Identify environment variables.
+   286→   286→10. Identify existing design system.
+   287→   287→11. Identify existing components.
+   288→   288→12. Identify existing integrations.
+   289→   289→13. Identify tests.
+   290→   290→14. Identify technical debt.
+   291→   291→15. Identify unfinished features.
+   292→   292→
+   293→   293→Create:
+   294→   294→
+   295→   295→```text
+   296→   296→/docs/PROJECT_AUDIT.md
+   297→   297→/docs/ARCHITECTURE.md
+   298→   298→/docs/DECISIONS.md
+   299→   299→/docs/REQUIREMENTS.md
+   300→   300→/docs/IMPLEMENTATION_PLAN.md
+   301→   301→```
+   302→   302→
+   303→   303→Do not replace the current stack simply because another stack is personally preferred.
+   304→   304→
+   305→   305→Only change architecture when there is a clear technical/business reason.
+   306→   306→
+   307→   307→---
+   308→   308→
+   309→   309→# 6. DISCOVERY MODE
+   310→   310→
+   311→   311→Before implementing hardware-dependent functionality, determine:
+   312→   312→
+   313→   313→## GPS infrastructure
+   314→   314→
+   315→   315→* Device manufacturer
+   316→   316→* Device models
+   317→   317→* IMEI format
+   318→   318→* Communication protocol
+   319→   319→* GPS provider
+   320→   320→* Existing GPS server
+   321→   321→* Existing tracking platform
+   322→   322→* API availability
+   323→   323→* Webhook availability
+   324→   324→* Data polling requirements
+   325→   325→* SIM provider
+   326→   326→* Device commands
+   327→   327→* Supported telemetry
+   328→   328→* Fuel sensor support
+   329→   329→* Camera support
+   330→   330→* Ignition data
+   331→   331→* Battery data
+   332→   332→* Tamper data
+   333→   333→
+   334→   334→If the client already has an existing GPS backend/API:
+   335→   335→
+   336→   336→> Integrate with it.
+   337→   337→
+   338→   338→Do not unnecessarily rebuild the GPS hardware communication layer.
+   339→   339→
+   340→   340→If no backend exists:
+   341→   341→
+   342→   342→> Design and implement a scalable telemetry ingestion architecture.
+   343→   343→
+   344→   344→---
+   345→   345→
+   346→   346→# 7. MULTI-TENANT ARCHITECTURE
+   347→   347→
+   348→   348→RTR must be capable of serving multiple companies.
+   349→   349→
+   350→   350→Core hierarchy:
+   351→   351→
+   352→   352→```text
+   353→   353→RTR Platform
+   354→   354→   │
+   355→   355→   ├── Organization
+   356→   356→   │      │
+   357→   357→   │      ├── Branches
+   358→   358→   │      ├── Users
+   359→   359→   │      ├── Vehicles
+   360→   360→   │      ├── Drivers
+   361→   361→   │      ├── Devices
+   362→   362→   │      ├── Trips
+   363→   363→   │      ├── Alerts
+   364→   364→   │      ├── Reports
+   365→   365→   │      └── Billing
+   366→   366→   │
+   367→   367→   └── RTR Super Admin
+   368→   368→```
+   369→   369→
+   370→   370→A customer must NEVER be able to access another customer's data.
+   371→   371→
+   372→   372→Tenant isolation must be enforced server-side.
+   373→   373→
+   374→   374→---
+   375→   375→
+   376→   376→# 8. USER ROLES
+   377→   377→
+   378→   378→At minimum support:
+   379→   379→
+   380→   380→## Platform Roles
+   381→   381→
+   382→   382→* Super Admin
+   383→   383→* Platform Admin
+   384→   384→* Operations Manager
+   385→   385→* Sales Manager
+   386→   386→* Support Manager
+   387→   387→* Finance Manager
+   388→   388→* Technician Manager
+   389→   389→* Marketing Manager
+   390→   390→
+   391→   391→## Customer Roles
+   392→   392→
+   393→   393→* Organization Owner
+   394→   394→* Fleet Manager
+   395→   395→* Dispatcher
+   396→   396→* Supervisor
+   397→   397→* Driver
+   398→   398→* Viewer
+   399→   399→* Finance User
+   400→   400→
+   401→   401→## Technician
+   402→   402→
+   403→   403→* Technician
+   404→   404→* Technician Supervisor
+   405→   405→
+   406→   406→Permissions must be granular.
+   407→   407→
+   408→   408→Example:
+   409→   409→
+   410→   410→```text
+   411→   411→vehicles.view
+   412→   412→vehicles.create
+   413→   413→vehicles.update
+   414→   414→vehicles.delete
+   415→   415→
+   416→   416→drivers.view
+   417→   417→drivers.create
+   418→   418→drivers.update
+   419→   419→
+   420→   420→tracking.view
+   421→   421→tracking.export
+   422→   422→
+   423→   423→reports.view
+   424→   424→reports.export
+   425→   425→
+   426→   426→billing.view
+   427→   427→billing.manage
+   428→   428→
+   429→   429→users.manage
+   430→   430→roles.manage
+   431→   431→```
+   432→   432→
+   433→   433→---
+   434→   434→
+   435→   435→# 9. AUTHENTICATION
+   436→   436→
+   437→   437→Implement:
+   438→   438→
+   439→   439→* Login
+   440→   440→* Logout
+   441→   441→* Password reset
+   442→   442→* Email verification
+   443→   443→* Optional 2FA
+   444→   444→* Session management
+   445→   445→* Device/session history
+   446→   446→* Account lockout protection
+   447→   447→* Password policies
+   448→   448→* Role-based authorization
+   449→   449→
+   450→   450→Future-ready for:
+   451→   451→
+   452→   452→* Google login
+   453→   453→* Microsoft login
+   454→   454→* SSO
+   455→   455→* Enterprise SAML/OIDC
+   456→   456→
+   457→   457→---
+   458→   458→
+   459→   459→# 10. RTR PUBLIC WEBSITE
+   460→   460→
+   461→   461→Build a premium UAE-focused B2B website.
+   462→   462→
+   463→   463→## Pages
+   464→   464→
+   465→   465→```text
+   466→   466→/
+   467→   467→ /about
+   468→   468→ /solutions
+   469→   469→ /solutions/gps-tracking
+   470→   470→ /solutions/fleet-management
+   471→   471→ /solutions/driver-monitoring
+   472→   472→ /solutions/fuel-monitoring
+   473→   473→ /solutions/vehicle-security
+   474→   474→ /solutions/geofencing
+   475→   475→ /solutions/fleet-analytics
+   476→   476→ /solutions/maintenance
+   477→   477→ /solutions/dashcams
+   478→   478→ /solutions/asset-tracking
+   479→   479→ /solutions/iot
+   480→   480→
+   481→   481→ /industries
+   482→   482→ /industries/logistics
+   483→   483→ /industries/car-rental
+   484→   484→ /industries/delivery
+   485→   485→ /industries/construction
+   486→   486→ /industries/school-transport
+   487→   487→ /industries/corporate-fleet
+   488→   488→ /industries/taxi
+   489→   489→ /industries/trucks
+   490→   490→
+   491→   491→ /gps-tracking-dubai
+   492→   492→ /gps-tracking-abu-dhabi
+   493→   493→ /gps-tracking-sharjah
+   494→   494→ /fleet-management-uae
+   495→   495→ /vehicle-tracking-uae
+   496→   496→
+   497→   497→ /blog
+   498→   498→ /case-studies
+   499→   499→ /faq
+   500→   500→ /contact
+   501→   501→ /request-demo
+   502→   502→ /fleet-audit
+   503→   503→```
+   504→   504→
+   505→   505→---
+   506→   506→
+   507→   507→# 11. WEBSITE CONVERSION SYSTEM
+   508→   508→
+   509→   509→Primary CTAs:
+   510→   510→
+   511→   511→* Request Demo
+   512→   512→* Get Free Fleet Audit
+   513→   513→* Get Quote
+   514→   514→* Talk to an Expert
+   515→   515→* WhatsApp Us
+   516→   516→* Call Now
+   517→   517→
+   518→   518→Every lead form must create/update a CRM lead.
+   519→   519→
+   520→   520→Track:
+   521→   521→
+   522→   522→* Source
+   523→   523→* Campaign
+   524→   524→* Landing page
+   525→   525→* UTM
+   526→   526→* Device
+   527→   527→* Location
+   528→   528→* Form
+   529→   529→* CTA
+   530→   530→* Timestamp
+   531→   531→
+   532→   532→---
+   533→   533→
+   534→   534→# 12. CRM
+   535→   535→
+   536→   536→## Lead
+   537→   537→
+   538→   538→Fields:
+   539→   539→
+   540→   540→* Name
+   541→   541→* Company
+   542→   542→* Email
+   543→   543→* Phone
+   544→   544→* Country
+   545→   545→* Emirate
+   546→   546→* Vehicle count
+   547→   547→* Vehicle type
+   548→   548→* Requirement
+   549→   549→* Source
+   550→   550→* Campaign
+   551→   551→* Assigned salesperson
+   552→   552→* Status
+   553→   553→* Notes
+   554→   554→
+   555→   555→Pipeline:
+   556→   556→
+   557→   557→```text
+   558→   558→New
+   559→   559→→ Contacted
+   560→   560→→ Qualified
+   561→   561→→ Demo
+   562→   562→→ Quotation
+   563→   563→→ Negotiation
+   564→   564→→ Won
+   565→   565→→ Lost
+   566→   566→```
+   567→   567→
+   568→   568→---
+   569→   569→
+   570→   570→# 13. COMPANY / CUSTOMER CRM
+   571→   571→
+   572→   572→Company profile:
+   573→   573→
+   574→   574→* Legal name
+   575→   575→* Trade name
+   576→   576→* Industry
+   577→   577→* Contact details
+   578→   578→* Address
+   579→   579→* Emirate
+   580→   580→* Contacts
+   581→   581→* Fleet size
+   582→   582→* Vehicles
+   583→   583→* Drivers
+   584→   584→* Devices
+   585→   585→* Contracts
+   586→   586→* Subscription
+   587→   587→* Billing
+   588→   588→* Tickets
+   589→   589→* Documents
+   590→   590→* Activity history
+   591→   591→
+   592→   592→---
+   593→   593→
+   594→   594→# 14. QUOTATION SYSTEM
+   595→   595→
+   596→   596→Salesperson selects:
+   597→   597→
+   598→   598→* Customer
+   599→   599→* Vehicles
+   600→   600→* Device
+   601→   601→* Package
+   602→   602→* Installation
+   603→   603→* Monthly subscription
+   604→   604→* Optional modules
+   605→   605→
+   606→   606→System calculates:
+   607→   607→
+   608→   608→* Hardware
+   609→   609→* Installation
+   610→   610→* Subscription
+   611→   611→* Add-ons
+   612→   612→* Discounts
+   613→   613→* Taxes where configured
+   614→   614→* Total
+   615→   615→
+   616→   616→Generate professional PDF quotation.
+   617→   617→
+   618→   618→---
+   619→   619→
+   620→   620→# 15. PROPOSAL GENERATOR
+   621→   621→
+   622→   622→Generate branded proposals containing:
+   623→   623→
+   624→   624→* RTR introduction
+   625→   625→* Customer requirements
+   626→   626→* Recommended solution
+   627→   627→* Package
+   628→   628→* Features
+   629→   629→* Pricing
+   630→   630→* Installation
+   631→   631→* Support
+   632→   632→* SLA
+   633→   633→* Terms
+   634→   634→* CTA
+   635→   635→
+   636→   636→Do not fabricate claims.
+   637→   637→
+   638→   638→---
+   639→   639→
+   640→   640→# 16. CUSTOMER ONBOARDING
+   641→   641→
+   642→   642→Won deal:
+   643→   643→
+   644→   644→```text
+   645→   645→Won
+   646→   646→ ↓
+   647→   647→Customer Created
+   648→   648→ ↓
+   649→   649→Contract
+   650→   650→ ↓
+   651→   651→Subscription
+   652→   652→ ↓
+   653→   653→Vehicles Added
+   654→   654→ ↓
+   655→   655→Devices Assigned
+   656→   656→ ↓
+   657→   657→Installation Scheduled
+   658→   658→ ↓
+   659→   659→Installation Completed
+   660→   660→ ↓
+   661→   661→Device Activated
+   662→   662→ ↓
+   663→   663→Fleet Live
+   664→   664→```
+   665→   665→
+   666→   666→Create an onboarding checklist.
+   667→   667→
+   668→   668→---
+   669→   669→
+   670→   670→# 17. VEHICLE MANAGEMENT
+   671→   671→
+   672→   672→Vehicle fields:
+   673→   673→
+   674→   674→* Internal ID
+   675→   675→* Plate number
+   676→   676→* Make
+   677→   677→* Model
+   678→   678→* Year
+   679→   679→* Vehicle type
+   680→   680→* VIN where applicable
+   681→   681→* Organization
+   682→   682→* Branch
+   683→   683→* Driver
+   684→   684→* Device
+   685→   685→* SIM
+   686→   686→* Installation date
+   687→   687→* Warranty
+   688→   688→* Status
+   689→   689→* Notes
+   690→   690→
+   691→   691→Vehicle statuses:
+   692→   692→
+   693→   693→```text
+   694→   694→Active
+   695→   695→Inactive
+   696→   696→Moving
+   697→   697→Stopped
+   698→   698→Idle
+   699→   699→Offline
+   700→   700→Maintenance
+   701→   701→Suspended
+   702→   702→```
+   703→   703→
+   704→   704→---
+   705→   705→
+   706→   706→# 18. DRIVER MANAGEMENT
+   707→   707→
+   708→   708→Driver:
+   709→   709→
+   710→   710→* Name
+   711→   711→* Employee ID
+   712→   712→* Phone
+   713→   713→* License number
+   714→   714→* License expiry
+   715→   715→* Organization
+   716→   716→* Assigned vehicle
+   717→   717→* Status
+   718→   718→* Performance score
+   719→   719→
+   720→   720→Track:
+   721→   721→
+   722→   722→* Trips
+   723→   723→* Distance
+   724→   724→* Overspeed
+   725→   725→* Harsh braking
+   726→   726→* Harsh acceleration
+   727→   727→* Idle time
+   728→   728→* Driving hours
+   729→   729→* Violations
+   730→   730→
+   731→   731→---
+   732→   732→
+   733→   733→# 19. DEVICE / IMEI INVENTORY
+   734→   734→
+   735→   735→Device:
+   736→   736→
+   737→   737→* IMEI
+   738→   738→* Serial number
+   739→   739→* Model
+   740→   740→* Manufacturer
+   741→   741→* SIM
+   742→   742→* Phone number
+   743→   743→* Firmware
+   744→   744→* Status
+   745→   745→* Warehouse
+   746→   746→* Customer
+   747→   747→* Vehicle
+   748→   748→* Installation date
+   749→   749→* Warranty
+   750→   750→
+   751→   751→Lifecycle:
+   752→   752→
+   753→   753→```text
+   754→   754→Warehouse
+   755→   755→→ Reserved
+   756→   756→→ Assigned
+   757→   757→→ Installed
+   758→   758→→ Activated
+   759→   759→→ Active
+   760→   760→→ Suspended
+   761→   761→→ Removed
+   762→   762→→ Returned
+   763→   763→```
+   764→   764→
+   765→   765→---
+   766→   766→
+   767→   767→# 20. GPS TELEMETRY ENGINE
+   768→   768→
+   769→   769→Build an abstraction layer:
+   770→   770→
+   771→   771→```text
+   772→   772→GPS Provider
+   773→   773→      ↓
+   774→   774→Protocol Adapter
+   775→   775→      ↓
+   776→   776→Telemetry Normalizer
+   777→   777→      ↓
+   778→   778→Event Processor
+   779→   779→      ↓
+   780→   780→Time-Series / Location Storage
+   781→   781→      ↓
+   782→   782→FleetOS
+   783→   783→```
+   784→   784→
+   785→   785→Normalize data such as:
+   786→   786→
+   787→   787→* Latitude
+   788→   788→* Longitude
+   789→   789→* Timestamp
+   790→   790→* Speed
+   791→   791→* Heading
+   792→   792→* Ignition
+   793→   793→* Battery
+   794→   794→* GPS signal
+   795→   795→* Odometer
+   796→   796→* Fuel
+   797→   797→* Engine data
+   798→   798→* Driver
+   799→   799→* Alarm
+   800→   800→* Device status
+   801→   801→
+   802→   802→The exact fields depend on the actual hardware/API.
+   803→   803→
+   804→   804→---
+   805→   805→
+   806→   806→# 21. LIVE TRACKING
+   807→   807→
+   808→   808→Admin and customer dashboards must support:
+   809→   809→
+   810→   810→* Live map
+   811→   811→* Vehicle markers
+   812→   812→* Status
+   813→   813→* Speed
+   814→   814→* Heading
+   815→   815→* Last update
+   816→   816→* Current location
+   817→   817→* Driver
+   818→   818→* Ignition
+   819→   819→* Search
+   820→   820→* Filters
+   821→   821→* Vehicle grouping
+   822→   822→* Map clustering
+   823→   823→* Vehicle details drawer
+   824→   824→
+   825→   825→Map provider must be configurable.
+   826→   826→
+   827→   827→---
+   828→   828→
+   829→   829→# 22. TRIP HISTORY
+   830→   830→
+   831→   831→For each vehicle:
+   832→   832→
+   833→   833→* Start
+   834→   834→* End
+   835→   835→* Distance
+   836→   836→* Duration
+   837→   837→* Average speed
+   838→   838→* Maximum speed
+   839→   839→* Stops
+   840→   840→* Idle
+   841→   841→* Driver
+   842→   842→* Route
+   843→   843→
+   844→   844→Implement:
+   845→   845→
+   846→   846→* Date filter
+   847→   847→* Vehicle filter
+   848→   848→* Driver filter
+   849→   849→* Route playback
+   850→   850→* Export
+   851→   851→
+   852→   852→---
+   853→   853→
+   854→   854→# 23. GEOFENCING
+   855→   855→
+   856→   856→Support:
+   857→   857→
+   858→   858→* Circle
+   859→   859→* Polygon
+   860→   860→* Named zones
+   861→   861→
+   862→   862→Examples:
+   863→   863→
+   864→   864→* Warehouse
+   865→   865→* Customer site
+   866→   866→* Restricted zone
+   867→   867→* Branch
+   868→   868→* Construction site
+   869→   869→
+   870→   870→Events:
+   871→   871→
+   872→   872→```text
+   873→   873→Enter
+   874→   874→Exit
+   875→   875→Dwell
+   876→   876→Unauthorized movement
+   877→   877→```
+   878→   878→
+   879→   879→---
+   880→   880→
+   881→   881→# 24. ALERT ENGINE
+   882→   882→
+   883→   883→Alert types:
+   884→   884→
+   885→   885→* Overspeed
+   886→   886→* Geofence enter
+   887→   887→* Geofence exit
+   888→   888→* Vehicle offline
+   889→   889→* Battery low
+   890→   890→* GPS tamper
+   891→   891→* Unauthorized movement
+   892→   892→* Excessive idle
+   893→   893→* Maintenance due
+   894→   894→* Ignition event
+   895→   895→* Device disconnected
+   896→   896→
+   897→   897→Notification channels:
+   898→   898→
+   899→   899→* In-app
+   900→   900→* Push
+   901→   901→* Email
+   902→   902→* SMS
+   903→   903→* WhatsApp where integration is available
+   904→   904→
+   905→   905→Build an extensible notification engine.
+   906→   906→
+   907→   907→---
+   908→   908→
+   909→   909→# 25. DRIVER BEHAVIOUR
+   910→   910→
+   911→   911→Calculate configurable scores.
+   912→   912→
+   913→   913→Example:
+   914→   914→
+   915→   915→```text
+   916→   916→Driver Score = 82/100
+   917→   917→
+   918→   918→Overspeed: 4
+   919→   919→Harsh Braking: 2
+   920→   920→Harsh Acceleration: 3
+   921→   921→Idle: 18 minutes
+   922→   922→Trips: 14
+   923→   923→```
+   924→   924→
+   925→   925→Scoring weights must be configurable.
+   926→   926→
+   927→   927→Never hardcode business rules that the client may later want to change.
+   928→   928→
+   929→   929→---
+   930→   930→
+   931→   931→# 26. FUEL MANAGEMENT
+   932→   932→
+   933→   933→If hardware supports real fuel telemetry:
+   934→   934→
+   935→   935→* Fuel level
+   936→   936→* Consumption
+   937→   937→* Refueling
+   938→   938→* Fuel cost
+   939→   939→* Fuel efficiency
+   940→   940→* Fuel anomalies
+   941→   941→
+   942→   942→If hardware does NOT provide fuel data:
+   943→   943→
+   944→   944→Clearly label calculated/estimated metrics.
+   945→   945→
+   946→   946→Never present estimates as sensor readings.
+   947→   947→
+   948→   948→---
+   949→   949→
+   950→   950→# 27. MAINTENANCE
+   951→   951→
+   952→   952→Maintenance types:
+   953→   953→
+   954→   954→* Service
+   955→   955→* Oil
+   956→   956→* Tyres
+   957→   957→* Battery
+   958→   958→* Inspection
+   959→   959→* Registration
+   960→   960→* Insurance
+   961→   961→* Custom
+   962→   962→
+   963→   963→Triggers:
+   964→   964→
+   965→   965→* Date
+   966→   966→* Mileage
+   967→   967→* Engine hours
+   968→   968→* Custom telemetry
+   969→   969→
+   970→   970→Notifications:
+   971→   971→
+   972→   972→* Upcoming
+   973→   973→* Due
+   974→   974→* Overdue
+   975→   975→
+   976→   976→---
+   977→   977→
+   978→   978→# 28. CUSTOMER PORTAL
+   979→   979→
+   980→   980→Customer sees ONLY their organization.
+   981→   981→
+   982→   982→Modules:
+   983→   983→
+   984→   984→```text
+   985→   985→Dashboard
+   986→   986→Vehicles
+   987→   987→Live Tracking
+   988→   988→Trips
+   989→   989→Drivers
+   990→   990→Geofences
+   991→   991→Alerts
+   992→   992→Reports
+   993→   993→Maintenance
+   994→   994→Documents
+   995→   995→Billing
+   996→   996→Support
+   997→   997→Users
+   998→   998→Settings
+   999→   999→```
+  1000→  1000→
+  1001→  1001→---
+  1002→  1002→
+  1003→  1003→# 29. MOBILE APP
+  1004→  1004→
+  1005→  1005→Build architecture for:
+  1006→  1006→
+  1007→  1007→## Customer App
+  1008→  1008→
+  1009→  1009→* Login
+  1010→  1010→* Dashboard
+  1011→  1011→* Vehicles
+  1012→  1012→* Live map
+  1013→  1013→* Vehicle details
+  1014→  1014→* Trips
+  1015→  1015→* Alerts
+  1016→  1016→* Reports
+  1017→  1017→* Maintenance
+  1018→  1018→* Documents
+  1019→  1019→* Support
+  1020→  1020→* Profile
+  1021→  1021→
+  1022→  1022→## Technician App
+  1023→  1023→
+  1024→  1024→* Login
+  1025→  1025→* Today's jobs
+  1026→  1026→* Job details
+  1027→  1027→* Navigation
+  1028→  1028→* Start job
+  1029→  1029→* Device assignment
+  1030→  1030→* Installation checklist
+  1031→  1031→* GPS test
+  1032→  1032→* Photos
+  1033→  1033→* Signature
+  1034→  1034→* Complete job
+  1035→  1035→
+  1036→  1036→---
+  1037→  1037→
+  1038→  1038→# 30. INSTALLATION MANAGEMENT
+  1039→  1039→
+  1040→  1040→Workflow:
+  1041→  1041→
+  1042→  1042→```text
+  1043→  1043→Installation Request
+  1044→  1044→ ↓
+  1045→  1045→Schedule
+  1046→  1046→ ↓
+  1047→  1047→Assign Technician
+  1048→  1048→ ↓
+  1049→  1049→Technician Accepts
+  1050→  1050→ ↓
+  1051→  1051→Start Job
+  1052→  1052→ ↓
+  1053→  1053→Install Device
+  1054→  1054→ ↓
+  1055→  1055→Test
+  1056→  1056→ ↓
+  1057→  1057→Photos
+  1058→  1058→ ↓
+  1059→  1059→Customer Signature
+  1060→  1060→ ↓
+  1061→  1061→Complete
+  1062→  1062→ ↓
+  1063→  1063→Activate Device
+  1064→  1064→```
+  1065→  1065→
+  1066→  1066→Installation record must include:
+  1067→  1067→
+  1068→  1068→* Customer
+  1069→  1069→* Vehicle
+  1070→  1070→* Plate
+  1071→  1071→* Device
+  1072→  1072→* IMEI
+  1073→  1073→* Technician
+  1074→  1074→* Location
+  1075→  1075→* Date/time
+  1076→  1076→* Photos
+  1077→  1077→* Test result
+  1078→  1078→* Signature
+  1079→  1079→* Notes
+  1080→  1080→
+  1081→  1081→---
+  1082→  1082→
+  1083→  1083→# 31. INTERNAL OPERATIONS DASHBOARD
+  1084→  1084→
+  1085→  1085→Management dashboard:
+  1086→  1086→
+  1087→  1087→* Today's installations
+  1088→  1088→* Pending installations
+  1089→  1089→* Active technicians
+  1090→  1090→* Devices in inventory
+  1091→  1091→* Devices installed
+  1092→  1092→* Failed installations
+  1093→  1093→* Open support tickets
+  1094→  1094→* New leads
+  1095→  1095→* Sales pipeline
+  1096→  1096→* Revenue
+  1097→  1097→* Renewals
+  1098→  1098→* Fleet status
+  1099→  1099→
+  1100→  1100→---
+  1101→  1101→
+  1102→  1102→# 32. SUPPORT / TICKETING
+  1103→  1103→
+  1104→  1104→Customer creates:
+  1105→  1105→
+  1106→  1106→```text
+  1107→  1107→GPS Offline
+  1108→  1108→```
+  1109→  1109→
+  1110→  1110→Ticket:
+  1111→  1111→
+  1112→  1112→```text
+  1113→  1113→Ticket #RTR-10482
+  1114→  1114→
+  1115→  1115→Priority: Critical
+  1116→  1116→Vehicle: DXB-421
+  1117→  1117→Customer: ABC
+  1118→  1118→
+  1119→  1119→Status:
+  1120→  1120→Open
+  1121→  1121→→ Assigned
+  1122→  1122→→ In Progress
+  1123→  1123→→ Resolved
+  1124→  1124→→ Closed
+  1125→  1125→```
+  1126→  1126→
+  1127→  1127→Support features:
+  1128→  1128→
+  1129→  1129→* Assignment
+  1130→  1130→* Priority
+  1131→  1131→* SLA
+  1132→  1132→* Internal notes
+  1133→  1133→* Customer replies
+  1134→  1134→* Attachments
+  1135→  1135→* Audit history
+  1136→  1136→* Escalation
+  1137→  1137→
+  1138→  1138→---
+  1139→  1139→
+  1140→  1140→# 33. BILLING & SUBSCRIPTIONS
+  1141→  1141→
+  1142→  1142→Support:
+  1143→  1143→
+  1144→  1144→* Plans
+  1145→  1145→* Add-ons
+  1146→  1146→* Vehicle-based pricing
+  1147→  1147→* Monthly subscriptions
+  1148→  1148→* Annual subscriptions
+  1149→  1149→* Contracts
+  1150→  1150→* Invoices
+  1151→  1151→* Payments
+  1152→  1152→* Due dates
+  1153→  1153→* Renewals
+  1154→  1154→* Outstanding balances
+  1155→  1155→
+  1156→  1156→Lifecycle:
+  1157→  1157→
+  1158→  1158→```text
+  1159→  1159→Trial
+  1160→  1160→Active
+  1161→  1161→Past Due
+  1162→  1162→Suspended
+  1163→  1163→Cancelled
+  1164→  1164→Expired
+  1165→  1165→```
+  1166→  1166→
+  1167→  1167→Payment gateway must remain configurable and must not be hardcoded to a provider without confirmation.
+  1168→  1168→
+  1169→  1169→---
+  1170→  1170→
+  1171→  1171→# 34. REPORTING ENGINE
+  1172→  1172→
+  1173→  1173→Reports:
+  1174→  1174→
+  1175→  1175→### Fleet
+  1176→  1176→
+  1177→  1177→* Distance
+  1178→  1178→* Trips
+  1179→  1179→* Utilization
+  1180→  1180→* Idle
+  1181→  1181→* Vehicle status
+  1182→  1182→
+  1183→  1183→### Driver
+  1184→  1184→
+  1185→  1185→* Score
+  1186→  1186→* Violations
+  1187→  1187→* Speed
+  1188→  1188→* Trips
+  1189→  1189→
+  1190→  1190→### Maintenance
+  1191→  1191→
+  1192→  1192→* Upcoming
+  1193→  1193→* Due
+  1194→  1194→* Overdue
+  1195→  1195→* Cost
+  1196→  1196→
+  1197→  1197→### Fuel
+  1198→  1198→
+  1199→  1199→* Consumption
+  1200→  1200→* Efficiency
+  1201→  1201→* Anomalies
+  1202→  1202→
+  1203→  1203→### Alerts
+  1204→  1204→
+  1205→  1205→* Type
+  1206→  1206→* Frequency
+  1207→  1207→* Vehicle
+  1208→  1208→* Driver
+  1209→  1209→* Resolution
+  1210→  1210→
+  1211→  1211→Exports:
+  1212→  1212→
+  1213→  1213→* PDF
+  1214→  1214→* CSV
+  1215→  1215→* Excel where required
+  1216→  1216→
+  1217→  1217→---
+  1218→  1218→
+  1219→  1219→# 35. EXECUTIVE DASHBOARD
+  1220→  1220→
+  1221→  1221→CEO/Owner dashboard should answer:
+  1222→  1222→
+  1223→  1223→* How many vehicles?
+  1224→  1224→* How many active?
+  1225→  1225→* How many offline?
+  1226→  1226→* Total distance?
+  1227→  1227→* Fleet utilization?
+  1228→  1228→* Driver performance?
+  1229→  1229→* Fuel performance?
+  1230→  1230→* Maintenance risk?
+  1231→  1231→* Open issues?
+  1232→  1232→* Revenue?
+  1233→  1233→* Renewals?
+  1234→  1234→
+  1235→  1235→Use visual KPI cards and charts.
+  1236→  1236→
+  1237→  1237→---
+  1238→  1238→
+  1239→  1239→# 36. AI — POWERED BY MIANX.AI
+  1240→  1240→
+  1241→  1241→AI must be an intelligence layer over real RTR data.
+  1242→  1242→
+  1243→  1243→Do NOT build a generic chatbot and call it AI Fleet Intelligence.
+  1244→  1244→
+  1245→  1245→---
+  1246→  1246→
+  1247→  1247→## AI Fleet Assistant
+  1248→  1248→
+  1249→  1249→Example questions:
+  1250→  1250→
+  1251→  1251→> Which vehicles travelled the most this month?
+  1252→  1252→
+  1253→  1253→> Which vehicles were idle the most?
+  1254→  1254→
+  1255→  1255→> Which drivers have the highest risk?
+  1256→  1256→
+  1257→  1257→> Which vehicles are approaching maintenance?
+  1258→  1258→
+  1259→  1259→> Which vehicles have abnormal fuel consumption?
+  1260→  1260→
+  1261→  1261→> What changed compared with last month?
+  1262→  1262→
+  1263→  1263→AI must:
+  1264→  1264→
+  1265→  1265→1. Understand the question.
+  1266→  1266→2. Determine required data.
+  1267→  1267→3. Query authorized data.
+  1268→  1268→4. Analyze it.
+  1269→  1269→5. Explain the answer.
+  1270→  1270→6. Cite the underlying fleet metrics where possible.
+  1271→  1271→7. Never expose another tenant's information.
+  1272→  1272→
+  1273→  1273→---
+  1274→  1274→
+  1275→  1275→# 37. AI DRIVER RISK
+  1276→  1276→
+  1277→  1277→Analyze:
+  1278→  1278→
+  1279→  1279→* Overspeed
+  1280→  1280→* Harsh braking
+  1281→  1281→* Harsh acceleration
+  1282→  1282→* Idle
+  1283→  1283→* Trip patterns
+  1284→  1284→* Repeated violations
+  1285→  1285→
+  1286→  1286→Output:
+  1287→  1287→
+  1288→  1288→```text
+  1289→  1289→Risk Level
+  1290→  1290→Low / Medium / High
+  1291→  1291→```
+  1292→  1292→
+  1293→  1293→Explain WHY.
+  1294→  1294→
+  1295→  1295→Never make unsupported claims.
+  1296→  1296→
+  1297→  1297→---
+  1298→  1298→
+  1299→  1299→# 38. AI PREDICTIVE MAINTENANCE
+  1300→  1300→
+  1301→  1301→Where enough historical data exists:
+  1302→  1302→
+  1303→  1303→* Mileage
+  1304→  1304→* Engine hours
+  1305→  1305→* Maintenance history
+  1306→  1306→* Vehicle age
+  1307→  1307→* Fault events
+  1308→  1308→* Usage patterns
+  1309→  1309→
+  1310→  1310→Predict:
+  1311→  1311→
+  1312→  1312→> Vehicles that may require maintenance soon.
+  1313→  1313→
+  1314→  1314→If insufficient historical data exists:
+  1315→  1315→
+  1316→  1316→Display:
+  1317→  1317→
+  1318→  1318→> Insufficient historical data for predictive maintenance.
+  1319→  1319→
+  1320→  1320→Do not fabricate predictions.
+  1321→  1321→
+  1322→  1322→---
+  1323→  1323→
+  1324→  1324→# 39. AI FUEL ANOMALY DETECTION
+  1325→  1325→
+  1326→  1326→Detect:
+  1327→  1327→
+  1328→  1328→* Unexpected consumption
+  1329→  1329→* Sudden drops
+  1330→  1330→* Unusual refueling
+  1331→  1331→* Vehicle-specific anomalies
+  1332→  1332→* Driver-specific patterns
+  1333→  1333→
+  1334→  1334→Always distinguish:
+  1335→  1335→
+  1336→  1336→```text
+  1337→  1337→Sensor Data
+  1338→  1338→Calculated Metric
+  1339→  1339→AI Inference
+  1340→  1340→```
+  1341→  1341→
+  1342→  1342→---
+  1343→  1343→
+  1344→  1344→# 40. AI EXECUTIVE REPORTS
+  1345→  1345→
+  1346→  1346→Generate natural-language reports:
+  1347→  1347→
+  1348→  1348→```text
+  1349→  1349→Fleet performance improved by X%.
+  1350→  1350→
+  1351→  1351→Main drivers:
+  1352→  1352→1. Reduced idle time
+  1353→  1353→2. Improved route utilization
+  1354→  1354→3. Lower abnormal fuel usage
+  1355→  1355→```
+  1356→  1356→
+  1357→  1357→Every numeric statement must come from actual data.
+  1358→  1358→
+  1359→  1359→---
+  1360→  1360→
+  1361→  1361→# 41. AI SALES ASSISTANT
+  1362→  1362→
+  1363→  1363→Website AI can qualify prospects.
+  1364→  1364→
+  1365→  1365→Example:
+  1366→  1366→
+  1367→  1367→```text
+  1368→  1368→How many vehicles do you have?
+  1369→  1369→
+  1370→  1370→What type?
+  1371→  1371→
+  1372→  1372→Which emirate?
+  1373→  1373→
+  1374→  1374→Do you already use GPS?
+  1375→  1375→
+  1376→  1376→What are you trying to improve?
+  1377→  1377→
+  1378→  1378→Tracking
+  1379→  1379→Security
+  1380→  1380→Fuel
+  1381→  1381→Driver behaviour
+  1382→  1382→Fleet management
+  1383→  1383→```
+  1384→  1384→
+  1385→  1385→Then:
+  1386→  1386→
+  1387→  1387→* Create lead
+  1388→  1388→* Assign source
+  1389→  1389→* Save conversation
+  1390→  1390→* Recommend relevant solution
+  1391→  1391→* Offer demo
+  1392→  1392→* Offer WhatsApp
+  1393→  1393→* Offer callback
+  1394→  1394→
+  1395→  1395→AI must never promise pricing unless pricing is configured.
+  1396→  1396→
+  1397→  1397→---
+  1398→  1398→
+  1399→  1399→# 42. AI SUPPORT ASSISTANT
+  1400→  1400→
+  1401→  1401→Customer:
+  1402→  1402→
+  1403→  1403→> Vehicle is offline.
+  1404→  1404→
+  1405→  1405→AI can:
+  1406→  1406→
+  1407→  1407→1. Identify vehicle.
+  1408→  1408→2. Check last telemetry.
+  1409→  1409→3. Check device status.
+  1410→  1410→4. Check recent alerts.
+  1411→  1411→5. Suggest troubleshooting.
+  1412→  1412→6. Create ticket if needed.
+  1413→  1413→7. Escalate critical issues.
+  1414→  1414→
+  1415→  1415→AI must not claim that hardware is physically repaired unless a technician confirms it.
+  1416→  1416→
+  1417→  1417→---
+  1418→  1418→
+  1419→  1419→# 43. AI SECURITY RULE
+  1420→  1420→
+  1421→  1421→Every AI request must inherit the authenticated user's permissions.
+  1422→  1422→
+  1423→  1423→AI must NEVER bypass:
+  1424→  1424→
+  1425→  1425→* Tenant isolation
+  1426→  1426→* Role permissions
+  1427→  1427→* Data access rules
+  1428→  1428→* Financial restrictions
+  1429→  1429→* Private notes
+  1430→  1430→* Internal-only information
+  1431→  1431→
+  1432→  1432→---
+  1433→  1433→
+  1434→  1434→# 44. NOTIFICATION CENTER
+  1435→  1435→
+  1436→  1436→Central notification system:
+  1437→  1437→
+  1438→  1438→```text
+  1439→  1439→Notifications
+  1440→  1440→Messages
+  1441→  1441→Alerts
+  1442→  1442→Tasks
+  1443→  1443→Tickets
+  1444→  1444→Billing
+  1445→  1445→Maintenance
+  1446→  1446→System Events
+  1447→  1447→```
+  1448→  1448→
+  1449→  1449→Support read/unread.
+  1450→  1450→
+  1451→  1451→---
+  1452→  1452→
+  1453→  1453→# 45. AUDIT LOG
+  1454→  1454→
+  1455→  1455→Record important events:
+  1456→  1456→
+  1457→  1457→* Login
+  1458→  1458→* Logout
+  1459→  1459→* User creation
+  1460→  1460→* Role change
+  1461→  1461→* Vehicle changes
+  1462→  1462→* Device assignment
+  1463→  1463→* Installation
+  1464→  1464→* Subscription changes
+  1465→  1465→* Invoice actions
+  1466→  1466→* Alert configuration
+  1467→  1467→* Data exports
+  1468→  1468→* Admin actions
+  1469→  1469→
+  1470→  1470→Audit records should contain:
+  1471→  1471→
+  1472→  1472→* User
+  1473→  1473→* Action
+  1474→  1474→* Entity
+  1475→  1475→* Entity ID
+  1476→  1476→* Timestamp
+  1477→  1477→* IP where appropriate
+  1478→  1478→* Metadata
+  1479→  1479→
+  1480→  1480→---
+  1481→  1481→
+  1482→  1482→# 46. DOCUMENT MANAGEMENT
+  1483→  1483→
+  1484→  1484→Support documents:
+  1485→  1485→
+  1486→  1486→* Contracts
+  1487→  1487→* Quotations
+  1488→  1488→* Invoices
+  1489→  1489→* Vehicle documents
+  1490→  1490→* Driver documents
+  1491→  1491→* Installation documents
+  1492→  1492→* Certificates
+  1493→  1493→* Support attachments
+  1494→  1494→
+  1495→  1495→Implement secure access control.
+  1496→  1496→
+  1497→  1497→---
+  1498→  1498→
+  1499→  1499→# 47. SEARCH
+  1500→  1500→
+  1501→  1501→Global search should eventually support:
+  1502→  1502→
+  1503→  1503→* Customer
+  1504→  1504→* Vehicle
+  1505→  1505→* Plate
+  1506→  1506→* Driver
+  1507→  1507→* Device
+  1508→  1508→* IMEI
+  1509→  1509→* Ticket
+  1510→  1510→* Invoice
+  1511→  1511→* Contract
+  1512→  1512→
+  1513→  1513→Use appropriate indexing.
+  1514→  1514→
+  1515→  1515→---
+  1516→  1516→
+  1517→  1517→# 48. DASHBOARD UX
+  1518→  1518→
+  1519→  1519→The UI must be:
+  1520→  1520→
+  1521→  1521→* Modern
+  1522→  1522→* Professional
+  1523→  1523→* Fast
+  1524→  1524→* Responsive
+  1525→  1525→* Mobile-friendly
+  1526→  1526→* RTL-ready for Arabic
+  1527→  1527→* English-first if required by current content
+  1528→  1528→* Accessible
+  1529→  1529→* Consistent
+  1530→  1530→
+  1531→  1531→The design should communicate:
+  1532→  1532→
+  1533→  1533→**Security + Technology + Trust + Fleet Intelligence**
+  1534→  1534→
+  1535→  1535→Avoid generic template-looking dashboards.
+  1536→  1536→
+  1537→  1537→---
+  1538→  1538→
+  1539→  1539→# 49. UAE / ARABIC READINESS
+  1540→  1540→
+  1541→  1541→Architecture must support:
+  1542→  1542→
+  1543→  1543→* English
+  1544→  1544→* Arabic
+  1545→  1545→* RTL
+  1546→  1546→* AED
+  1547→  1547→* UAE phone formatting
+  1548→  1548→* UAE emirates
+  1549→  1549→* Configurable tax settings
+  1550→  1550→* Local date/time
+  1551→  1551→* Configurable compliance information
+  1552→  1552→
+  1553→  1553→Do not hardcode legal/compliance claims.
+  1554→  1554→
+  1555→  1555→---
+  1556→  1556→
+  1557→  1557→# 50. SEO ARCHITECTURE
+  1558→  1558→
+  1559→  1559→Implement:
+  1560→  1560→
+  1561→  1561→* SEO metadata
+  1562→  1562→* OpenGraph
+  1563→  1563→* Schema markup
+  1564→  1564→* Sitemap
+  1565→  1565→* Robots
+  1566→  1566→* Canonicals
+  1567→  1567→* Internal linking
+  1568→  1568→* Location pages
+  1569→  1569→* Industry pages
+  1570→  1570→* Service pages
+  1571→  1571→* Blog
+  1572→  1572→* FAQ schema where appropriate
+  1573→  1573→
+  1574→  1574→Avoid duplicate thin pages.
+  1575→  1575→
+  1576→  1576→---
+  1577→  1577→
+  1578→  1578→# 51. ANALYTICS
+  1579→  1579→
+  1580→  1580→Track:
+  1581→  1581→
+  1582→  1582→* Page views
+  1583→  1583→* CTA clicks
+  1584→  1584→* Form submissions
+  1585→  1585→* WhatsApp clicks
+  1586→  1586→* Calls
+  1587→  1587→* Demo requests
+  1588→  1588→* Fleet audit submissions
+  1589→  1589→* Campaign attribution
+  1590→  1590→* Conversion rate
+  1591→  1591→* Lead source
+  1592→  1592→
+  1593→  1593→Admin dashboard should show marketing performance.
+  1594→  1594→
+  1595→  1595→---
+  1596→  1596→
+  1597→  1597→# 52. GOOGLE / ADS READINESS
+  1598→  1598→
+  1599→  1599→Architecture should support:
+  1600→  1600→
+  1601→  1601→* Google Analytics
+  1602→  1602→* Google Tag Manager
+  1603→  1603→* Google Search Console
+  1604→  1604→* Google Ads conversion tracking
+  1605→  1605→* Meta Pixel where required
+  1606→  1606→
+  1607→  1607→Credentials must come from environment/configuration.
+  1608→  1608→
+  1609→  1609→---
+  1610→  1610→
+  1611→  1611→# 53. WHATSAPP INTEGRATION
+  1612→  1612→
+  1613→  1613→Build an abstraction so provider can be changed.
+  1614→  1614→
+  1615→  1615→Support:
+  1616→  1616→
+  1617→  1617→* Incoming messages
+  1618→  1618→* Outgoing messages
+  1619→  1619→* Templates
+  1620→  1620→* Lead qualification
+  1621→  1621→* Notifications
+  1622→  1622→* Ticket updates
+  1623→  1623→* Renewal reminders
+  1624→  1624→* Review requests
+  1625→  1625→
+  1626→  1626→Never hardcode provider credentials.
+  1627→  1627→
+  1628→  1628→---
+  1629→  1629→
+  1630→  1630→# 54. EMAIL SYSTEM
+  1631→  1631→
+  1632→  1632→Transactional email:
+  1633→  1633→
+  1634→  1634→* Welcome
+  1635→  1635→* Password reset
+  1636→  1636→* Quote
+  1637→  1637→* Invoice
+  1638→  1638→* Payment
+  1639→  1639→* Renewal
+  1640→  1640→* Maintenance
+  1641→  1641→* Ticket
+  1642→  1642→* Installation
+  1643→  1643→* Alerts
+  1644→  1644→
+  1645→  1645→Use templates.
+  1646→  1646→
+  1647→  1647→---
+  1648→  1648→
+  1649→  1649→# 55. BACKGROUND JOBS
+  1650→  1650→
+  1651→  1651→Long-running tasks must not block HTTP requests.
+  1652→  1652→
+  1653→  1653→Use queues/jobs for:
+  1654→  1654→
+  1655→  1655→* Reports
+  1656→  1656→* Notifications
+  1657→  1657→* PDF generation
+  1658→  1658→* AI processing
+  1659→  1659→* GPS ingestion
+  1660→  1660→* Data aggregation
+  1661→  1661→* Analytics
+  1662→  1662→* Scheduled reminders
+  1663→  1663→* Billing reminders
+  1664→  1664→
+  1665→  1665→---
+  1666→  1666→
+  1667→  1667→# 56. OBSERVABILITY
+  1668→  1668→
+  1669→  1669→Implement:
+  1670→  1670→
+  1671→  1671→* Application logs
+  1672→  1672→* Error tracking
+  1673→  1673→* API monitoring
+  1674→  1674→* Health checks
+  1675→  1675→* Database monitoring
+  1676→  1676→* Job monitoring
+  1677→  1677→* GPS ingestion monitoring
+  1678→  1678→* AI request monitoring
+  1679→  1679→
+  1680→  1680→Create:
+  1681→  1681→
+  1682→  1682→```text
+  1683→  1683→/health
+  1684→  1684→/ready
+  1685→  1685→```
+  1686→  1686→
+  1687→  1687→or equivalent health endpoints.
+  1688→  1688→
+  1689→  1689→---
+  1690→  1690→
+  1691→  1691→# 57. DATABASE REQUIREMENTS
+  1692→  1692→
+  1693→  1693→Design normalized relational data where appropriate.
+  1694→  1694→
+  1695→  1695→Core entities should include at minimum:
+  1696→  1696→
+  1697→  1697→```text
+  1698→  1698→organizations
+  1699→  1699→branches
+  1700→  1700→users
+  1701→  1701→roles
+  1702→  1702→permissions
+  1703→  1703→contacts
+  1704→  1704→leads
+  1705→  1705→opportunities
+  1706→  1706→activities
+  1707→  1707→vehicles
+  1708→  1708→drivers
+  1709→  1709→devices
+  1710→  1710→sims
+  1711→  1711→installations
+  1712→  1712→technicians
+  1713→  1713→jobs
+  1714→  1714→telemetry
+  1715→  1715→trips
+  1716→  1716→geofences
+  1717→  1717→alerts
+  1718→  1718→alert_rules
+  1719→  1719→maintenance
+  1720→  1720→fuel
+  1721→  1721→reports
+  1722→  1722→tickets
+  1723→  1723→contracts
+  1724→  1724→subscriptions
+  1725→  1725→plans
+  1726→  1726→invoices
+  1727→  1727→payments
+  1728→  1728→documents
+  1729→  1729→notifications
+  1730→  1730→audit_logs
+  1731→  1731→ai_conversations
+  1732→  1732→ai_actions
+  1733→  1733→```
+  1734→  1734→
+  1735→  1735→Do not create unnecessary tables without a reason.
+  1736→  1736→
+  1737→  1737→Document relationships.
+  1738→  1738→
+  1739→  1739→---
+  1740→  1740→
+  1741→  1741→# 58. API DESIGN
+  1742→  1742→
+  1743→  1743→Document all APIs.
+  1744→  1744→
+  1745→  1745→Use:
+  1746→  1746→
+  1747→  1747→* Consistent naming
+  1748→  1748→* Validation
+  1749→  1749→* Pagination
+  1750→  1750→* Filtering
+  1751→  1751→* Sorting
+  1752→  1752→* Authentication
+  1753→  1753→* Authorization
+  1754→  1754→* Error format
+  1755→  1755→* Rate limits
+  1756→  1756→* Versioning where appropriate
+  1757→  1757→
+  1758→  1758→Generate API documentation.
+  1759→  1759→
+  1760→  1760→---
+  1761→  1761→
+  1762→  1762→# 59. ERROR HANDLING
+  1763→  1763→
+  1764→  1764→Every user-facing error must be understandable.
+  1765→  1765→
+  1766→  1766→Never expose:
+  1767→  1767→
+  1768→  1768→* Stack traces
+  1769→  1769→* Database errors
+  1770→  1770→* Secrets
+  1771→  1771→* Internal infrastructure
+  1772→  1772→* Sensitive API responses
+  1773→  1773→
+  1774→  1774→Log technical detail server-side.
+  1775→  1775→
+  1776→  1776→---
+  1777→  1777→
+  1778→  1778→# 60. TESTING
+  1779→  1779→
+  1780→  1780→Implement:
+  1781→  1781→
+  1782→  1782→## Unit tests
+  1783→  1783→
+  1784→  1784→* Business logic
+  1785→  1785→* Calculations
+  1786→  1786→* Permissions
+  1787→  1787→* Scoring
+  1788→  1788→* Billing
+  1789→  1789→
+  1790→  1790→## Integration tests
+  1791→  1791→
+  1792→  1792→* API
+  1793→  1793→* Database
+  1794→  1794→* GPS ingestion
+  1795→  1795→* Notifications
+  1796→  1796→* CRM
+  1797→  1797→* Billing
+  1798→  1798→
+  1799→  1799→## E2E tests
+  1800→  1800→
+  1801→  1801→At minimum:
+  1802→  1802→
+  1803→  1803→```text
+  1804→  1804→Lead
+  1805→  1805→→ CRM
+  1806→  1806→→ Quote
+  1807→  1807→→ Won
+  1808→  1808→→ Customer
+  1809→  1809→→ Vehicle
+  1810→  1810→→ Device
+  1811→  1811→→ Installation
+  1812→  1812→→ Activation
+  1813→  1813→→ Tracking
+  1814→  1814→→ Alert
+  1815→  1815→→ Report
+  1816→  1816→→ Billing
+  1817→  1817→→ Support
+  1818→  1818→```
+  1819→  1819→
+  1820→  1820→---
+  1821→  1821→
+  1822→  1822→# 61. SECURITY TESTING
+  1823→  1823→
+  1824→  1824→Test:
+  1825→  1825→
+  1826→  1826→* Unauthorized access
+  1827→  1827→* Tenant isolation
+  1828→  1828→* Role bypass
+  1829→  1829→* API abuse
+  1830→  1830→* Invalid tokens
+  1831→  1831→* File upload attacks
+  1832→  1832→* Injection
+  1833→  1833→* XSS
+  1834→  1834→* CSRF where applicable
+  1835→  1835→* Rate limiting
+  1836→  1836→* Sensitive data exposure
+  1837→  1837→
+  1838→  1838→---
+  1839→  1839→
+  1840→  1840→# 62. PERFORMANCE
+  1841→  1841→
+  1842→  1842→Design for growth.
+  1843→  1843→
+  1844→  1844→Do not assume:
+  1845→  1845→
+  1846→  1846→```text
+  1847→  1847→100 vehicles
+  1848→  1848→```
+  1849→  1849→
+  1850→  1850→Design so architecture can eventually handle:
+  1851→  1851→
+  1852→  1852→```text
+  1853→  1853→1,000
+  1854→  1854→10,000
+  1855→  1855→100,000+
+  1856→  1856→```
+  1857→  1857→
+  1858→  1858→vehicles and high-frequency telemetry, subject to infrastructure scaling.
+  1859→  1859→
+  1860→  1860→Use:
+  1861→  1861→
+  1862→  1862→* Proper indexes
+  1863→  1863→* Caching
+  1864→  1864→* Queue workers
+  1865→  1865→* Time-series strategy where appropriate
+  1866→  1866→* Aggregated reporting
+  1867→  1867→* Pagination
+  1868→  1868→* Lazy loading
+  1869→  1869→* Map clustering
+  1870→  1870→
+  1871→  1871→---
+  1872→  1872→
+  1873→  1873→# 63. DATA RETENTION
+  1874→  1874→
+  1875→  1875→Make retention configurable.
+  1876→  1876→
+  1877→  1877→Examples:
+  1878→  1878→
+  1879→  1879→* Raw telemetry
+  1880→  1880→* Aggregated telemetry
+  1881→  1881→* Audit logs
+  1882→  1882→* Tickets
+  1883→  1883→* AI conversations
+  1884→  1884→
+  1885→  1885→Do not delete production data automatically without an explicit retention policy.
+  1886→  1886→
+  1887→  1887→---
+  1888→  1888→
+  1889→  1889→# 64. BACKUP & RECOVERY
+  1890→  1890→
+  1891→  1891→Implement/document:
+  1892→  1892→
+  1893→  1893→* Database backups
+  1894→  1894→* Backup retention
+  1895→  1895→* Restore procedure
+  1896→  1896→* Disaster recovery
+  1897→  1897→* Environment recovery
+  1898→  1898→* Secrets recovery
+  1899→  1899→
+  1900→  1900→Test restore procedures.
+  1901→  1901→
+  1902→  1902→---
+  1903→  1903→
+  1904→  1904→# 65. DEV / STAGING / PRODUCTION
+  1905→  1905→
+  1906→  1906→Maintain clear environments:
+  1907→  1907→
+  1908→  1908→```text
+  1909→  1909→Development
+  1910→  1910→Staging
+  1911→  1911→Production
+  1912→  1912→```
+  1913→  1913→
+  1914→  1914→Never point development to production data.
+  1915→  1915→
+  1916→  1916→---
+  1917→  1917→
+  1918→  1918→# 66. ENVIRONMENT VARIABLES
+  1919→  1919→
+  1920→  1920→All secrets must use environment variables/configuration.
+  1921→  1921→
+  1922→  1922→Examples:
+  1923→  1923→
+  1924→  1924→```text
+  1925→  1925→DATABASE_URL
+  1926→  1926→AUTH_SECRET
+  1927→  1927→GPS_API_URL
+  1928→  1928→GPS_API_KEY
+  1929→  1929→MAP_API_KEY
+  1930→  1930→EMAIL_API_KEY
+  1931→  1931→WHATSAPP_API_KEY
+  1932→  1932→PAYMENT_API_KEY
+  1933→  1933→MIANX_API_KEY
+  1934→  1934→STORAGE credentials
+  1935→  1935→```
+  1936→  1936→
+  1937→  1937→Never commit secrets.
+  1938→  1938→
+  1939→  1939→Provide:
+  1940→  1940→
+  1941→  1941→```text
+  1942→  1942→.env.example
+  1943→  1943→```
+  1944→  1944→
+  1945→  1945→with safe placeholders.
+  1946→  1946→
+  1947→  1947→---
+  1948→  1948→
+  1949→  1949→# 67. CI/CD
+  1950→  1950→
+  1951→  1951→Set up:
+  1952→  1952→
+  1953→  1953→* Lint
+  1954→  1954→* Type checks
+  1955→  1955→* Unit tests
+  1956→  1956→* Integration tests
+  1957→  1957→* Build
+  1958→  1958→* Security checks
+  1959→  1959→* Deployment
+  1960→  1960→
+  1961→  1961→Do not deploy broken builds.
+  1962→  1962→
+  1963→  1963→---
+  1964→  1964→
+  1965→  1965→# 68. ADMIN SETTINGS
+  1966→  1966→
+  1967→  1967→Create configurable settings for:
+  1968→  1968→
+  1969→  1969→* Company
+  1970→  1970→* Branding
+  1971→  1971→* Logo
+  1972→  1972→* Contact information
+  1973→  1973→* Currency
+  1974→  1974→* Tax
+  1975→  1975→* Timezone
+  1976→  1976→* Notifications
+  1977→  1977→* Alert rules
+  1978→  1978→* Maintenance rules
+  1979→  1979→* Driver scoring
+  1980→  1980→* Subscription plans
+  1981→  1981→* Pricing
+  1982→  1982→* AI settings
+  1983→  1983→* Integrations
+  1984→  1984→* Email
+  1985→  1985→* WhatsApp
+  1986→  1986→* Maps
+  1987→  1987→* GPS providers
+  1988→  1988→
+  1989→  1989→---
+  1990→  1990→
+  1991→  1991→# 69. FEATURE FLAGS
+  1992→  1992→
+  1993→  1993→Use feature flags for modules that may be released later:
+  1994→  1994→
+  1995→  1995→```text
+  1996→  1996→fuel
+  1997→  1997→dashcam
+  1998→  1998→ai
+  1999→  1999→billing
+  2000→  2000→mobile
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]
