@@ -20,6 +20,7 @@ async function main() {
   await db.installation.deleteMany();
   await db.notification.deleteMany();
   await db.document.deleteMany();
+  await db.quotation.deleteMany();
   await db.invoice.deleteMany();
   await db.subscription.deleteMany();
   await db.activity.deleteMany();
@@ -80,6 +81,23 @@ async function main() {
     },
   });
   console.log(`  ✅ Al Fahim Logistics (${customerOrg.id})`);
+
+  // Phase 2: Additional customer orgs for pipeline demo
+  const megaOrg = await db.organization.create({
+    data: {
+      name: 'Mega Logistics FZCO',
+      tradeName: 'Mega Logistics',
+      legalName: 'Mega Logistics FZCO',
+      industry: 'Logistics & Transportation',
+      email: 'info@megalogistics.ae',
+      phone: '+971-4-888-9900',
+      emirate: 'Dubai',
+      address: 'JAFZA South, Building 45',
+      city: 'Dubai',
+      status: 'active',
+    },
+  });
+  console.log(`  ✅ Mega Logistics FZCO (${megaOrg.id})`);
 
   // ========================================
   // 2. USERS
@@ -779,15 +797,214 @@ async function main() {
   ]);
   console.log(`  ✅ Created 2 geofences`);
 
+  // ========================================
+  // 14. CONTACTS (Phase 2)
+  // ========================================
+  console.log('\n👤 Creating contacts...');
+
+  await Promise.all([
+    db.contact.create({
+      data: {
+        name: 'Omar Al Ketbi',
+        email: 'omar@emiratescargo.ae',
+        phone: '+971-50-600-1122',
+        position: 'Fleet Manager',
+        organizationId: rtrOrg.id,
+      },
+    }),
+    db.contact.create({
+      data: {
+        name: 'Hamad Al Nahyan',
+        email: 'hamad@abudhabilogistics.ae',
+        phone: '+971-50-800-3344',
+        position: 'Operations Director',
+        organizationId: rtrOrg.id,
+      },
+    }),
+    db.contact.create({
+      data: {
+        name: 'Rashed Al Ameri',
+        email: 'rashed@megalogistics.ae',
+        phone: '+971-50-666-0011',
+        position: 'CEO',
+        organizationId: rtrOrg.id,
+      },
+    }),
+    db.contact.create({
+      data: {
+        name: 'Khalid Al Fahim',
+        email: 'khalid@alfahim.ae',
+        phone: '+971-50-333-4455',
+        position: 'Managing Director',
+        organizationId: customerOrg.id,
+      },
+    }),
+  ]);
+  console.log(`  ✅ Created 4 contacts`);
+
+  // ========================================
+  // 15. ACTIVITIES (Phase 2)
+  // ========================================
+  console.log('\n📝 Creating activities...');
+
+  await Promise.all([
+    db.activity.create({
+      data: {
+        type: 'call',
+        title: 'Initial discovery call',
+        description: 'Discussed fleet size and requirements. Very interested in premium plan.',
+        leadId: leads[0].id,
+        userId: salesManager.id,
+      },
+    }),
+    db.activity.create({
+      data: {
+        type: 'email',
+        title: 'Sent proposal via email',
+        description: 'Sent detailed proposal with pricing for 25 GPS devices + premium plan.',
+        leadId: leads[0].id,
+        userId: salesManager.id,
+      },
+    }),
+    db.activity.create({
+      data: {
+        type: 'whatsapp',
+        title: 'Follow-up on WhatsApp',
+        description: 'Sent product brochure and demo video link.',
+        leadId: leads[1].id,
+        userId: salesManager.id,
+      },
+    }),
+    db.activity.create({
+      data: {
+        type: 'meeting',
+        title: 'On-site meeting at KIZAD',
+        description: 'Met with operations team. Demoed live tracking dashboard. Very positive response.',
+        leadId: leads[2].id,
+        userId: salesManager.id,
+      },
+    }),
+    db.activity.create({
+      data: {
+        type: 'note',
+        title: 'Contract signed!',
+        description: '100-vehicle enterprise deal closed. Installation starts next week.',
+        leadId: leads[9].id,
+        userId: salesManager.id,
+      },
+    }),
+    db.activity.create({
+      data: {
+        type: 'call',
+        title: 'Requirement gathering call',
+        description: 'Discussed temperature monitoring needs for refrigerated vans.',
+        leadId: leads[1].id,
+        userId: salesManager.id,
+      },
+    }),
+  ]);
+  console.log(`  ✅ Created 6 activities`);
+
+  // ========================================
+  // 16. QUOTATIONS (Phase 2)
+  // ========================================
+  console.log('\n💰 Creating quotations...');
+
+  const q1Items = JSON.stringify([
+    { description: 'GPS Tracking Device (GT06N)', quantity: 25, unitPrice: 150 },
+    { description: 'SIM Card (Annual Plan)', quantity: 25, unitPrice: 120 },
+    { description: 'Professional Installation', quantity: 25, unitPrice: 100 },
+    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 1250 },
+  ]);
+  const q1Subtotal = 25 * 150 + 25 * 120 + 25 * 100 + 12 * 1250;
+  const q1Tax = Math.round(q1Subtotal * 5 / 100 * 100) / 100;
+
+  await db.quotation.create({
+    data: {
+      quotationNumber: 'RTR-Q-2408-0001',
+      leadId: leads[0].id,
+      organizationId: rtrOrg.id,
+      items: q1Items,
+      subtotal: q1Subtotal,
+      taxRate: 5,
+      tax: q1Tax,
+      total: q1Subtotal + q1Tax,
+      status: 'sent',
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      notes: 'Volume discount applied for 25+ devices. Includes free training session.',
+      terms: 'This quotation is valid for 30 days. Payment terms: 50% advance, 50% upon installation. All prices in AED.',
+    },
+  });
+
+  const q2Items = JSON.stringify([
+    { description: 'GPS Tracking Device (FM1200)', quantity: 100, unitPrice: 180 },
+    { description: 'SIM Card (Annual Plan)', quantity: 100, unitPrice: 100 },
+    { description: 'Professional Installation', quantity: 100, unitPrice: 80 },
+    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 5000 },
+    { description: 'Custom API Integration', quantity: 1, unitPrice: 15000 },
+    { description: 'Dedicated Account Manager', quantity: 12, unitPrice: 2000 },
+  ]);
+  const q2Subtotal = 100 * 180 + 100 * 100 + 100 * 80 + 12 * 5000 + 15000 + 12 * 2000;
+  const q2Tax = Math.round(q2Subtotal * 5 / 100 * 100) / 100;
+
+  await db.quotation.create({
+    data: {
+      quotationNumber: 'RTR-Q-2407-0002',
+      leadId: leads[9].id,
+      organizationId: rtrOrg.id,
+      items: q2Items,
+      subtotal: q2Subtotal,
+      taxRate: 5,
+      tax: q2Tax,
+      total: q2Subtotal + q2Tax,
+      status: 'accepted',
+      validUntil: new Date('2024-08-15'),
+      notes: 'Enterprise SLA with 99.9% uptime guarantee. Dedicated support channel included.',
+      terms: 'This quotation is valid for 30 days. Payment terms: 30% advance, 40% at half-installation, 30% upon completion. All prices in AED.',
+    },
+  });
+
+  const q3Items = JSON.stringify([
+    { description: 'GPS Tracking Device (GT06N)', quantity: 10, unitPrice: 150 },
+    { description: 'Temperature Sensor', quantity: 10, unitPrice: 75 },
+    { description: 'SIM Card (Annual Plan)', quantity: 10, unitPrice: 120 },
+    { description: 'Professional Installation', quantity: 10, unitPrice: 100 },
+    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 500 },
+  ]);
+  const q3Subtotal = 10 * 150 + 10 * 75 + 10 * 120 + 10 * 100 + 12 * 500;
+  const q3Tax = Math.round(q3Subtotal * 5 / 100 * 100) / 100;
+
+  await db.quotation.create({
+    data: {
+      quotationNumber: 'RTR-Q-2408-0003',
+      leadId: leads[1].id,
+      organizationId: rtrOrg.id,
+      items: q3Items,
+      subtotal: q3Subtotal,
+      taxRate: 5,
+      tax: q3Tax,
+      total: q3Subtotal + q3Tax,
+      status: 'draft',
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      notes: 'Specialized quote for cold chain monitoring. Temperature sensors included.',
+      terms: 'This quotation is valid for 30 days. Payment terms: 50% advance, 50% upon installation. All prices in AED.',
+    },
+  });
+
+  console.log(`  ✅ Created 3 quotations`);
+
   console.log('\n' + '='.repeat(50));
   console.log('🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
-  console.log(`   Organizations: 2`);
+  console.log(`   Organizations: 3`);
   console.log(`   Users: 4`);
   console.log(`   Vehicles: 5`);
   console.log(`   Drivers: 3`);
   console.log(`   Devices: 3`);
   console.log(`   Leads: 10`);
+  console.log(`   Contacts: 4`);
+  console.log(`   Activities: 6`);
+  console.log(`   Quotations: 3`);
   console.log(`   Alerts: 5`);
   console.log(`   Tickets: 2`);
   console.log(`   Trips: 3`);

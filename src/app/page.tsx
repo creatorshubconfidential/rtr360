@@ -32,6 +32,7 @@ import {
   Mail,
   Globe,
   Menu,
+  Kanban,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+
+// Phase 2 CRM Views
+import PipelineView from '@/components/views/PipelineView';
+import QuotationsView from '@/components/views/QuotationsView';
+import ContactsView from '@/components/views/ContactsView';
 
 // ────────────────────────────────────────
 // Types
@@ -151,8 +157,10 @@ type ViewType =
   | 'devices'
   | 'installations'
   | 'maintenance'
+  | 'pipeline'
   | 'leads'
   | 'contacts'
+  | 'quotations'
   | 'subscriptions'
   | 'invoices'
   | 'tickets'
@@ -241,8 +249,10 @@ const NAV_SECTIONS = [
   {
     label: 'CRM',
     items: [
+      { id: 'pipeline' as ViewType, icon: Kanban, label: 'Pipeline' },
       { id: 'leads' as ViewType, icon: UserPlus, label: 'Leads' },
       { id: 'contacts' as ViewType, icon: Users, label: 'Contacts' },
+      { id: 'quotations' as ViewType, icon: FileText, label: 'Quotations' },
     ],
   },
   {
@@ -1397,8 +1407,10 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     devices: 'Devices',
     installations: 'Installations',
     maintenance: 'Maintenance',
+    pipeline: 'Sales Pipeline',
     leads: 'Leads',
     contacts: 'Contacts',
+    quotations: 'Quotations',
     subscriptions: 'Subscriptions',
     invoices: 'Invoices',
     tickets: 'Tickets',
@@ -1410,8 +1422,14 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     switch (currentView) {
       case 'dashboard':
         return <DashboardView />;
+      case 'pipeline':
+        return <PipelineView />;
       case 'leads':
         return <LeadsView />;
+      case 'contacts':
+        return <ContactsView />;
+      case 'quotations':
+        return <QuotationsView />;
       case 'vehicles':
         return <VehiclesView />;
       case 'live-tracking':
@@ -1424,8 +1442,6 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
         return <PlaceholderView title="Installations" icon={Wrench} />;
       case 'maintenance':
         return <PlaceholderView title="Maintenance" icon={Settings} />;
-      case 'contacts':
-        return <PlaceholderView title="Contacts" icon={Building2} />;
       case 'subscriptions':
         return <PlaceholderView title="Subscriptions" icon={CreditCard} />;
       case 'invoices':
