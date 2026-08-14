@@ -34,6 +34,12 @@ import {
   Menu,
   Kanban,
   HardHat,
+  BarChart3,
+  BellRing,
+  MapPinned,
+  UserCog,
+  FileSignature,
+  Route as RouteIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -100,6 +106,15 @@ import InvoicesView from '@/components/views/InvoicesView';
 import TicketsView from '@/components/views/TicketsView';
 import SettingsView from '@/components/views/SettingsView';
 import AuditLogsView from '@/components/views/AuditLogsView';
+
+// Phase 6 Intelligence & Admin Views
+import ReportsView from '@/components/views/ReportsView';
+import AlertRulesView from '@/components/views/AlertRulesView';
+import GeofencesView from '@/components/views/GeofencesView';
+import UsersView from '@/components/views/UsersView';
+import ContractsView from '@/components/views/ContractsView';
+import TripsView from '@/components/views/TripsView';
+import NotificationsView from '@/components/views/NotificationsView';
 
 // Phase 4 FleetOS Views
 import dynamic from 'next/dynamic';
@@ -190,6 +205,13 @@ type ViewType =
   | 'subscriptions'
   | 'invoices'
   | 'tickets'
+  | 'reports'
+  | 'alert-rules'
+  | 'geofences'
+  | 'trips'
+  | 'users'
+  | 'contracts'
+  | 'notifications'
   | 'settings'
   | 'audit-logs';
 
@@ -254,6 +276,7 @@ const NAV_SECTIONS = [
     label: 'MAIN',
     items: [
       { id: 'dashboard' as ViewType, icon: LayoutDashboard, label: 'Dashboard' },
+      { id: 'reports' as ViewType, icon: BarChart3, label: 'Reports' },
       { id: 'live-tracking' as ViewType, icon: MapPin, label: 'Live Tracking' },
     ],
   },
@@ -263,6 +286,7 @@ const NAV_SECTIONS = [
       { id: 'vehicles' as ViewType, icon: Truck, label: 'Vehicles' },
       { id: 'drivers' as ViewType, icon: Users, label: 'Drivers' },
       { id: 'devices' as ViewType, icon: Cpu, label: 'Devices' },
+      { id: 'trips' as ViewType, icon: RouteIcon, label: 'Trips' },
     ],
   },
   {
@@ -280,6 +304,7 @@ const NAV_SECTIONS = [
       { id: 'leads' as ViewType, icon: UserPlus, label: 'Leads' },
       { id: 'contacts' as ViewType, icon: Users, label: 'Contacts' },
       { id: 'quotations' as ViewType, icon: FileText, label: 'Quotations' },
+      { id: 'contracts' as ViewType, icon: FileSignature, label: 'Contracts' },
     ],
   },
   {
@@ -290,14 +315,23 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'SUPPORT',
+    label: 'INTELLIGENCE',
     items: [
-      { id: 'tickets' as ViewType, icon: Ticket, label: 'Tickets' },
+      { id: 'geofences' as ViewType, icon: MapPinned, label: 'Geofences' },
+      { id: 'alert-rules' as ViewType, icon: BellRing, label: 'Alert Rules' },
     ],
   },
   {
-    label: 'SYSTEM',
+    label: 'SUPPORT',
     items: [
+      { id: 'tickets' as ViewType, icon: Ticket, label: 'Tickets' },
+      { id: 'notifications' as ViewType, icon: Bell, label: 'Notifications' },
+    ],
+  },
+  {
+    label: 'ADMIN',
+    items: [
+      { id: 'users' as ViewType, icon: UserCog, label: 'Users' },
       { id: 'settings' as ViewType, icon: Settings, label: 'Settings' },
       { id: 'audit-logs' as ViewType, icon: Shield, label: 'Audit Logs' },
     ],
@@ -1431,10 +1465,12 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
 
   const viewTitle: Record<ViewType, string> = {
     dashboard: 'Dashboard',
+    reports: 'Reports & Analytics',
     'live-tracking': 'Live Tracking',
     vehicles: 'Vehicles',
     drivers: 'Drivers',
     devices: 'Devices',
+    trips: 'Trips',
     installations: 'Installations',
     technicians: 'Technicians',
     maintenance: 'Maintenance',
@@ -1442,9 +1478,14 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     leads: 'Leads',
     contacts: 'Contacts',
     quotations: 'Quotations',
+    contracts: 'Contracts',
     subscriptions: 'Subscriptions',
     invoices: 'Invoices',
+    geofences: 'Geofences',
+    'alert-rules': 'Alert Rules',
     tickets: 'Tickets',
+    notifications: 'Notifications',
+    users: 'User Management',
     settings: 'Settings',
     'audit-logs': 'Audit Logs',
   };
@@ -1481,6 +1522,20 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
         return <InvoicesView />;
       case 'tickets':
         return <TicketsView />;
+      case 'reports':
+        return <ReportsView />;
+      case 'trips':
+        return <TripsView />;
+      case 'contracts':
+        return <ContractsView />;
+      case 'geofences':
+        return <GeofencesView />;
+      case 'alert-rules':
+        return <AlertRulesView />;
+      case 'notifications':
+        return <NotificationsView />;
+      case 'users':
+        return <UsersView />;
       case 'settings':
         return <SettingsView />;
       case 'audit-logs':

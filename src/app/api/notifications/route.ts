@@ -1,0 +1,66 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { getAuthUser } from '@/lib/auth';
+
+export async function GET(request: Request) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')));
+    const unreadOnly = searchParams.get('unread') === 'true';
+
+    const where: Record<string, unknown> = {};
+    if (user.organizationId) where.organizationId = user.organizationId;
+    else where.userId = user.id;
+    if (unreadOnly) where.read = false;
+
+    const notifications = await db.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    const unreadCount = await db.notification.count({
+      where: {
+        ...(user.organizationId ? { organizationId: user.organizationId } : { userId: user.id }),
+        read: false,
+      },
+    });
+
+    return NextResponse.json({ notifications, unreadCount });
+  } catch (error) {
+    console.error('Notifications GET error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // Mark all as read
+    const body = await request.json();
+    if (body.markAllRead) {
+      const where: Record<string, unknown> = { read: false };
+      if (user.organizationId) where.organizationId = user.organizationId;
+      else where.userId = user.id;
+
+      await db.notification.updateMany({ where, data: { read: true } });
+      return NextResponse.json({ success: true });
+    }
+
+    // Mark single as read
+    if (body.id) {
+      await db.notification.update({ where: { id: body.id }, data: { read: true } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: 'Specify markAllRead or id' }, { status: 400 });
+  } catch (error) {
+    console.error('Notifications POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

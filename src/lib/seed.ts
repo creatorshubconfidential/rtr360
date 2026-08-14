@@ -1396,7 +1396,125 @@ async function main() {
   console.log('  ✅ Created 5 support tickets');
 
   // ========================================
-  // 20. PLATFORM SETTINGS (Phase 5)
+  // 21. ALERT RULES (Phase 6)
+  // ========================================
+  console.log('\n🔔 Creating alert rules...');
+
+  await Promise.all([
+    db.alertRule.create({
+      data: { name: 'Speed Limit — 120 km/h', type: 'overspeed', conditions: JSON.stringify({ threshold: 120, unit: 'km/h' }), channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'Jebel Ali Warehouse Exit', type: 'geofence_exit', conditions: JSON.stringify({ geofenceId: 'jebel-ali-wh' }), channels: JSON.stringify(['in_app', 'sms', 'whatsapp']), active: true, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'SOS Emergency', type: 'sos', conditions: null, channels: JSON.stringify(['in_app', 'email', 'sms', 'whatsapp']), active: true, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'Device Power Off Alert', type: 'power_off', conditions: null, channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'Idle More Than 30 Minutes', type: 'idle', conditions: JSON.stringify({ timeoutMinutes: 30 }), channels: JSON.stringify(['in_app']), active: false, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'KIZAD Yard Geofence Enter', type: 'geofence_enter', conditions: JSON.stringify({ geofenceId: 'kizad-yard' }), channels: JSON.stringify(['in_app', 'whatsapp']), active: true, organizationId: customerOrg.id },
+    }),
+    db.alertRule.create({
+      data: { name: 'Low Battery Warning', type: 'low_battery', conditions: JSON.stringify({ threshold: 15 }), channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: rtrOrg.id },
+    }),
+  ]);
+  console.log('  ✅ Created 7 alert rules');
+
+  // ========================================
+  // 22. GEOFENCES (Phase 6)
+  // ========================================
+  console.log('\n📍 Creating geofences...');
+
+  await Promise.all([
+    db.geofence.create({
+      data: { name: 'Jebel Ali Warehouse', type: 'circle', centerLat: 25.0225, centerLng: 55.0704, radius: 500, organizationId: customerOrg.id },
+    }),
+    db.geofence.create({
+      data: { name: 'KIZAD Yard', type: 'circle', centerLat: 24.5384, centerLng: 54.6726, radius: 1000, organizationId: customerOrg.id },
+    }),
+    db.geofence.create({
+      data: { name: 'Dubai Port (Jebel Ali Port)', type: 'circle', centerLat: 24.9894, centerLng: 55.0455, radius: 2000, organizationId: customerOrg.id },
+    }),
+    db.geofence.create({
+      data: { name: 'Mussafah Industrial Area', type: 'circle', centerLat: 24.3523, centerLng: 54.4876, radius: 1500, organizationId: customerOrg.id },
+    }),
+  ]);
+  console.log('  ✅ Created 4 geofences');
+
+  // ========================================
+  // 23. CONTRACTS (Phase 6)
+  // ========================================
+  console.log('\n📄 Creating contracts...');
+
+  await Promise.all([
+    db.contract.create({
+      data: { title: 'Fleet GPS Tracking Service Agreement — Al Fahim', startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31'), status: 'active', terms: 'Annual service agreement for GPS tracking of 5 vehicles. Includes 24/7 monitoring, monthly reports, and priority support. SLA: 99.5% uptime. Payment: Monthly AED 6,562.50 (inclusive of 5% VAT).', organizationId: customerOrg.id },
+    }),
+    db.contract.create({
+      data: { title: 'Device Supply Agreement — Concox GT06N', startDate: new Date('2025-03-01'), endDate: new Date('2026-02-28'), status: 'active', terms: 'Bulk supply agreement for Concox GT06N GPS devices. Minimum order quantity: 50 units. Unit price: AED 150. Delivery within 5 business days. Warranty: 12 months from delivery date.', organizationId: rtrOrg.id },
+    }),
+    db.contract.create({
+      data: { title: 'Etisalat SIM Bulk Agreement', startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31'), status: 'active', terms: 'Annual data-only SIM plan for GPS devices. 500MB/month per SIM. Annual cost: AED 100/SIM. Includes 100 SMS/month. Auto-renewal clause.', organizationId: rtrOrg.id },
+    }),
+  ]);
+  console.log('  ✅ Created 3 contracts');
+
+  // ========================================
+  // 24. ADDITIONAL TRIPS (Phase 6)
+  // ========================================
+  console.log('\n🚛 Creating trip history...');
+
+  const tripVehicles = await db.vehicle.findMany({ where: { organizationId: customerOrg.id } });
+  const tripDrivers = await db.driver.findMany({ where: { organizationId: customerOrg.id } });
+
+  await Promise.all([
+    // Completed trips
+    db.trip.create({
+      data: { vehicleId: tripVehicles[0]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-14T06:00:00'), endTime: new Date('2025-08-14T09:30:00'), distance: 245.5, duration: 12600, maxSpeed: 118, avgSpeed: 72, idleTime: 1800, overspeedCount: 2, harshBrakes: 1, harshAccel: 3, status: 'completed' },
+    }),
+    db.trip.create({
+      data: { vehicleId: tripVehicles[1]?.id || '', driverName: tripDrivers[1]?.name, startTime: new Date('2025-08-14T07:15:00'), endTime: new Date('2025-08-14T11:00:00'), distance: 312.8, duration: 14100, maxSpeed: 125, avgSpeed: 68, idleTime: 2400, overspeedCount: 5, harshBrakes: 3, harshAccel: 2, status: 'completed' },
+    }),
+    db.trip.create({
+      data: { vehicleId: tripVehicles[2]?.id || '', driverName: tripDrivers[2]?.name, startTime: new Date('2025-08-13T05:30:00'), endTime: new Date('2025-08-13T08:45:00'), distance: 198.2, duration: 11700, maxSpeed: 105, avgSpeed: 65, idleTime: 900, overspeedCount: 0, harshBrakes: 0, harshAccel: 1, status: 'completed' },
+    }),
+    db.trip.create({
+      data: { vehicleId: tripVehicles[0]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-13T10:00:00'), endTime: new Date('2025-08-13T14:30:00'), distance: 356.7, duration: 16200, maxSpeed: 132, avgSpeed: 78, idleTime: 3600, overspeedCount: 8, harshBrakes: 4, harshAccel: 6, status: 'completed' },
+    }),
+    db.trip.create({
+      data: { vehicleId: tripVehicles[3]?.id || '', driverName: tripDrivers[1]?.name, startTime: new Date('2025-08-12T06:00:00'), endTime: new Date('2025-08-12T10:00:00'), distance: 287.3, duration: 14400, maxSpeed: 110, avgSpeed: 70, idleTime: 1200, overspeedCount: 1, harshBrakes: 1, harshAccel: 2, status: 'completed' },
+    }),
+    // In-progress trip
+    db.trip.create({
+      data: { vehicleId: tripVehicles[4]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-15T06:30:00'), distance: 45.2, duration: 2700, maxSpeed: 95, avgSpeed: 62, idleTime: 300, overspeedCount: 0, harshBrakes: 0, harshAccel: 1, status: 'in_progress' },
+    }),
+  ]);
+  console.log('  ✅ Created 6 trips');
+
+  // ========================================
+  // 25. NOTIFICATIONS (Phase 6)
+  // ========================================
+  console.log('\n🔔 Creating notifications...');
+
+  await Promise.all([
+    db.notification.create({ data: { organizationId: customerOrg.id, type: 'alert', title: 'Overspeed Alert', body: 'Vehicle DXB-A-12345 exceeded 120 km/h on Sheikh Zayed Road near Dubai Marina.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 15) } }),
+    db.notification.create({ data: { organizationId: customerOrg.id, type: 'ticket', title: 'New Support Ticket', body: 'Ticket TKT-20250811-001 has been assigned to your organization.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3) } }),
+    db.notification.create({ data: { organizationId: customerOrg.id, type: 'maintenance', title: 'Maintenance Due Tomorrow', body: 'Vehicle DXB-B-54321 is due for tire rotation. Scheduled for Aug 20.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8) } }),
+    db.notification.create({ data: { organizationId: customerOrg.id, type: 'invoice', title: 'Invoice Generated', body: 'Invoice INV-20250801-001 for AED 6,562.50 is now available. Due: Aug 15.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48) } }),
+    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'system', title: 'New Lead Assigned', body: 'Lead "Al Futtaim Logistics" from Google Ads has been assigned to Fatima.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 30) } }),
+    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'info', title: 'Installation Completed', body: 'Installation INST-202508-004 has been completed by Hassan Ali Khan.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24) } }),
+    db.notification.create({ data: { organizationId: customerOrg.id, type: 'alert', title: 'Geofence Exit Alert', body: 'Vehicle DXB-C-67890 exited Jebel Ali Warehouse geofence at 14:32.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36) } }),
+    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'system', title: 'Platform Update', body: 'RTR 360 v2.5 deployed with new Reports & Analytics module.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72) } }),
+  ]);
+  console.log('  ✅ Created 8 notifications');
+
+  // ========================================
+  // 26. PLATFORM SETTINGS (Phase 5)
   // ========================================
   console.log('\n⚙️ Creating platform settings...');
 
@@ -1436,9 +1554,12 @@ async function main() {
   console.log(`   Invoices: 4`);
   console.log(`   Tickets: 5`);
   console.log(`   Alerts: 5`);
-  console.log(`   Trips: 3`);
+  console.log(`   Trips: 9`);
   console.log(`   Plans: 2`);
-  console.log(`   Geofences: 2`);
+  console.log(`   Geofences: 4`);
+  console.log(`   Alert Rules: 7`);
+  console.log(`   Contracts: 3`);
+  console.log(`   Notifications: 8`);
   console.log(`   Settings: 15`);
   console.log('\n🔑 Test credentials:');
   console.log(`   Super Admin: admin@rtr.ae / REDACTED_DEMO_PASSWORD`);
