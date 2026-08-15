@@ -2,7 +2,20 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
-const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'];
+const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
+
+const ROLE_HIERARCHY: Record<string, number> = {
+  viewer: 0,
+  dispatcher: 1,
+  fleet_manager: 2,
+  sales_manager: 2,
+  operations_manager: 3,
+  org_owner: 4,
+  platform_admin: 5,
+  super_admin: 6,
+};
+
+const NON_PLATFORM_ROLES = ['viewer', 'dispatcher', 'fleet_manager', 'sales_manager', 'operations_manager', 'org_owner'] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,7 +42,36 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (name !== undefined) updateData.name = name.trim();
     if (phone !== undefined) updateData.phone = phone;
     if (status !== undefined) updateData.status = status;
-    if (role !== undefined && VALID_ROLES.includes(role)) updateData.role = role;
+
+    // SECURITY: Role change must follow hierarchy rules
+    if (role !== undefined) {
+      if (!VALID_ROLES.includes(role)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+      }
+      if (user.role === 'super_admin') {
+        // Super admin can set any role
+        updateData.role = role;
+      } else if (user.role === 'platform_admin') {
+        if (role === 'super_admin') {
+          return NextResponse.json({ error: 'Cannot assign super_admin role' }, { status: 403 });
+        }
+        if (!NON_PLATFORM_ROLES.includes(role as typeof NON_PLATFORM_ROLES[number])) {
+          return NextResponse.json({ error: 'Cannot assign platform roles' }, { status: 403 });
+        }
+        updateData.role = role;
+      } else {
+        // Org-scoped users: cannot assign platform roles, cannot escalate above own level
+        if (!NON_PLATFORM_ROLES.includes(role as typeof NON_PLATFORM_ROLES[number])) {
+          return NextResponse.json({ error: 'Cannot assign platform roles' }, { status: 403 });
+        }
+        const callerLevel = ROLE_HIERARCHY[user.role] ?? 0;
+        const targetLevel = ROLE_HIERARCHY[role] ?? 0;
+        if (targetLevel > callerLevel) {
+          return NextResponse.json({ error: 'Cannot assign role higher than your own' }, { status: 403 });
+        }
+        updateData.role = role;
+      }
+    }
     if (password) {
       const pwError = validatePasswordStrength(password);
       if (pwError) {

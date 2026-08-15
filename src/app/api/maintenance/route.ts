@@ -126,6 +126,14 @@ export async function POST(request: Request) {
       );
     }
 
+    if (vehicleId) {
+      const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId } });
+      if (!vehicle) return NextResponse.json({ error: 'Vehicle not found' }, { status: 400 });
+      if (user.role !== 'super_admin' && vehicle.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+      }
+    }
+
     const maintenanceRecord = await db.maintenanceRecord.create({
       data: {
         vehicleId,

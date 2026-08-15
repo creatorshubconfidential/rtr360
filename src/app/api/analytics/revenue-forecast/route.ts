@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
     // 2. Subscription-based recurring revenue
     const subscriptions = await db.subscription.findMany({
-      where: { status: 'active' },
+      where: { ...orgFilter, status: 'active' },
       include: {
         plan: true,
         organization: { select: { name: true } },

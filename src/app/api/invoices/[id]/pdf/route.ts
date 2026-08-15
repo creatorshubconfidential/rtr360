@@ -23,6 +23,11 @@ export async function GET(
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
+    // SECURITY: Tenant isolation — prevent cross-tenant invoice access
+    if (user.role !== 'super_admin' && invoice.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
     const org = invoice.organization;
     const plan = invoice.subscription?.plan;
     const dateStr = new Date(invoice.createdAt).toLocaleDateString('en-AE', {

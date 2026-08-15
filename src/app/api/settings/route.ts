@@ -7,6 +7,13 @@ export async function GET(request: Request) {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
 
+    if (user.role !== 'super_admin' && user.role !== 'platform_admin') {
+      return NextResponse.json(
+        { error: 'Only super_admin or platform_admin can access settings' },
+        { status: 403 }
+      );
+    }
+
     const settings = await db.setting.findMany({
       orderBy: { key: 'asc' },
     });

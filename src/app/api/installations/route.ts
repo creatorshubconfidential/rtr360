@@ -140,6 +140,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Device is already installed on another vehicle' }, { status: 400 });
     }
 
+    if (user.role !== 'super_admin' && vehicle.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+    }
+    if (device.organizationId && user.role !== 'super_admin' && device.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+    }
+
     // Validate technician if provided
     if (technicianId) {
       const tech = await db.technician.findUnique({ where: { id: technicianId } });

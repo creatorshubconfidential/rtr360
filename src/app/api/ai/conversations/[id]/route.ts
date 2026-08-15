@@ -27,14 +27,10 @@ export async function GET(
     }
 
     // Verify ownership
-    if (
-      conversation.userId &&
-      conversation.userId !== user.id &&
-      conversation.organizationId !== user.organizationId
-    ) {
+    if (user.role !== 'super_admin' && conversation.organizationId !== user.organizationId) {
       return NextResponse.json(
-        { error: 'Unauthorized access to this conversation' },
-        { status: 403 },
+        { error: 'Not found' },
+        { status: 404 },
       );
     }
 
@@ -86,14 +82,10 @@ export async function DELETE(
     }
 
     // Verify ownership
-    if (
-      conversation.userId &&
-      conversation.userId !== user.id &&
-      conversation.organizationId !== user.organizationId
-    ) {
+    if (user.role !== 'super_admin' && conversation.organizationId !== user.organizationId) {
       return NextResponse.json(
-        { error: 'Unauthorized access to this conversation' },
-        { status: 403 },
+        { error: 'Not found' },
+        { status: 404 },
       );
     }
 

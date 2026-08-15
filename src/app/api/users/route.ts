@@ -2,7 +2,22 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
-const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'];
+const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
+
+// Role hierarchy: higher index = more powerful. A user can only assign roles <= their own level.
+const ROLE_HIERARCHY: Record<string, number> = {
+  viewer: 0,
+  dispatcher: 1,
+  fleet_manager: 2,
+  sales_manager: 2,
+  operations_manager: 3,
+  org_owner: 4,
+  platform_admin: 5,
+  super_admin: 6,
+};
+
+// Roles that non-super_admin users are allowed to assign (bounded by their own level)
+const NON_PLATFORM_ROLES = ['viewer', 'dispatcher', 'fleet_manager', 'sales_manager', 'operations_manager', 'org_owner'] as const;
 
 export async function GET(request: Request) {
   try {
@@ -77,8 +92,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: pwError }, { status: 400 });
     }
 
-    if (role && !VALID_ROLES.includes(role)) {
-      return NextResponse.json({ error: `Invalid role. Valid: ${VALID_ROLES.join(', ')}` }, { status: 400 });
+    // SECURITY: Determine the role to assign — NEVER trust client-supplied role blindly
+    let assignedRole = 'viewer'; // default
+    if (user.role === 'super_admin') {
+      // Super admin can assign any role
+      if (role && VALID_ROLES.includes(role)) {
+        assignedRole = role;
+      }
+    } else if (user.role === 'platform_admin') {
+      // Platform admin can assign non-super_admin roles
+      if (role && NON_PLATFORM_ROLES.includes(role as typeof NON_PLATFORM_ROLES[number])) {
+        assignedRole = role;
+      } else if (role && role === 'super_admin') {
+        return NextResponse.json({ error: 'Cannot assign super_admin role' }, { status: 403 });
+      }
+    } else {
+      // Org-scoped users (org_owner, etc.) can only assign roles <= their own level
+      const callerLevel = ROLE_HIERARCHY[user.role] ?? 0;
+      if (role) {
+        if (!NON_PLATFORM_ROLES.includes(role as typeof NON_PLATFORM_ROLES[number])) {
+          return NextResponse.json({ error: 'Cannot assign platform roles' }, { status: 403 });
+        }
+        const targetLevel = ROLE_HIERARCHY[role] ?? 0;
+        if (targetLevel > callerLevel) {
+          return NextResponse.json({ error: 'Cannot assign role higher than your own' }, { status: 403 });
+        }
+        assignedRole = role;
+      }
+    }
+
+    // SECURITY: NEVER trust client-supplied organizationId
+    // Non-super_admin users can only create users in their own organization
+    let targetOrgId: string | null = null;
+    if (user.role === 'super_admin') {
+      // Super admin may specify org (for creating users in other orgs)
+      if (organizationId) {
+        const orgExists = await db.organization.findUnique({ where: { id: organizationId } });
+        if (!orgExists) {
+          return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
+        }
+        targetOrgId = organizationId;
+      } else {
+        targetOrgId = user.organizationId || null;
+      }
+    } else {
+      // All other users: always use their own org
+      targetOrgId = user.organizationId || null;
     }
 
     // Check email uniqueness
@@ -94,8 +153,8 @@ export async function POST(request: Request) {
         email: email.toLowerCase().trim(),
         passwordHash,
         phone: phone || null,
-        role: role || 'viewer',
-        organizationId: organizationId || user.organizationId || null,
+        role: assignedRole,
+        organizationId: targetOrgId,
         status: status || 'active',
         emailVerified: false,
       },
