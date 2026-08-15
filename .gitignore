@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,16 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Database files (never commit databases)
+db/
+*.db
+*.sqlite
+*.sqlite3
+
+# AI agent artifacts (not project source)
+tool-results/
+upload/
+download/
+agent-ctx/
+.zscripts/
