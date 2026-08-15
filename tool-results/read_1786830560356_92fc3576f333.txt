@@ -1,0 +1,825 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { toast } from 'sonner';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import {
+     7→  GripVertical,
+     8→  Phone,
+     9→  Building2,
+    10→  MapPin,
+    11→  Plus,
+    12→  MessageSquare,
+    13→  FileText,
+    14→  ChevronRight,
+    15→  TrendingUp,
+    16→  Trophy,
+    17→} from 'lucide-react';
+    18→import { Button } from '@/components/ui/button';
+    19→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    20→import { Input } from '@/components/ui/input';
+    21→import { Label } from '@/components/ui/label';
+    22→import { Badge } from '@/components/ui/badge';
+    23→import {
+    24→  Dialog,
+    25→  DialogContent,
+    26→  DialogHeader,
+    27→  DialogTitle,
+    28→  DialogTrigger,
+    29→  DialogFooter,
+    30→} from '@/components/ui/dialog';
+    31→import {
+    32→  Select,
+    33→  SelectContent,
+    34→  SelectItem,
+    35→  SelectTrigger,
+    36→  SelectValue,
+    37→} from '@/components/ui/select';
+    38→import {
+    39→  Sheet,
+    40→  SheetContent,
+    41→  SheetTrigger,
+    42→  SheetTitle,
+    43→} from '@/components/ui/sheet';
+    44→import { Textarea } from '@/components/ui/textarea';
+    45→import { Skeleton } from '@/components/ui/skeleton';
+    46→import { authFetch, formatAED, formatDate } from '@/lib/api';
+    47→import { STATUS_COLORS, PRIORITY_COLORS, PIPELINE_STAGES, EMIRATES, VEHICLE_TYPES, LEAD_SOURCES, ACTIVITY_TYPES, ACTIVITY_ICONS, DEFAULT_QUOTATION_ITEMS, QUOTATION_TERMS } from '@/lib/constants';
+    48→import type { Lead, LeadDetail, Quotation, QuotationItem, Activity, PipelineSummary } from '@/lib/types';
+    49→
+    50→// ────────────────────────────────────────
+    51→// PipelineView — CRM Kanban Board
+    52→// ────────────────────────────────────────
+    53→
+    54→export default function PipelineView() {
+    55→  const [pipeline, setPipeline] = useState<Record<string, Lead[]>>({});
+    56→  const [summary, setSummary] = useState<PipelineSummary | null>(null);
+    57→  const [loading, setLoading] = useState(true);
+    58→  const [selectedLead, setSelectedLead] = useState<LeadDetail | null>(null);
+    59→  const [detailOpen, setDetailOpen] = useState(false);
+    60→  const [detailLoading, setDetailLoading] = useState(false);
+    61→  const [createOpen, setCreateOpen] = useState(false);
+    62→  const [submitting, setSubmitting] = useState(false);
+    63→
+    64→  // Quotation dialog state
+    65→  const [quotationOpen, setQuotationOpen] = useState(false);
+    66→  const [quotationItems, setQuotationItems] = useState<QuotationItem[]>([...DEFAULT_QUOTATION_ITEMS]);
+    67→  const [quotationNotes, setQuotationNotes] = useState('');
+    68→  const [quotationLeadId, setQuotationLeadId] = useState<string | null>(null);
+    69→  const [quotationSubmitting, setQuotationSubmitting] = useState(false);
+    70→
+    71→  // Activity form state
+    72→  const [activityType, setActivityType] = useState('note');
+    73→  const [activityTitle, setActivityTitle] = useState('');
+    74→  const [activityDesc, setActivityDesc] = useState('');
+    75→  const [activitySubmitting, setActivitySubmitting] = useState(false);
+    76→
+    77→  // Create lead form
+    78→  const [form, setForm] = useState({
+    79→    name: '', email: '', phone: '', company: '', emirate: '',
+    80→    vehicleCount: '', vehicleType: '', requirement: '', source: '', priority: 'medium',
+    81→  });
+    82→
+    83→  const fetchPipeline = useCallback(async () => {
+    84→    setLoading(true);
+    85→    try {
+    86→      const res = await authFetch('/api/pipeline');
+    87→      const data = await res.json();
+    88→      if (res.ok) {
+    89→        setPipeline(data.pipeline || {});
+    90→        setSummary(data.summary || null);
+    91→      }
+    92→    } catch {
+    93→      toast.error('Failed to load pipeline');
+    94→    } finally {
+    95→      setLoading(false);
+    96→    }
+    97→  }, []);
+    98→
+    99→  useEffect(() => { fetchPipeline(); }, [fetchPipeline]);
+   100→
+   101→  const fetchLeadDetail = async (leadId: string) => {
+   102→    setDetailLoading(true);
+   103→    setDetailOpen(true);
+   104→    try {
+   105→      const res = await authFetch(`/api/leads/${leadId}`);
+   106→      const data = await res.json();
+   107→      if (res.ok) {
+   108→        setSelectedLead(data.lead);
+   109→      } else {
+   110→        toast.error(data.error || 'Failed to load lead');
+   111→      }
+   112→    } catch {
+   113→      toast.error('Failed to load lead');
+   114→    } finally {
+   115→      setDetailLoading(false);
+   116→    }
+   117→  };
+   118→
+   119→  const handleStatusChange = async (leadId: string, newStatus: string) => {
+   120→    try {
+   121→      const res = await authFetch(`/api/leads/${leadId}`, {
+   122→        method: 'PATCH',
+   123→        body: JSON.stringify({ status: newStatus }),
+   124→      });
+   125→      if (res.ok) {
+   126→        toast.success(`Moved to ${newStatus}`);
+   127→        fetchPipeline();
+   128→        // Refresh detail if open
+   129→        if (selectedLead?.id === leadId) {
+   130→          fetchLeadDetail(leadId);
+   131→        }
+   132→      } else {
+   133→        const data = await res.json();
+   134→        toast.error(data.error || 'Failed to update');
+   135→      }
+   136→    } catch {
+   137→      toast.error('Failed to update lead');
+   138→    }
+   139→  };
+   140→
+   141→  const handleCreateLead = async () => {
+   142→    if (!form.name.trim()) { toast.error('Name is required'); return; }
+   143→    setSubmitting(true);
+   144→    try {
+   145→      const res = await authFetch('/api/leads', {
+   146→        method: 'POST',
+   147→        body: JSON.stringify({
+   148→          ...form,
+   149→          vehicleCount: form.vehicleCount ? parseInt(form.vehicleCount) : null,
+   150→        }),
+   151→      });
+   152→      const data = await res.json();
+   153→      if (res.ok) {
+   154→        toast.success('Lead created!');
+   155→        setCreateOpen(false);
+   156→        setForm({ name: '', email: '', phone: '', company: '', emirate: '', vehicleCount: '', vehicleType: '', requirement: '', source: '', priority: 'medium' });
+   157→        fetchPipeline();
+   158→      } else {
+   159→        toast.error(data.error || 'Failed to create lead');
+   160→      }
+   161→    } catch {
+   162→      toast.error('Failed to create lead');
+   163→    } finally {
+   164→      setSubmitting(false);
+   165→    }
+   166→  };
+   167→
+   168→  const handleCreateQuotation = async () => {
+   169→    if (quotationItems.length === 0) { toast.error('Add at least one item'); return; }
+   170→    setQuotationSubmitting(true);
+   171→    try {
+   172→      const res = await authFetch('/api/quotations', {
+   173→        method: 'POST',
+   174→        body: JSON.stringify({
+   175→          leadId: quotationLeadId,
+   176→          items: quotationItems,
+   177→          notes: quotationNotes || undefined,
+   178→          terms: QUOTATION_TERMS,
+   179→        }),
+   180→      });
+   181→      const data = await res.json();
+   182→      if (res.ok) {
+   183→        toast.success(`Quotation ${data.quotation.quotationNumber} created!`);
+   184→        setQuotationOpen(false);
+   185→        setQuotationItems([...DEFAULT_QUOTATION_ITEMS]);
+   186→        setQuotationNotes('');
+   187→        setQuotationLeadId(null);
+   188→        if (selectedLead?.id) fetchLeadDetail(selectedLead.id);
+   189→      } else {
+   190→        toast.error(data.error || 'Failed to create quotation');
+   191→      }
+   192→    } catch {
+   193→      toast.error('Failed to create quotation');
+   194→    } finally {
+   195→      setQuotationSubmitting(false);
+   196→    }
+   197→  };
+   198→
+   199→  const handleAddActivity = async () => {
+   200→    if (!activityTitle.trim() || !selectedLead) return;
+   201→    setActivitySubmitting(true);
+   202→    try {
+   203→      const res = await authFetch('/api/activities', {
+   204→        method: 'POST',
+   205→        body: JSON.stringify({
+   206→          type: activityType,
+   207→          title: activityTitle.trim(),
+   208→          description: activityDesc.trim() || undefined,
+   209→          leadId: selectedLead.id,
+   210→        }),
+   211→      });
+   212→      if (res.ok) {
+   213→        toast.success('Activity logged');
+   214→        setActivityTitle('');
+   215→        setActivityDesc('');
+   216→        setActivityType('note');
+   217→        fetchLeadDetail(selectedLead.id);
+   218→      } else {
+   219→        toast.error('Failed to log activity');
+   220→      }
+   221→    } catch {
+   222→      toast.error('Failed to log activity');
+   223→    } finally {
+   224→      setActivitySubmitting(false);
+   225→    }
+   226→  };
+   227→
+   228→  const addQuotationItem = () => {
+   229→    setQuotationItems([...quotationItems, { description: '', quantity: 1, unitPrice: 0 }]);
+   230→  };
+   231→
+   232→  const removeQuotationItem = (idx: number) => {
+   233→    setQuotationItems(quotationItems.filter((_, i) => i !== idx));
+   234→  };
+   235→
+   236→  const updateQuotationItem = (idx: number, field: keyof QuotationItem, value: string | number) => {
+   237→    const updated = [...quotationItems];
+   238→    (updated[idx] as Record<string, unknown>)[field] = value;
+   239→    setQuotationItems(updated);
+   240→  };
+   241→
+   242→  const quotationSubtotal = quotationItems.reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
+   243→  const quotationTax = Math.round(quotationSubtotal * 5 / 100 * 100) / 100;
+   244→  const quotationTotal = Math.round((quotationSubtotal + quotationTax) * 100) / 100;
+   245→
+   246→  return (
+   247→    <div className="space-y-5">
+   248→      {/* Header */}
+   249→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+   250→        <div>
+   251→          <h2 className="text-2xl font-bold text-slate-900">Sales Pipeline</h2>
+   252→          <p className="text-sm text-slate-500">Track and manage your sales opportunities</p>
+   253→        </div>
+   254→        <div className="flex items-center gap-2">
+   255→          <Button variant="outline" size="sm" onClick={fetchPipeline} className="gap-1.5">
+   256→            Refresh
+   257→          </Button>
+   258→          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+   259→            <DialogTrigger asChild>
+   260→              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+   261→                <Plus className="w-4 h-4" /> New Lead
+   262→              </Button>
+   263→            </DialogTrigger>
+   264→            <DialogContent className="max-w-lg">
+   265→              <DialogHeader><DialogTitle>Add New Lead</DialogTitle></DialogHeader>
+   266→              <div className="grid gap-4 py-4">
+   267→                <div className="grid grid-cols-2 gap-4">
+   268→                  <div className="space-y-2">
+   269→                    <Label>Full Name *</Label>
+   270→                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Contact name" />
+   271→                  </div>
+   272→                  <div className="space-y-2">
+   273→                    <Label>Company</Label>
+   274→                    <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company name" />
+   275→                  </div>
+   276→                </div>
+   277→                <div className="grid grid-cols-2 gap-4">
+   278→                  <div className="space-y-2">
+   279→                    <Label>Phone</Label>
+   280→                    <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+971 5x xxx xxxx" />
+   281→                  </div>
+   282→                  <div className="space-y-2">
+   283→                    <Label>Email</Label>
+   284→                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@company.ae" />
+   285→                  </div>
+   286→                </div>
+   287→                <div className="grid grid-cols-3 gap-4">
+   288→                  <div className="space-y-2">
+   289→                    <Label>Emirate</Label>
+   290→                    <Select value={form.emirate} onValueChange={(v) => setForm({ ...form, emirate: v })}>
+   291→                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+   292→                      <SelectContent>{EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+   293→                    </Select>
+   294→                  </div>
+   295→                  <div className="space-y-2">
+   296→                    <Label>Source</Label>
+   297→                    <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
+   298→                      <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
+   299→                      <SelectContent>{LEAD_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+   300→                    </Select>
+   301→                  </div>
+   302→                  <div className="space-y-2">
+   303→                    <Label>Priority</Label>
+   304→                    <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+   305→                      <SelectTrigger><SelectValue /></SelectTrigger>
+   306→                      <SelectContent>
+   307→                        {['low', 'medium', 'high', 'urgent'].map((p) => <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>)}
+   308→                      </SelectContent>
+   309→                    </Select>
+   310→                  </div>
+   311→                </div>
+   312→                <div className="grid grid-cols-2 gap-4">
+   313→                  <div className="space-y-2">
+   314→                    <Label>Vehicle Count</Label>
+   315→                    <Input type="number" value={form.vehicleCount} onChange={(e) => setForm({ ...form, vehicleCount: e.target.value })} placeholder="e.g. 10" />
+   316→                  </div>
+   317→                  <div className="space-y-2">
+   318→                    <Label>Vehicle Type</Label>
+   319→                    <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v })}>
+   320→                      <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+   321→                      <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+   322→                    </Select>
+   323→                  </div>
+   324→                </div>
+   325→                <div className="space-y-2">
+   326→                  <Label>Requirement</Label>
+   327→                  <Textarea value={form.requirement} onChange={(e) => setForm({ ...form, requirement: e.target.value })} placeholder="Describe the customer requirement..." rows={3} />
+   328→                </div>
+   329→              </div>
+   330→              <DialogFooter>
+   331→                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+   332→                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreateLead} disabled={submitting}>
+   333→                  {submitting ? 'Creating...' : 'Create Lead'}
+   334→                </Button>
+   335→              </DialogFooter>
+   336→            </DialogContent>
+   337→          </Dialog>
+   338→        </div>
+   339→      </div>
+   340→
+   341→      {/* Pipeline Summary Cards */}
+   342→      {summary && !loading && (
+   343→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   344→          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   345→            <CardContent className="p-4">
+   346→              <div className="flex items-center gap-3">
+   347→                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+   348→                  <TrendingUp className="w-5 h-5 text-blue-600" />
+   349→                </div>
+   350→                <div>
+   351→                  <p className="text-2xl font-bold text-slate-900">{summary.total}</p>
+   352→                  <p className="text-xs text-slate-500">Total Leads</p>
+   353→                </div>
+   354→              </div>
+   355→            </CardContent>
+   356→          </Card>
+   357→          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   358→            <CardContent className="p-4">
+   359→              <div className="flex items-center gap-3">
+   360→                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+   361→                  <Trophy className="w-5 h-5 text-emerald-600" />
+   362→                </div>
+   363→                <div>
+   364→                  <p className="text-2xl font-bold text-slate-900">{summary.wonThisMonth}</p>
+   365→                  <p className="text-xs text-slate-500">Won This Month</p>
+   366→                </div>
+   367→              </div>
+   368→            </CardContent>
+   369→          </Card>
+   370→          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   371→            <CardContent className="p-4">
+   372→              <div className="flex items-center gap-3">
+   373→                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+   374→                  <FileText className="w-5 h-5 text-purple-600" />
+   375→                </div>
+   376→                <div>
+   377→                  <p className="text-2xl font-bold text-slate-900">{summary.byStage.proposal || 0}</p>
+   378→                  <p className="text-xs text-slate-500">In Proposal</p>
+   379→                </div>
+   380→              </div>
+   381→            </CardContent>
+   382→          </Card>
+   383→          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+   384→            <CardContent className="p-4">
+   385→              <div className="flex items-center gap-3">
+   386→                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+   387→                  <span className="text-lg font-bold text-amber-600">AED</span>
+   388→                </div>
+   389→                <div>
+   390→                  <p className="text-2xl font-bold text-slate-900">{formatAED(summary.totalValue)}</p>
+   391→                  <p className="text-xs text-slate-500">Pipeline Value</p>
+   392→                </div>
+   393→              </div>
+   394→            </CardContent>
+   395→          </Card>
+   396→        </div>
+   397→      )}
+   398→
+   399→      {/* Kanban Board */}
+   400→      {loading ? (
+   401→        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+   402→          {Array.from({ length: 7 }).map((_, i) => (
+   403→            <div key={i} className="space-y-3">
+   404→              <Skeleton className="h-8 w-24" />
+   405→              <Skeleton className="h-32 rounded-xl" />
+   406→              <Skeleton className="h-28 rounded-xl" />
+   407→            </div>
+   408→          ))}
+   409→        </div>
+   410→      ) : (
+   411→        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+   412→          {PIPELINE_STAGES.map((stage) => {
+   413→            const leads = pipeline[stage.id] || [];
+   414→            return (
+   415→              <div
+   416→                key={stage.id}
+   417→                className={`flex-shrink-0 w-[280px] lg:w-auto lg:flex-1 bg-slate-50/80 rounded-xl border-t-[3px] ${stage.color} p-3`}
+   418→              >
+   419→                {/* Column Header */}
+   420→                <div className="flex items-center justify-between mb-3">
+   421→                  <div className="flex items-center gap-2">
+   422→                    <h3 className="text-sm font-semibold text-slate-700">{stage.label}</h3>
+   423→                    <Badge variant="secondary" className="text-[11px] bg-white text-slate-600 border-0">
+   424→                      {leads.length}
+   425→                    </Badge>
+   426→                  </div>
+   427→                </div>
+   428→
+   429→                {/* Lead Cards */}
+   430→                <div className="space-y-2.5 min-h-[120px]">
+   431→                  {leads.length === 0 && (
+   432→                    <div className="text-center py-8 text-slate-400 text-xs">
+   433→                      No leads
+   434→                    </div>
+   435→                  )}
+   436→                  {leads.map((lead) => (
+   437→                    <motion.div
+   438→                      key={lead.id}
+   439→                      initial={{ opacity: 0, y: 8 }}
+   440→                      animate={{ opacity: 1, y: 0 }}
+   441→                      transition={{ delay: 0.05 }}
+   442→                    >
+   443→                      <Card
+   444→                        className="rounded-lg border-slate-200/60 shadow-sm hover:shadow-md cursor-pointer transition-all hover:border-emerald-200"
+   445→                        onClick={() => fetchLeadDetail(lead.id)}
+   446→                      >
+   447→                        <CardContent className="p-3">
+   448→                          <div className="flex items-start justify-between gap-2">
+   449→                            <div className="min-w-0 flex-1">
+   450→                              <p className="text-sm font-semibold text-slate-800 truncate">{lead.name}</p>
+   451→                              {lead.company && (
+   452→                                <p className="text-xs text-slate-500 truncate mt-0.5 flex items-center gap-1">
+   453→                                  <Building2 className="w-3 h-3" /> {lead.company}
+   454→                                </p>
+   455→                              )}
+   456→                            </div>
+   457→                            <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
+   458→                          </div>
+   459→
+   460→                          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+   461→                            {lead.emirate && (
+   462→                              <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{lead.emirate}</span>
+   463→                            )}
+   464→                            {lead.vehicleCount && (
+   465→                              <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-medium">
+   466→                                {lead.vehicleCount} vehicle{lead.vehicleCount > 1 ? 's' : ''}
+   467→                              </span>
+   468→                            )}
+   469→                            {lead.source && (
+   470→                              <span>{lead.source}</span>
+   471→                            )}
+   472→                          </div>
+   473→
+   474→                          {/* Quick actions bar */}
+   475→                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+   476→                            <div className="flex items-center gap-1.5">
+   477→                              {lead.quotations && lead.quotations.length > 0 && (
+   478→                                <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-medium">
+   479→                                  {lead.quotations.length} quote{lead.quotations.length > 1 ? 's' : ''}
+   480→                                </span>
+   481→                              )}
+   482→                              {lead._count && lead._count.activities > 0 && (
+   483→                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
+   484→                                  {lead._count.activities} activities
+   485→                                </span>
+   486→                              )}
+   487→                            </div>
+   488→                            {lead.assignedTo && (
+   489→                              <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-semibold text-slate-600" title={lead.assignedTo.name}>
+   490→                                {lead.assignedTo.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+   491→                              </div>
+   492→                            )}
+   493→                          </div>
+   494→
+   495→                          {/* Move to next stage button */}
+   496→                          <div className="mt-2">
+   497→                            <Select onValueChange={(v) => handleStatusChange(lead.id, v)}>
+   498→                              <SelectTrigger className="h-7 text-[11px] w-full">
+   499→                                <SelectValue placeholder="Move to..." />
+   500→                              </SelectTrigger>
+   501→                              <SelectContent>
+   502→                                {PIPELINE_STAGES.map((s) => (
+   503→                                  <SelectItem key={s.id} value={s.id} disabled={s.id === lead.status}>
+   504→                                    {s.label}
+   505→                                  </SelectItem>
+   506→                                ))}
+   507→                              </SelectContent>
+   508→                            </Select>
+   509→                          </div>
+   510→                        </CardContent>
+   511→                      </Card>
+   512→                    </motion.div>
+   513→                  ))}
+   514→                </div>
+   515→              </div>
+   516→            );
+   517→          })}
+   518→        </div>
+   519→      )}
+   520→
+   521→      {/* ─── Lead Detail Side Sheet ─── */}
+   522→      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+   523→        <SheetContent side="right" className="w-full sm:w-[540px] p-0 overflow-y-auto">
+   524→          <SheetTitle className="sr-only">Lead Detail</SheetTitle>
+   525→          {detailLoading ? (
+   526→            <div className="p-6 space-y-4">
+   527→              <Skeleton className="h-8 w-48" />
+   528→              <Skeleton className="h-40 w-full" />
+   529→              <Skeleton className="h-60 w-full" />
+   530→            </div>
+   531→          ) : selectedLead ? (
+   532→            <div className="p-6 space-y-6">
+   533→              {/* Header */}
+   534→              <div className="flex items-start justify-between">
+   535→                <div>
+   536→                  <h3 className="text-xl font-bold text-slate-900">{selectedLead.name}</h3>
+   537→                  {selectedLead.company && (
+   538→                    <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+   539→                      <Building2 className="w-3.5 h-3.5" /> {selectedLead.company}
+   540→                    </p>
+   541→                  )}
+   542→                </div>
+   543→                <Badge className={`${STATUS_COLORS[selectedLead.status] || 'bg-slate-100 text-slate-600'} border-0`}
+   544→                >
+   545→                  {selectedLead.status}
+   546→                </Badge>
+   547→              </div>
+   548→
+   549→              {/* Contact Info */}
+   550→              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl">
+   551→                {selectedLead.phone && (
+   552→                  <div className="flex items-center gap-2 text-sm">
+   553→                    <Phone className="w-4 h-4 text-slate-400" />
+   554→                    <a href={`tel:${selectedLead.phone}`} className="text-emerald-600 hover:underline">{selectedLead.phone}</a>
+   555→                  </div>
+   556→                )}
+   557→                {selectedLead.email && (
+   558→                  <div className="flex items-center gap-2 text-sm">
+   559→                    <span className="text-slate-400">✉</span>
+   560→                    <a href={`mailto:${selectedLead.email}`} className="text-emerald-600 hover:underline">{selectedLead.email}</a>
+   561→                  </div>
+   562→                )}
+   563→                {selectedLead.emirate && (
+   564→                  <div className="flex items-center gap-2 text-sm text-slate-600">
+   565→                    <MapPin className="w-4 h-4 text-slate-400" /> {selectedLead.emirate}
+   566→                  </div>
+   567→                )}
+   568→                {selectedLead.vehicleCount && (
+   569→                  <div className="text-sm text-slate-600">
+   570→                    <span className="font-medium">{selectedLead.vehicleCount}</span> vehicle{selectedLead.vehicleCount > 1 ? 's' : ''}
+   571→                    {selectedLead.vehicleType && ` (${selectedLead.vehicleType})`}
+   572→                  </div>
+   573→                )}
+   574→                {selectedLead.source && (
+   575→                  <div className="text-sm text-slate-500">
+   576→                    Source: <span className="font-medium text-slate-700">{selectedLead.source}</span>
+   577→                  </div>
+   578→                )}
+   579→                <div className="flex items-center gap-1.5 text-sm">
+   580→                  <div className={`w-2.5 h-2.5 rounded-full ${PRIORITY_COLORS[selectedLead.priority] || 'bg-slate-300'}`} />
+   581→                  <span className="capitalize text-slate-600">{selectedLead.priority} priority</span>
+   582→                </div>
+   583→              </div>
+   584→
+   585→              {/* Notes */}
+   586→              {selectedLead.notes && (
+   587→                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+   588→                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Notes</p>
+   589→                  <p className="text-sm text-amber-900 whitespace-pre-wrap">{selectedLead.notes}</p>
+   590→                </div>
+   591→              )}
+   592→
+   593→              {/* Quick Actions */}
+   594→              <div className="flex flex-wrap gap-2">
+   595→                <Button
+   596→                  size="sm"
+   597→                  variant="outline"
+   598→                  className="gap-1.5 text-xs"
+   599→                  onClick={() => {
+   600→                    setQuotationLeadId(selectedLead.id);
+   601→                    setQuotationOpen(true);
+   602→                  }}
+   603→                >
+   604→                  <FileText className="w-3.5 h-3.5" /> Create Quotation
+   605→                </Button>
+   606→                <Select
+   607→                  onValueChange={(v) => handleStatusChange(selectedLead.id, v)}
+   608→                >
+   609→                  <SelectTrigger className="h-9 w-[160px] text-xs gap-1.5">
+   610→                    <span className="text-slate-500">Move to</span>
+   611→                    <SelectValue />
+   612→                  </SelectTrigger>
+   613→                  <SelectContent>
+   614→                    {PIPELINE_STAGES.map((s) => (
+   615→                      <SelectItem key={s.id} value={s.id} disabled={s.id === selectedLead.status}>
+   616→                        {s.label}
+   617→                      </SelectItem>
+   618→                    ))}
+   619→                  </SelectContent>
+   620→                </Select>
+   621→              </div>
+   622→
+   623→              {/* Activity Log */}
+   624→              <div>
+   625→                <div className="flex items-center justify-between mb-3">
+   626→                  <h4 className="text-sm font-semibold text-slate-700">Activity Log</h4>
+   627→                </div>
+   628→
+   629→                {/* Add Activity Form */}
+   630→                <div className="p-3 bg-slate-50 rounded-lg mb-3 space-y-2">
+   631→                  <div className="flex gap-2">
+   632→                    <Select value={activityType} onValueChange={setActivityType}>
+   633→                      <SelectTrigger className="h-8 w-[110px] text-xs">
+   634→                        <SelectValue />
+   635→                      </SelectTrigger>
+   636→                      <SelectContent>
+   637→                        {ACTIVITY_TYPES.map((t) => (
+   638→                          <SelectItem key={t} value={t}>
+   639→                            {ACTIVITY_ICONS[t] || '📋'} {t.charAt(0).toUpperCase() + t.slice(1)}
+   640→                          </SelectItem>
+   641→                        ))}
+   642→                      </SelectContent>
+   643→                    </Select>
+   644→                    <Input
+   645→                      className="h-8 text-xs flex-1"
+   646→                      placeholder="Activity title..."
+   647→                      value={activityTitle}
+   648→                      onChange={(e) => setActivityTitle(e.target.value)}
+   649→                      onKeyDown={(e) => e.key === 'Enter' && handleAddActivity()}
+   650→                    />
+   651→                    <Button
+   652→                      size="sm"
+   653→                      className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+   654→                      onClick={handleAddActivity}
+   655→                      disabled={activitySubmitting || !activityTitle.trim()}
+   656→                    >
+   657→                      <Plus className="w-3.5 h-3.5" />
+   658→                    </Button>
+   659→                  </div>
+   660→                  <Input
+   661→                    className="h-7 text-xs"
+   662→                    placeholder="Description (optional)..."
+   663→                    value={activityDesc}
+   664→                    onChange={(e) => setActivityDesc(e.target.value)}
+   665→                  />
+   666→                </div>
+   667→
+   668→                {/* Activities List */}
+   669→                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+   670→                  {!selectedLead.activities || selectedLead.activities.length === 0 ? (
+   671→                    <p className="text-xs text-slate-400 text-center py-4">No activities yet</p>
+   672→                  ) : (
+   673→                    selectedLead.activities.map((act) => (
+   674→                      <div key={act.id} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50">
+   675→                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm flex-shrink-0">
+   676→                          {ACTIVITY_ICONS[act.type] || '📋'}
+   677→                        </div>
+   678→                        <div className="flex-1 min-w-0">
+   679→                          <div className="flex items-center justify-between">
+   680→                            <p className="text-sm font-medium text-slate-800 truncate">{act.title}</p>
+   681→                            <span className="text-[10px] text-slate-400 flex-shrink-0 ml-2">{formatDate(act.createdAt)}</span>
+   682→                          </div>
+   683→                          {act.description && (
+   684→                            <p className="text-xs text-slate-500 mt-0.5 truncate">{act.description}</p>
+   685→                          )}
+   686→                          {act.user && (
+   687→                            <p className="text-[10px] text-slate-400 mt-0.5">by {act.user.name}</p>
+   688→                          )}
+   689→                        </div>
+   690→                      </div>
+   691→                    ))
+   692→                  )}
+   693→                </div>
+   694→              </div>
+   695→
+   696→              {/* Quotations */}
+   697→              {selectedLead.quotations && selectedLead.quotations.length > 0 && (
+   698→                <div>
+   699→                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Quotations</h4>
+   700→                  <div className="space-y-2">
+   701→                    {selectedLead.quotations.map((q: Quotation) => (
+   702→                      <div
+   703→                        key={q.id}
+   704→                        className="flex items-center justify-between p-3 bg-white border border-slate-200/60 rounded-lg hover:border-emerald-200 transition-colors"
+   705→                      >
+   706→                        <div>
+   707→                          <p className="text-sm font-medium text-slate-800 font-mono">{q.quotationNumber}</p>
+   708→                          <p className="text-xs text-slate-500">{formatDate(q.createdAt)}</p>
+   709→                        </div>
+   710→                        <div className="text-right">
+   711→                          <p className="text-sm font-bold text-slate-900">{formatAED(q.total)}</p>
+   712→                          <Badge className={`text-[10px] ${STATUS_COLORS[q.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+   713→                            {q.status}
+   714→                          </Badge>
+   715→                        </div>
+   716→                      </div>
+   717→                    ))}
+   718→                  </div>
+   719→                </div>
+   720→              )}
+   721→
+   722→              {/* Meta */}
+   723→              <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 space-y-1">
+   724→                <p>Created: {formatDate(selectedLead.createdAt)}</p>
+   725→                <p>Last updated: {formatDate(selectedLead.updatedAt)}</p>
+   726→                {selectedLead.organization && <p>Org: {selectedLead.organization.name}</p>}
+   727→              </div>
+   728→            </div>
+   729→          ) : null}
+   730→        </SheetContent>
+   731→      </Sheet>
+   732→
+   733→      {/* ─── Create Quotation Dialog ─── */}
+   734→      <Dialog open={quotationOpen} onOpenChange={setQuotationOpen}>
+   735→        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+   736→          <DialogHeader>
+   737→            <DialogTitle>Create Quotation</DialogTitle>
+   738→          </DialogHeader>
+   739→          <div className="space-y-4 py-2">
+   740→            {/* Line Items */}
+   741→            <div>
+   742→              <Label className="text-sm font-semibold">Line Items</Label>
+   743→              <div className="mt-2 space-y-2">
+   744→                {quotationItems.map((item, idx) => (
+   745→                  <div key={idx} className="flex items-center gap-2">
+   746→                    <Input
+   747→                      className="flex-1 h-9 text-sm"
+   748→                      placeholder="Description"
+   749→                      value={item.description}
+   750→                      onChange={(e) => updateQuotationItem(idx, 'description', e.target.value)}
+   751→                    />
+   752→                    <Input
+   753→                      className="w-20 h-9 text-sm text-center"
+   754→                      type="number"
+   755→                      placeholder="Qty"
+   756→                      value={item.quantity}
+   757→                      onChange={(e) => updateQuotationItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+   758→                    />
+   759→                    <Input
+   760→                      className="w-28 h-9 text-sm text-right"
+   761→                      type="number"
+   762→                      placeholder="AED"
+   763→                      value={item.unitPrice}
+   764→                      onChange={(e) => updateQuotationItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+   765→                    />
+   766→                    <p className="text-sm font-medium text-slate-700 w-24 text-right">
+   767→                      {formatAED(item.quantity * item.unitPrice)}
+   768→                    </p>
+   769→                    <button
+   770→                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   771→                      onClick={() => removeQuotationItem(idx)}
+   772→                    >
+   773→                      ✕
+   774→                    </button>
+   775→                  </div>
+   776→                ))}
+   777→              </div>
+   778→              <Button variant="outline" size="sm" className="mt-2 gap-1.5" onClick={addQuotationItem}>
+   779→                <Plus className="w-3.5 h-3.5" /> Add Item
+   780→              </Button>
+   781→            </div>
+   782→
+   783→            {/* Notes */}
+   784→            <div className="space-y-2">
+   785→              <Label>Notes</Label>
+   786→              <Textarea
+   787→                value={quotationNotes}
+   788→                onChange={(e) => setQuotationNotes(e.target.value)}
+   789→                placeholder="Additional notes for the customer..."
+   790→                rows={2}
+   791→              />
+   792→            </div>
+   793→
+   794→            {/* Totals */}
+   795→            <div className="p-4 bg-slate-50 rounded-xl space-y-2">
+   796→              <div className="flex justify-between text-sm">
+   797→                <span className="text-slate-500">Subtotal</span>
+   798→                <span className="font-medium">{formatAED(quotationSubtotal)}</span>
+   799→              </div>
+   800→              <div className="flex justify-between text-sm">
+   801→                <span className="text-slate-500">VAT (5%)</span>
+   802→                <span className="font-medium">{formatAED(quotationTax)}</span>
+   803→              </div>
+   804→              <div className="flex justify-between text-base font-bold border-t border-slate-200 pt-2">
+   805→                <span>Total</span>
+   806→                <span className="text-emerald-700">{formatAED(quotationTotal)}</span>
+   807→              </div>
+   808→            </div>
+   809→          </div>
+   810→          <DialogFooter>
+   811→            <Button variant="outline" onClick={() => setQuotationOpen(false)}>Cancel</Button>
+   812→            <Button
+   813→              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+   814→              onClick={handleCreateQuotation}
+   815→              disabled={quotationSubmitting}
+   816→            >
+   817→              {quotationSubmitting ? 'Creating...' : 'Create Quotation'}
+   818→            </Button>
+   819→          </DialogFooter>
+   820→        </DialogContent>
+   821→      </Dialog>
+   822→    </div>
+   823→  );
+   824→}
+   825→

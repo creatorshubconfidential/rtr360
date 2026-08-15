@@ -1,0 +1,1690 @@
+     1→/**
+     2→ * RTR 360 — Database Seed Script
+     3→ * Populates the database with realistic UAE demo data.
+     4→ * Run with: bun run src/lib/seed.ts
+     5→ */
+     6→
+     7→import { db } from '@/lib/db';
+     8→import { hashPassword } from '@/lib/auth';
+     9→
+    10→async function main() {
+    11→  console.log('🌱 Seeding RTR 360 database...');
+    12→  console.log('='.repeat(50));
+    13→
+    14→  // Clean up existing data (order matters for FK constraints)
+    15→  console.log('🧹 Cleaning existing data...');
+    16→  await db.alert.deleteMany();
+    17→  await db.ticket.deleteMany();
+    18→  await db.trip.deleteMany();
+    19→  await db.maintenanceRecord.deleteMany();
+    20→  await db.installation.deleteMany();
+    21→  await db.technician.deleteMany();
+    22→  await db.notification.deleteMany();
+    23→  await db.document.deleteMany();
+    24→  await db.quotation.deleteMany();
+    25→  await db.invoice.deleteMany();
+    26→  await db.subscription.deleteMany();
+    27→  await db.activity.deleteMany();
+    28→  await db.opportunity.deleteMany();
+    29→  await db.lead.deleteMany();
+    30→  await db.contact.deleteMany();
+    31→  await db.vehicle.deleteMany();
+    32→  await db.driver.deleteMany();
+    33→  await db.device.deleteMany();
+    34→  await db.sIM.deleteMany();
+    35→  await db.geofence.deleteMany();
+    36→  await db.alertRule.deleteMany();
+    37→  await db.contract.deleteMany();
+    38→  await db.branch.deleteMany();
+    39→  await db.session.deleteMany();
+    40→  await db.user.deleteMany();
+    41→  await db.plan.deleteMany();
+    42→  await db.organization.deleteMany();
+    43→  await db.setting.deleteMany();
+    44→
+    45→  console.log('✅ Database cleaned');
+    46→
+    47→  // ========================================
+    48→  // 1. ORGANIZATIONS
+    49→  // ========================================
+    50→  console.log('\n🏢 Creating organizations...');
+    51→
+    52→  const rtrOrg = await db.organization.create({
+    53→    data: {
+    54→      name: 'RTR Platform',
+    55→      tradeName: 'RTR',
+    56→      legalName: 'RTR Technology Solutions LLC',
+    57→      industry: 'Technology',
+    58→      email: 'info@rtr.ae',
+    59→      phone: '+971-4-123-4567',
+    60→      website: 'https://rtr.ae',
+    61→      emirate: 'Dubai',
+    62→      address: 'Dubai Internet City, Building 12',
+    63→      city: 'Dubai',
+    64→      status: 'active',
+    65→      planName: 'Enterprise',
+    66→      vehicleLimit: 9999,
+    67→      userLimit: 999,
+    68→    },
+    69→  });
+    70→  console.log(`  ✅ RTR Platform (${rtrOrg.id})`);
+    71→
+    72→  const customerOrg = await db.organization.create({
+    73→    data: {
+    74→      name: 'Al Fahim Logistics',
+    75→      tradeName: 'Al Fahim',
+    76→      legalName: 'Al Fahim Logistics Co. LLC',
+    77→      industry: 'Logistics & Transportation',
+    78→      email: 'info@alfahim.ae',
+    79→      phone: '+971-2-678-9012',
+    80→      website: 'https://alfahim.ae',
+    81→      emirate: 'Abu Dhabi',
+    82→      address: 'Khalifa Industrial Zone (KIZAD)',
+    83→      city: 'Abu Dhabi',
+    84→      status: 'active',
+    85→      planName: 'Premium',
+    86→      vehicleLimit: 50,
+    87→      userLimit: 20,
+    88→    },
+    89→  });
+    90→  console.log(`  ✅ Al Fahim Logistics (${customerOrg.id})`);
+    91→
+    92→  // Phase 2: Additional customer orgs for pipeline demo
+    93→  const megaOrg = await db.organization.create({
+    94→    data: {
+    95→      name: 'Mega Logistics FZCO',
+    96→      tradeName: 'Mega Logistics',
+    97→      legalName: 'Mega Logistics FZCO',
+    98→      industry: 'Logistics & Transportation',
+    99→      email: 'info@megalogistics.ae',
+   100→      phone: '+971-4-888-9900',
+   101→      emirate: 'Dubai',
+   102→      address: 'JAFZA South, Building 45',
+   103→      city: 'Dubai',
+   104→      status: 'active',
+   105→      planName: 'Starter',
+   106→      vehicleLimit: 10,
+   107→      userLimit: 5,
+   108→    },
+   109→  });
+   110→  console.log(`  ✅ Mega Logistics FZCO (${megaOrg.id})`);
+   111→
+   112→  // Phase 9: Additional orgs for Super Admin demo
+   113→  const gulfTransitOrg = await db.organization.create({
+   114→    data: {
+   115→      name: 'Gulf Transit LLC',
+   116→      tradeName: 'Gulf Transit',
+   117→      legalName: 'Gulf Transit LLC',
+   118→      industry: 'Transportation',
+   119→      email: 'ops@gulftransit.ae',
+   120→      phone: '+971-6-555-1234',
+   121→      emirate: 'Sharjah',
+   122→      address: 'SAIF Zone, Sharjah',
+   123→      city: 'Sharjah',
+   124→      status: 'active',
+   125→      planName: 'Starter',
+   126→      vehicleLimit: 15,
+   127→      userLimit: 5,
+   128→    },
+   129→  });
+   130→  console.log(`  ✅ Gulf Transit LLC (${gulfTransitOrg.id})`);
+   131→
+   132→  const emiratesFleetOrg = await db.organization.create({
+   133→    data: {
+   134→      name: 'Emirates Fleet Services',
+   135→      tradeName: 'Emirates Fleet',
+   136→      legalName: 'Emirates Fleet Services LLC',
+   137→      industry: 'Fleet Management',
+   138→      email: 'info@emiratesfleet.ae',
+   139→      phone: '+971-3-777-8899',
+   140→      emirate: 'Ajman',
+   141→      address: 'Ajman Free Zone',
+   142→      city: 'Ajman',
+   143→      status: 'active',
+   144→      planName: 'Premium',
+   145→      vehicleLimit: 30,
+   146→      userLimit: 10,
+   147→      whiteLabelEnabled: true,
+   148→      primaryColor: '#1e40af',
+   149→      brandedAppName: 'FleetTrack Pro',
+   150→    },
+   151→  });
+   152→  console.log(`  ✅ Emirates Fleet Services (${emiratesFleetOrg.id})`);
+   153→
+   154→  const nationalCargoOrg = await db.organization.create({
+   155→    data: {
+   156→      name: 'National Cargo Co.',
+   157→      tradeName: 'National Cargo',
+   158→      legalName: 'National Cargo Company LLC',
+   159→      industry: 'Cargo & Logistics',
+   160→      email: 'info@nationalcargo.ae',
+   161→      phone: '+971-7-222-3344',
+   162→      emirate: 'Ras Al Khaimah',
+   163→      address: 'RAK Free Trade Zone',
+   164→      city: 'Ras Al Khaimah',
+   165→      status: 'active',
+   166→      planName: 'Free',
+   167→      vehicleLimit: 5,
+   168→      userLimit: 3,
+   169→    },
+   170→  });
+   171→  console.log(`  ✅ National Cargo Co. (${nationalCargoOrg.id})`);
+   172→
+   173→  const adnocOrg = await db.organization.create({
+   174→    data: {
+   175→      name: 'ADNOC Distribution',
+   176→      tradeName: 'ADNOC Dist',
+   177→      legalName: 'ADNOC Distribution LLC',
+   178→      industry: 'Oil & Gas',
+   179→      email: 'fleet@adnocdist.ae',
+   180→      phone: '+971-2-666-7788',
+   181→      emirate: 'Abu Dhabi',
+   182→      address: 'ADNOC HQ, Corniche Road',
+   183→      city: 'Abu Dhabi',
+   184→      status: 'active',
+   185→      planName: 'Enterprise',
+   186→      vehicleLimit: 200,
+   187→      userLimit: 50,
+   188→      whiteLabelEnabled: true,
+   189→      primaryColor: '#dc2626',
+   190→      accentColor: '#fbbf24',
+   191→      brandedAppName: 'ADNOC Fleet Command',
+   192→    },
+   193→  });
+   194→  console.log(`  ✅ ADNOC Distribution (${adnocOrg.id})`);
+   195→
+   196→  const inactiveOrg = await db.organization.create({
+   197→    data: {
+   198→      name: 'Desert Express (Inactive)',
+   199→      tradeName: 'Desert Express',
+   200→      industry: 'Courier',
+   201→      email: 'info@desertexpress.ae',
+   202→      emirate: 'Fujairah',
+   203→      status: 'inactive',
+   204→      planName: 'Free',
+   205→      vehicleLimit: 5,
+   206→      userLimit: 2,
+   207→    },
+   208→  });
+   209→  console.log(`  ✅ Desert Express (Inactive) (${inactiveOrg.id})`);
+   210→
+   211→  // ========================================
+   212→  // 2. USERS
+   213→  // ========================================
+   214→  console.log('\n👤 Creating users...');
+   215→
+   216→  // Password from env var or a strong default (dev only)
+   217→  const SEED_PASSWORD = process.env.SEED_PASSWORD || 'REDACTED_SEED_PASSWORD';
+   218→
+   219→  const adminPw = await hashPassword(SEED_PASSWORD);
+   220→  const superAdmin = await db.user.create({
+   221→    data: {
+   222→      email: 'admin@rtr.ae',
+   223→      passwordHash: adminPw,
+   224→      name: 'RTR Super Admin',
+   225→      phone: '+971-50-111-2233',
+   226→      role: 'super_admin',
+   227→      // No organizationId — super admin sees all orgs
+   228→      status: 'active',
+   229→      emailVerified: true,
+   230→    },
+   231→  });
+   232→  console.log(`  ✅ Super Admin: admin@rtr.ae`);
+   233→
+   234→  const opsPw = await hashPassword(SEED_PASSWORD);
+   235→  const opsManager = await db.user.create({
+   236→    data: {
+   237→      email: 'ahmed.ops@rtr.ae',
+   238→      passwordHash: opsPw,
+   239→      name: 'Ahmed Al Mansouri',
+   240→      phone: '+971-50-444-5566',
+   241→      role: 'operations_manager',
+   242→      organizationId: rtrOrg.id,
+   243→      status: 'active',
+   244→      emailVerified: true,
+   245→    },
+   246→  });
+   247→  console.log(`  ✅ Operations Manager: ahmed.ops@rtr.ae`);
+   248→
+   249→  const salesPw = await hashPassword(SEED_PASSWORD);
+   250→  const salesManager = await db.user.create({
+   251→    data: {
+   252→      email: 'fatima.sales@rtr.ae',
+   253→      passwordHash: salesPw,
+   254→      name: 'Fatima Al Hashemi',
+   255→      phone: '+971-50-777-8899',
+   256→      role: 'sales_manager',
+   257→      organizationId: rtrOrg.id,
+   258→      status: 'active',
+   259→      emailVerified: true,
+   260→    },
+   261→  });
+   262→  console.log(`  ✅ Sales Manager: fatima.sales@rtr.ae`);
+   263→
+   264→  // Customer org user
+   265→  const customerPw = await hashPassword(SEED_PASSWORD);
+   266→  const customerUser = await db.user.create({
+   267→    data: {
+   268→      email: 'khalid@alfahim.ae',
+   269→      passwordHash: customerPw,
+   270→      name: 'Khalid Al Fahim',
+   271→      phone: '+971-50-333-4455',
+   272→      role: 'org_owner',
+   273→      organizationId: customerOrg.id,
+   274→      status: 'active',
+   275→      emailVerified: true,
+   276→    },
+   277→  });
+   278→  console.log(`  ✅ Customer Admin: khalid@alfahim.ae`);
+   279→
+   280→  // ========================================
+   281→  // 3. BRANCHES (for customer org)
+   282→  // ========================================
+   283→  console.log('\n🏠 Creating branches...');
+   284→
+   285→  const branchAbuDhabi = await db.branch.create({
+   286→    data: {
+   287→      name: 'Abu Dhabi HQ',
+   288→      address: 'Khalifa Industrial Zone (KIZAD)',
+   289→      emirate: 'Abu Dhabi',
+   290→      phone: '+971-2-678-9012',
+   291→      organizationId: customerOrg.id,
+   292→    },
+   293→  });
+   294→  console.log(`  ✅ Abu Dhabi HQ`);
+   295→
+   296→  const branchDubai = await db.branch.create({
+   297→    data: {
+   298→      name: 'Dubai Branch',
+   299→      address: 'Jebel Ali Free Zone (JAFZA)',
+   300→      emirate: 'Dubai',
+   301→      phone: '+971-4-555-6677',
+   302→      organizationId: customerOrg.id,
+   303→    },
+   304→  });
+   305→  console.log(`  ✅ Dubai Branch`);
+   306→
+   307→  // ========================================
+   308→  // 4. DEVICES
+   309→  // ========================================
+   310→  console.log('\n📱 Creating devices...');
+   311→
+   312→  const devices = await Promise.all([
+   313→    db.device.create({
+   314→      data: {
+   315→        imei: '860123456789012',
+   316→        serialNumber: 'RTR-DEV-001',
+   317→        model: 'GT06N',
+   318→        manufacturer: 'Concox',
+   319→        phoneNumber: '+971-56-100-0001',
+   320→        firmware: 'v3.2.1',
+   321→        organizationId: customerOrg.id,
+   322→        warehouse: 'JAFZA Warehouse',
+   323→        status: 'installed',
+   324→      },
+   325→    }),
+   326→    db.device.create({
+   327→      data: {
+   328→        imei: '860123456789013',
+   329→        serialNumber: 'RTR-DEV-002',
+   330→        model: 'GT06N',
+   331→        manufacturer: 'Concox',
+   332→        phoneNumber: '+971-56-100-0002',
+   333→        firmware: 'v3.2.1',
+   334→        organizationId: customerOrg.id,
+   335→        warehouse: 'JAFZA Warehouse',
+   336→        status: 'installed',
+   337→      },
+   338→    }),
+   339→    db.device.create({
+   340→      data: {
+   341→        imei: '860123456789014',
+   342→        serialNumber: 'RTR-DEV-003',
+   343→        model: 'FM1200',
+   344→        manufacturer: 'Teltonika',
+   345→        phoneNumber: '+971-56-100-0003',
+   346→        firmware: 'v2.8.0',
+   347→        organizationId: customerOrg.id,
+   348→        warehouse: 'JAFZA Warehouse',
+   349→        status: 'warehouse',
+   350→      },
+   351→    }),
+   352→  ]);
+   353→  console.log(`  ✅ Created ${devices.length} devices`);
+   354→
+   355→  // Add warehouse devices (for RTR platform - unassigned inventory)
+   356→  const warehouseDevices = await Promise.all([
+   357→    db.device.create({
+   358→      data: {
+   359→        imei: '860987654321001', serialNumber: 'RTR-WH-001', model: 'GT06N', manufacturer: 'Concox',
+   360→        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+   361→        status: 'warehouse', purchaseCost: 185, purchaseDate: new Date('2025-06-01'),
+   362→      },
+   363→    }),
+   364→    db.device.create({
+   365→      data: {
+   366→        imei: '860987654321002', serialNumber: 'RTR-WH-002', model: 'GT06N', manufacturer: 'Concox',
+   367→        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+   368→        status: 'warehouse', purchaseCost: 185, purchaseDate: new Date('2025-06-01'),
+   369→      },
+   370→    }),
+   371→    db.device.create({
+   372→      data: {
+   373→        imei: '860987654321003', serialNumber: 'RTR-WH-003', model: 'FM1200', manufacturer: 'Teltonika',
+   374→        deviceType: 'Wired Tracker', protocol: 'FM', warehouse: 'RTR Dubai Warehouse',
+   375→        status: 'warehouse', purchaseCost: 220, purchaseDate: new Date('2025-06-15'),
+   376→      },
+   377→    }),
+   378→    db.device.create({
+   379→      data: {
+   380→        imei: '860987654321004', serialNumber: 'RTR-WH-004', model: 'S10', manufacturer: 'Queclink',
+   381→        deviceType: 'OBD Tracker', protocol: 'Queclink', warehouse: 'RTR Abu Dhabi Warehouse',
+   382→        status: 'warehouse', purchaseCost: 150, purchaseDate: new Date('2025-07-01'),
+   383→      },
+   384→    }),
+   385→    db.device.create({
+   386→      data: {
+   387→        imei: '860987654321005', serialNumber: 'RTR-WH-005', model: 'GT06N', manufacturer: 'Concox',
+   388→        deviceType: 'GPS Tracker', protocol: 'GT06', warehouse: 'RTR Dubai Warehouse',
+   389→        status: 'defective', purchaseCost: 185, purchaseDate: new Date('2025-03-10'),
+   390→      },
+   391→    }),
+   392→  ]);
+   393→  console.log(`  ✅ Created ${warehouseDevices.length} warehouse devices`);
+   394→
+   395→  // ========================================
+   396→  // 4B. TECHNICIANS
+   397→  // ========================================
+   398→  console.log('\n🔧 Creating technicians...');
+   399→
+   400→  const technicians = await Promise.all([
+   401→    db.technician.create({
+   402→      data: {
+   403→        name: 'Hassan Ali Khan', phone: '+971-55-100-2233', email: 'hassan.tech@rtr.ae',
+   404→        emirate: 'Dubai', specialty: 'GPS Installation', organizationId: rtrOrg.id,
+   405→        status: 'active', totalInstalled: 47,
+   406→      },
+   407→    }),
+   408→    db.technician.create({
+   409→      data: {
+   410→        name: 'Waqar Ahmed', phone: '+971-55-200-3344', email: 'waqar.tech@rtr.ae',
+   411→        emirate: 'Dubai', specialty: 'All Types', organizationId: rtrOrg.id,
+   412→        status: 'active', totalInstalled: 32,
+   413→      },
+   414→    }),
+   415→    db.technician.create({
+   416→      data: {
+   417→        name: 'Bilal Sheikh', phone: '+971-55-300-4455',
+   418→        emirate: 'Abu Dhabi', specialty: 'Camera Setup', organizationId: rtrOrg.id,
+   419→        status: 'active', totalInstalled: 18,
+   420→      },
+   421→    }),
+   422→  ]);
+   423→  console.log(`  ✅ Created ${technicians.length} technicians`);
+   424→
+   425→  // ========================================
+   426→  // 5. DRIVERS
+   427→  // ========================================
+   428→  console.log('\n🚗 Creating drivers...');
+   429→
+   430→  const drivers = await Promise.all([
+   431→    db.driver.create({
+   432→      data: {
+   433→        name: 'Mohammed Al Rashid',
+   434→        employeeId: 'DRV-001',
+   435→        phone: '+971-50-222-3344',
+   436→        email: 'mohammed.drv@alfahim.ae',
+   437→        licenseNumber: 'DL-87654',
+   438→        licenseType: 'Heavy Vehicle',
+   439→        licenseExpiry: new Date('2026-06-15'),
+   440→        emirate: 'Dubai',
+   441→        nationality: 'UAE',
+   442→        emergencyContact: 'Ali Al Rashid',
+   443→        emergencyPhone: '+971-50-222-9900',
+   444→        organizationId: customerOrg.id,
+   445→        status: 'active',
+   446→        score: 95.5,
+   447→        totalTrips: 142,
+   448→        totalDistance: 28500.0,
+   449→        totalViolations: 2,
+   450→      },
+   451→    }),
+   452→    db.driver.create({
+   453→      data: {
+   454→        name: 'Rashid Sultan',
+   455→        employeeId: 'DRV-002',
+   456→        phone: '+971-50-333-4455',
+   457→        email: 'rashid.drv@alfahim.ae',
+   458→        licenseNumber: 'DL-54321',
+   459→        licenseType: 'Heavy Vehicle',
+   460→        licenseExpiry: new Date('2025-12-01'),
+   461→        emirate: 'Dubai',
+   462→        nationality: 'India',
+   463→        organizationId: customerOrg.id,
+   464→        status: 'active',
+   465→        score: 88.0,
+   466→        totalTrips: 98,
+   467→        totalDistance: 19200.0,
+   468→        totalViolations: 5,
+   469→      },
+   470→    }),
+   471→    db.driver.create({
+   472→      data: {
+   473→        name: 'Saeed Al Maktoum',
+   474→        employeeId: 'DRV-003',
+   475→        phone: '+971-50-444-5566',
+   476→        licenseNumber: 'DL-11223',
+   477→        licenseType: 'Light Vehicle',
+   478→        licenseExpiry: new Date('2026-09-30'),
+   479→        emirate: 'Abu Dhabi',
+   480→        nationality: 'UAE',
+   481→        organizationId: customerOrg.id,
+   482→        status: 'active',
+   483→        score: 97.2,
+   484→        totalTrips: 210,
+   485→        totalDistance: 42000.0,
+   486→        totalViolations: 0,
+   487→      },
+   488→    }),
+   489→  ]);
+   490→  console.log(`  ✅ Created ${drivers.length} drivers`);
+   491→
+   492→  // ========================================
+   493→  // 6. VEHICLES
+   494→  // ========================================
+   495→  console.log('\n🚛 Creating vehicles...');
+   496→
+   497→  const vehicleData = [
+   498→    {
+   499→      internalId: 'VH-001',
+   500→      plateNumber: 'DXB-A-12345',
+   501→      make: 'Toyota',
+   502→      model: 'Hilux',
+   503→      year: 2023,
+   504→      vehicleType: 'pickup',
+   505→      color: 'White',
+   506→      branchId: branchDubai.id,
+   507→      driverId: drivers[0].id,
+   508→      deviceId: devices[0].id,
+   509→      status: 'active',
+   510→      mileage: 15200.0,
+   511→      installDate: new Date('2024-01-15'),
+   512→    },
+   513→    {
+   514→      internalId: 'VH-002',
+   515→      plateNumber: 'AUH-B-67890',
+   516→      make: 'Nissan',
+   517→      model: 'Patrol',
+   518→      year: 2022,
+   519→      vehicleType: 'suv',
+   520→      color: 'Black',
+   521→      branchId: branchAbuDhabi.id,
+   522→      driverId: drivers[1].id,
+   523→      deviceId: devices[1].id,
+   524→      status: 'active',
+   525→      mileage: 28300.0,
+   526→      installDate: new Date('2024-02-20'),
+   527→    },
+   528→    {
+   529→      internalId: 'VH-003',
+   530→      plateNumber: 'SHJ-C-11223',
+   531→      make: 'Isuzu',
+   532→      model: 'NPR',
+   533→      year: 2023,
+   534→      vehicleType: 'truck',
+   535→      color: 'White',
+   536→      branchId: branchDubai.id,
+   537→      driverId: drivers[2].id,
+   538→      status: 'active',
+   539→      mileage: 45600.0,
+   540→      installDate: new Date('2024-03-10'),
+   541→    },
+   542→    {
+   543→      internalId: 'VH-004',
+   544→      plateNumber: 'DXB-D-44556',
+   545→      make: 'Mitsubishi',
+   546→      model: 'Canter',
+   547→      year: 2021,
+   548→      vehicleType: 'truck',
+   549→      color: 'Silver',
+   550→      branchId: branchDubai.id,
+   551→      status: 'maintenance',
+   552→      mileage: 67800.0,
+   553→      installDate: new Date('2023-08-05'),
+   554→    },
+   555→    {
+   556→      internalId: 'VH-005',
+   557→      plateNumber: 'AJM-E-77889',
+   558→      make: 'Toyota',
+   559→      model: 'Land Cruiser',
+   560→      year: 2024,
+   561→      vehicleType: 'suv',
+   562→      color: 'Pearl White',
+   563→      branchId: branchAbuDhabi.id,
+   564→      status: 'active',
+   565→      mileage: 3200.0,
+   566→      installDate: new Date('2024-06-01'),
+   567→    },
+   568→  ];
+   569→
+   570→  const vehicles = await Promise.all(
+   571→    vehicleData.map((v) =>
+   572→      db.vehicle.create({
+   573→        data: {
+   574→          ...v,
+   575→          organizationId: customerOrg.id,
+   576→          warrantyExpiry: new Date(v.year + 3, 0, 1),
+   577→        },
+   578→      })
+   579→    )
+   580→  );
+   581→  console.log(`  ✅ Created ${vehicles.length} vehicles`);
+   582→
+   583→  // ========================================
+   584→  // 6B. INSTALLATIONS
+   585→  // ========================================
+   586→  console.log('\n🔧 Creating installations...');
+   587→
+   588→  const tomorrow = new Date();
+   589→  tomorrow.setDate(tomorrow.getDate() + 1);
+   590→  const nextWeek = new Date();
+   591→  nextWeek.setDate(nextWeek.getDate() + 5);
+   592→
+   593→  const installations = await Promise.all([
+   594→    db.installation.create({
+   595→      data: {
+   596→        installationNumber: 'INST-202508-001',
+   597→        organizationId: customerOrg.id,
+   598→        vehicleId: vehicles[0].id,
+   599→        deviceId: devices[0].id,
+   600→        technicianId: technicians[0].id,
+   601→        status: 'completed',
+   602→        scheduledDate: new Date('2024-01-14'),
+   603→        scheduledTime: '09:00',
+   604→        completedAt: new Date('2024-01-15'),
+   605→        emirate: 'Dubai',
+   606→        location: 'Al Quoz Industrial Area, Unit 45',
+   607→        gpsSignal: true, powerWiring: true, antennaMounted: true,
+   608→        testResult: 'passed',
+   609→        notes: 'Standard installation, GPS signal strong.',
+   610→      },
+   611→    }),
+   612→    db.installation.create({
+   613→      data: {
+   614→        installationNumber: 'INST-202508-002',
+   615→        organizationId: customerOrg.id,
+   616→        vehicleId: vehicles[1].id,
+   617→        deviceId: devices[1].id,
+   618→        technicianId: technicians[1].id,
+   619→        status: 'completed',
+   620→        scheduledDate: new Date('2024-02-19'),
+   621→        scheduledTime: '10:30',
+   622→        completedAt: new Date('2024-02-20'),
+   623→        emirate: 'Abu Dhabi',
+   624→        location: 'Mussafah Industrial, Block 12',
+   625→        gpsSignal: true, powerWiring: true, antennaMounted: true,
+   626→        testResult: 'passed',
+   627→      },
+   628→    }),
+   629→    db.installation.create({
+   630→      data: {
+   631→        installationNumber: 'INST-202508-003',
+   632→        organizationId: customerOrg.id,
+   633→        vehicleId: vehicles[4].id,
+   634→        deviceId: warehouseDevices[0].id,
+   635→        technicianId: technicians[0].id,
+   636→        status: 'scheduled',
+   637→        scheduledDate: tomorrow,
+   638→        scheduledTime: '08:00',
+   639→        emirate: 'Dubai',
+   640→        location: 'Customer site - Al Jaddaf',
+   641→        notes: 'New vehicle delivery, customer requested morning slot.',
+   642→      },
+   643→    }),
+   644→    db.installation.create({
+   645→      data: {
+   646→        installationNumber: 'INST-202508-004',
+   647→        organizationId: customerOrg.id,
+   648→        vehicleId: vehicles[3].id,
+   649→        deviceId: warehouseDevices[1].id,
+   650→        technicianId: technicians[2].id,
+   651→        status: 'in_progress',
+   652→        scheduledDate: new Date(),
+   653→        scheduledTime: '14:00',
+   654→        emirate: 'Dubai',
+   655→        location: 'RTR Workshop - Al Quoz',
+   656→        notes: 'Maintenance vehicle re-install after repair.',
+   657→      },
+   658→    }),
+   659→  ]);
+   660→  console.log(`  ✅ Created ${installations.length} installations`);
+   661→
+   662→  // ========================================
+   663→  // 7. ALERTS
+   664→  // ========================================
+   665→  console.log('\n⚠️  Creating alerts...');
+   666→
+   667→  const alertData = [
+   668→    {
+   669→      type: 'speeding',
+   670→      severity: 'high',
+   671→      vehicleId: vehicles[0].id,
+   672→      driverName: drivers[0].name,
+   673→      vehiclePlate: vehicles[0].plateNumber,
+   674→      message: 'Speed exceeded 140 km/h on Sheikh Zayed Road',
+   675→      status: 'open',
+   676→    },
+   677→    {
+   678→      type: 'geofence_exit',
+   679→      severity: 'medium',
+   680→      vehicleId: vehicles[1].id,
+   681→      driverName: drivers[1].name,
+   682→      vehiclePlate: vehicles[1].plateNumber,
+   683→      message: 'Vehicle exited Abu Dhabi city geofence boundary',
+   684→      status: 'open',
+   685→    },
+   686→    {
+   687→      type: 'idle',
+   688→      severity: 'low',
+   689→      vehicleId: vehicles[2].id,
+   690→      driverName: drivers[2].name,
+   691→      vehiclePlate: vehicles[2].plateNumber,
+   692→      message: 'Vehicle idling for more than 30 minutes at KIZAD',
+   693→      status: 'resolved',
+   694→      resolvedAt: new Date('2024-07-10T14:30:00Z'),
+   695→    },
+   696→    {
+   697→      type: 'fuel_drop',
+   698→      severity: 'high',
+   699→      vehicleId: vehicles[1].id,
+   700→      driverName: drivers[1].name,
+   701→      vehiclePlate: vehicles[1].plateNumber,
+   702→      message: 'Sudden fuel drop detected — possible theft or leak',
+   703→      status: 'open',
+   704→    },
+   705→    {
+   706→      type: 'maintenance_due',
+   707→      severity: 'medium',
+   708→      vehicleId: vehicles[3].id,
+   709→      vehiclePlate: vehicles[3].plateNumber,
+   710→      message: 'Scheduled maintenance overdue by 2,000 km',
+   711→      status: 'open',
+   712→    },
+   713→  ];
+   714→
+   715→  const alerts = await Promise.all(
+   716→    alertData.map((a) =>
+   717→      db.alert.create({
+   718→        data: { ...a, organizationId: customerOrg.id },
+   719→      })
+   720→    )
+   721→  );
+   722→  console.log(`  ✅ Created ${alerts.length} alerts`);
+   723→
+   724→  // ========================================
+   725→  // 8. LEADS
+   726→  // ========================================
+   727→  console.log('\n📋 Creating leads...');
+   728→
+   729→  const leadsData = [
+   730→    {
+   731→      name: 'Omar Al Ketbi',
+   732→      email: 'omar@emiratescargo.ae',
+   733→      phone: '+971-50-600-1122',
+   734→      company: 'Emirates Cargo Services',
+   735→      emirate: 'Dubai',
+   736→      vehicleCount: 25,
+   737→      vehicleType: 'truck',
+   738→      requirement: 'Full fleet GPS tracking with driver behavior monitoring',
+   739→      source: 'website',
+   740→      campaign: 'Google Ads UAE',
+   741→      status: 'new',
+   742→      priority: 'high',
+   743→      assignedToId: salesManager.id,
+   744→    },
+   745→    {
+   746→      name: 'Aisha Al Qasimi',
+   747→      email: 'aisha@gulftransport.ae',
+   748→      phone: '+971-50-700-2233',
+   749→      company: 'Gulf Transport LLC',
+   750→      emirate: 'Sharjah',
+   751→      vehicleCount: 10,
+   752→      vehicleType: 'van',
+   753→      requirement: 'Temperature monitoring for refrigerated fleet',
+   754→      source: 'referral',
+   755→      status: 'contacted',
+   756→      priority: 'medium',
+   757→      assignedToId: salesManager.id,
+   758→    },
+   759→    {
+   760→      name: 'Hamad Al Nahyan',
+   761→      email: 'hamad@abudhabilogistics.ae',
+   762→      phone: '+971-50-800-3344',
+   763→      company: 'Abu Dhabi Logistics Co.',
+   764→      emirate: 'Abu Dhabi',
+   765→      vehicleCount: 50,
+   766→      vehicleType: 'truck',
+   767→      requirement: 'Enterprise fleet management with API integration',
+   768→      source: 'exhibition',
+   769→      campaign: 'GITEX Technology Week',
+   770→      status: 'qualified',
+   771→      priority: 'high',
+   772→      assignedToId: salesManager.id,
+   773→    },
+   774→    {
+   775→      name: 'Mariam Al Muhairi',
+   776→      email: 'mariam@swiftcourier.ae',
+   777→      phone: '+971-50-900-4455',
+   778→      company: 'Swift Courier Services',
+   779→      emirate: 'Dubai',
+   780→      vehicleCount: 8,
+   781→      vehicleType: 'motorcycle',
+   782→      requirement: 'Real-time tracking for last-mile delivery fleet',
+   783→      source: 'website',
+   784→      status: 'proposal',
+   785→      priority: 'medium',
+   786→      assignedToId: salesManager.id,
+   787→    },
+   788→    {
+   789→      name: 'Sultan Al Suwaidi',
+   790→      email: 'sultan@desertexpress.ae',
+   791→      phone: '+971-50-111-5566',
+   792→      company: 'Desert Express Transport',
+   793→      emirate: 'Ras Al Khaimah',
+   794→      vehicleCount: 15,
+   795→      vehicleType: 'truck',
+   796→      requirement: 'Heavy vehicle tracking with fuel management',
+   797→      source: 'cold_call',
+   798→      status: 'new',
+   799→      priority: 'low',
+   800→      assignedToId: salesManager.id,
+   801→    },
+   802→    {
+   803→      name: 'Latifa Al Shamsi',
+   804→      email: 'latifa@royaltrans.ae',
+   805→      phone: '+971-50-222-6677',
+   806→      company: 'Royal Transportation',
+   807→      emirate: 'Dubai',
+   808→      vehicleCount: 30,
+   809→      vehicleType: 'bus',
+   810→      requirement: 'School bus tracking with parent notification system',
+   811→      source: 'referral',
+   812→      status: 'negotiation',
+   813→      priority: 'high',
+   814→      assignedToId: salesManager.id,
+   815→    },
+   816→    {
+   817→      name: 'Khalifa Al Dhaheri',
+   818→      email: 'khalifa@northernfleet.ae',
+   819→      phone: '+971-50-333-7788',
+   820→      company: 'Northern Fleet Services',
+   821→      emirate: 'Fujairah',
+   822→      vehicleCount: 12,
+   823→      vehicleType: 'pickup',
+   824→      requirement: 'Basic GPS tracking with monthly reports',
+   825→      source: 'website',
+   826→      campaign: 'Facebook Ads UAE',
+   827→      status: 'new',
+   828→      priority: 'medium',
+   829→      assignedToId: salesManager.id,
+   830→    },
+   831→    {
+   832→      name: 'Noora Al Ketbi',
+   833→      email: 'noora@greenfleet.ae',
+   834→      phone: '+971-50-444-8899',
+   835→      company: 'Green Fleet Solutions',
+   836→      emirate: 'Dubai',
+   837→      vehicleCount: 20,
+   838→      vehicleType: 'ev',
+   839→      requirement: 'EV fleet monitoring with battery analytics',
+   840→      source: 'exhibition',
+   841→      campaign: 'WETEX Dubai',
+   842→      status: 'contacted',
+   843→      priority: 'medium',
+   844→      assignedToId: salesManager.id,
+   845→    },
+   846→    {
+   847→      name: 'Ahmed Al Zaabi',
+   848→      email: 'ahmed@citymove.ae',
+   849→      phone: '+971-50-555-9900',
+   850→      company: 'City Move Movers',
+   851→      emirate: 'Ajman',
+   852→      vehicleCount: 6,
+   853→      vehicleType: 'truck',
+   854→      requirement: 'Moving company fleet tracking with route optimization',
+   855→      source: 'cold_call',
+   856→      status: 'lost',
+   857→      priority: 'low',
+   858→      notes: 'Chose competitor — pricing too high',
+   859→      assignedToId: salesManager.id,
+   860→    },
+   861→    {
+   862→      name: 'Rashed Al Ameri',
+   863→      email: 'rashed@megalogistics.ae',
+   864→      phone: '+971-50-666-0011',
+   865→      company: 'Mega Logistics FZCO',
+   866→      emirate: 'Dubai',
+   867→      vehicleCount: 100,
+   868→      vehicleType: 'truck',
+   869→      requirement: 'Enterprise platform with custom integrations and SLA',
+   870→      source: 'website',
+   871→      campaign: 'SEO Organic',
+   872→      status: 'won',
+   873→      priority: 'urgent',
+   874→      assignedToId: salesManager.id,
+   875→    },
+   876→  ];
+   877→
+   878→  const leads = await Promise.all(
+   879→    leadsData.map((l) =>
+   880→      db.lead.create({
+   881→        data: { ...l, organizationId: rtrOrg.id },
+   882→      })
+   883→    )
+   884→  );
+   885→  console.log(`  ✅ Created ${leads.length} leads`);
+   886→
+   887→  // ========================================
+   888→  // 9. PLANS
+   889→  // ========================================
+   890→  console.log('\n💰 Creating plans...');
+   891→
+   892→  const basicPlan = await db.plan.create({
+   893→    data: {
+   894→      name: 'Basic',
+   895→      description: 'Essential fleet tracking for small operations',
+   896→      priceMonthly: 50,
+   897→      priceAnnual: 500,
+   898→      vehicleLimit: 10,
+   899→      features: JSON.stringify([
+   900→        'Real-time GPS tracking',
+   901→        'Basic reporting',
+   902→        'Email alerts',
+   903→        'Mobile app access',
+   904→      ]),
+   905→      active: true,
+   906→    },
+   907→  });
+   908→  console.log(`  ✅ Basic Plan (50 AED/mo)`);
+   909→
+   910→  const premiumPlan = await db.plan.create({
+   911→    data: {
+   912→      name: 'Premium',
+   913→      description: 'Advanced fleet management for growing businesses',
+   914→      priceMonthly: 120,
+   915→      priceAnnual: 1200,
+   916→      vehicleLimit: 0, // unlimited
+   917→      features: JSON.stringify([
+   918→        'Real-time GPS tracking',
+   919→        'Advanced analytics & reports',
+   920→        'Driver behavior monitoring',
+   921→        'Geofencing',
+   922→        'Fuel management',
+   923→        'Maintenance scheduling',
+   924→        'API access',
+   925→        'Priority support',
+   926→        'Custom dashboards',
+   927→      ]),
+   928→      active: true,
+   929→    },
+   930→  });
+   931→  console.log(`  ✅ Premium Plan (120 AED/mo)`);
+   932→
+   933→  // ========================================
+   934→  // 10. SUBSCRIPTION for customer org
+   935→  // ========================================
+   936→  console.log('\n📝 Creating subscription...');
+   937→
+   938→  await db.subscription.create({
+   939→    data: {
+   940→      organizationId: customerOrg.id,
+   941→      planId: premiumPlan.id,
+   942→      status: 'active',
+   943→      vehicleCount: 5,
+   944→      startsAt: new Date('2024-01-01'),
+   945→      endsAt: new Date('2025-01-01'),
+   946→    },
+   947→  });
+   948→  console.log(`  ✅ Al Fahim Logistics → Premium Plan`);
+   949→
+   950→  // ========================================
+   951→  // 11. TICKETS
+   952→  // ========================================
+   953→  console.log('\n🎫 Creating tickets...');
+   954→
+   955→  await Promise.all([
+   956→    db.ticket.create({
+   957→      data: {
+   958→        ticketNumber: 'TKT-0001',
+   959→        organizationId: customerOrg.id,
+   960→        subject: 'GPS signal lost on VH-002',
+   961→        description: 'Vehicle AUH-B-67890 showing no GPS signal since yesterday afternoon',
+   962→        priority: 'high',
+   963→        status: 'open',
+   964→        vehiclePlate: 'AUH-B-67890',
+   965→        assignedToId: opsManager.id,
+   966→      },
+   967→    }),
+   968→    db.ticket.create({
+   969→      data: {
+   970→        ticketNumber: 'TKT-0002',
+   971→        organizationId: customerOrg.id,
+   972→        subject: 'Request additional device for new vehicle',
+   973→        description: 'Need a new tracking device for incoming Toyota Land Cruiser',
+   974→        priority: 'medium',
+   975→        status: 'open',
+   976→      },
+   977→    }),
+   978→  ]);
+   979→  console.log(`  ✅ Created 2 tickets`);
+   980→
+   981→  // ========================================
+   982→  // 12. TRIPS (today)
+   983→  // ========================================
+   984→  console.log('\n🗺️  Creating trips...');
+   985→
+   986→  const today = new Date();
+   987→  today.setHours(0, 0, 0, 0);
+   988→
+   989→  await Promise.all([
+   990→    db.trip.create({
+   991→      data: {
+   992→        vehicleId: vehicles[0].id,
+   993→        driverName: drivers[0].name,
+   994→        startTime: new Date(today.getTime() + 6 * 60 * 60 * 1000),
+   995→        endTime: new Date(today.getTime() + 9 * 60 * 60 * 1000),
+   996→        distance: 145.5,
+   997→        duration: 180,
+   998→        maxSpeed: 120.0,
+   999→        avgSpeed: 48.5,
+  1000→        idleTime: 15,
+  1001→        overspeedCount: 2,
+  1002→        harshBrakes: 1,
+  1003→        harshAccel: 0,
+  1004→        status: 'completed',
+  1005→      },
+  1006→    }),
+  1007→    db.trip.create({
+  1008→      data: {
+  1009→        vehicleId: vehicles[1].id,
+  1010→        driverName: drivers[1].name,
+  1011→        startTime: new Date(today.getTime() + 7 * 60 * 60 * 1000),
+  1012→        distance: 230.0,
+  1013→        duration: 210,
+  1014→        maxSpeed: 135.0,
+  1015→        avgSpeed: 65.7,
+  1016→        idleTime: 22,
+  1017→        overspeedCount: 4,
+  1018→        harshBrakes: 3,
+  1019→        harshAccel: 2,
+  1020→        status: 'in_progress',
+  1021→      },
+  1022→    }),
+  1023→    db.trip.create({
+  1024→      data: {
+  1025→        vehicleId: vehicles[2].id,
+  1026→        driverName: drivers[2].name,
+  1027→        startTime: new Date(today.getTime() + 5 * 60 * 60 * 1000),
+  1028→        endTime: new Date(today.getTime() + 11 * 60 * 60 * 1000),
+  1029→        distance: 380.0,
+  1030→        duration: 360,
+  1031→        maxSpeed: 110.0,
+  1032→        avgSpeed: 63.3,
+  1033→        idleTime: 8,
+  1034→        overspeedCount: 0,
+  1035→        harshBrakes: 0,
+  1036→        harshAccel: 1,
+  1037→        status: 'completed',
+  1038→      },
+  1039→    }),
+  1040→  ]);
+  1041→  console.log(`  ✅ Created 3 trips for today`);
+  1042→
+  1043→  // ========================================
+  1044→  // 13. GEOFENCES
+  1045→  // ========================================
+  1046→  console.log('\n📍 Creating geofences...');
+  1047→
+  1048→  await Promise.all([
+  1049→    db.geofence.create({
+  1050→      data: {
+  1051→        name: 'Abu Dhabi City Zone',
+  1052→        type: 'circle',
+  1053→        centerLat: 24.4539,
+  1054→        centerLng: 54.3773,
+  1055→        radius: 25000,
+  1056→        organizationId: customerOrg.id,
+  1057→      },
+  1058→    }),
+  1059→    db.geofence.create({
+  1060→      data: {
+  1061→        name: 'KIZAD Depot',
+  1062→        type: 'circle',
+  1063→        centerLat: 24.5236,
+  1064→        centerLng: 54.6733,
+  1065→        radius: 2000,
+  1066→        organizationId: customerOrg.id,
+  1067→      },
+  1068→    }),
+  1069→  ]);
+  1070→  console.log(`  ✅ Created 2 geofences`);
+  1071→
+  1072→  // ========================================
+  1073→  // 14. CONTACTS (Phase 2)
+  1074→  // ========================================
+  1075→  console.log('\n👤 Creating contacts...');
+  1076→
+  1077→  await Promise.all([
+  1078→    db.contact.create({
+  1079→      data: {
+  1080→        name: 'Omar Al Ketbi',
+  1081→        email: 'omar@emiratescargo.ae',
+  1082→        phone: '+971-50-600-1122',
+  1083→        position: 'Fleet Manager',
+  1084→        organizationId: rtrOrg.id,
+  1085→      },
+  1086→    }),
+  1087→    db.contact.create({
+  1088→      data: {
+  1089→        name: 'Hamad Al Nahyan',
+  1090→        email: 'hamad@abudhabilogistics.ae',
+  1091→        phone: '+971-50-800-3344',
+  1092→        position: 'Operations Director',
+  1093→        organizationId: rtrOrg.id,
+  1094→      },
+  1095→    }),
+  1096→    db.contact.create({
+  1097→      data: {
+  1098→        name: 'Rashed Al Ameri',
+  1099→        email: 'rashed@megalogistics.ae',
+  1100→        phone: '+971-50-666-0011',
+  1101→        position: 'CEO',
+  1102→        organizationId: rtrOrg.id,
+  1103→      },
+  1104→    }),
+  1105→    db.contact.create({
+  1106→      data: {
+  1107→        name: 'Khalid Al Fahim',
+  1108→        email: 'khalid@alfahim.ae',
+  1109→        phone: '+971-50-333-4455',
+  1110→        position: 'Managing Director',
+  1111→        organizationId: customerOrg.id,
+  1112→      },
+  1113→    }),
+  1114→  ]);
+  1115→  console.log(`  ✅ Created 4 contacts`);
+  1116→
+  1117→  // ========================================
+  1118→  // 15. ACTIVITIES (Phase 2)
+  1119→  // ========================================
+  1120→  console.log('\n📝 Creating activities...');
+  1121→
+  1122→  await Promise.all([
+  1123→    db.activity.create({
+  1124→      data: {
+  1125→        type: 'call',
+  1126→        title: 'Initial discovery call',
+  1127→        description: 'Discussed fleet size and requirements. Very interested in premium plan.',
+  1128→        leadId: leads[0].id,
+  1129→        userId: salesManager.id,
+  1130→      },
+  1131→    }),
+  1132→    db.activity.create({
+  1133→      data: {
+  1134→        type: 'email',
+  1135→        title: 'Sent proposal via email',
+  1136→        description: 'Sent detailed proposal with pricing for 25 GPS devices + premium plan.',
+  1137→        leadId: leads[0].id,
+  1138→        userId: salesManager.id,
+  1139→      },
+  1140→    }),
+  1141→    db.activity.create({
+  1142→      data: {
+  1143→        type: 'whatsapp',
+  1144→        title: 'Follow-up on WhatsApp',
+  1145→        description: 'Sent product brochure and demo video link.',
+  1146→        leadId: leads[1].id,
+  1147→        userId: salesManager.id,
+  1148→      },
+  1149→    }),
+  1150→    db.activity.create({
+  1151→      data: {
+  1152→        type: 'meeting',
+  1153→        title: 'On-site meeting at KIZAD',
+  1154→        description: 'Met with operations team. Demoed live tracking dashboard. Very positive response.',
+  1155→        leadId: leads[2].id,
+  1156→        userId: salesManager.id,
+  1157→      },
+  1158→    }),
+  1159→    db.activity.create({
+  1160→      data: {
+  1161→        type: 'note',
+  1162→        title: 'Contract signed!',
+  1163→        description: '100-vehicle enterprise deal closed. Installation starts next week.',
+  1164→        leadId: leads[9].id,
+  1165→        userId: salesManager.id,
+  1166→      },
+  1167→    }),
+  1168→    db.activity.create({
+  1169→      data: {
+  1170→        type: 'call',
+  1171→        title: 'Requirement gathering call',
+  1172→        description: 'Discussed temperature monitoring needs for refrigerated vans.',
+  1173→        leadId: leads[1].id,
+  1174→        userId: salesManager.id,
+  1175→      },
+  1176→    }),
+  1177→  ]);
+  1178→  console.log(`  ✅ Created 6 activities`);
+  1179→
+  1180→  // ========================================
+  1181→  // 16. QUOTATIONS (Phase 2)
+  1182→  // ========================================
+  1183→  console.log('\n💰 Creating quotations...');
+  1184→
+  1185→  const q1Items = JSON.stringify([
+  1186→    { description: 'GPS Tracking Device (GT06N)', quantity: 25, unitPrice: 150 },
+  1187→    { description: 'SIM Card (Annual Plan)', quantity: 25, unitPrice: 120 },
+  1188→    { description: 'Professional Installation', quantity: 25, unitPrice: 100 },
+  1189→    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 1250 },
+  1190→  ]);
+  1191→  const q1Subtotal = 25 * 150 + 25 * 120 + 25 * 100 + 12 * 1250;
+  1192→  const q1Tax = Math.round(q1Subtotal * 5 / 100 * 100) / 100;
+  1193→
+  1194→  await db.quotation.create({
+  1195→    data: {
+  1196→      quotationNumber: 'RTR-Q-2408-0001',
+  1197→      leadId: leads[0].id,
+  1198→      organizationId: rtrOrg.id,
+  1199→      items: q1Items,
+  1200→      subtotal: q1Subtotal,
+  1201→      taxRate: 5,
+  1202→      tax: q1Tax,
+  1203→      total: q1Subtotal + q1Tax,
+  1204→      status: 'sent',
+  1205→      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  1206→      notes: 'Volume discount applied for 25+ devices. Includes free training session.',
+  1207→      terms: 'This quotation is valid for 30 days. Payment terms: 50% advance, 50% upon installation. All prices in AED.',
+  1208→    },
+  1209→  });
+  1210→
+  1211→  const q2Items = JSON.stringify([
+  1212→    { description: 'GPS Tracking Device (FM1200)', quantity: 100, unitPrice: 180 },
+  1213→    { description: 'SIM Card (Annual Plan)', quantity: 100, unitPrice: 100 },
+  1214→    { description: 'Professional Installation', quantity: 100, unitPrice: 80 },
+  1215→    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 5000 },
+  1216→    { description: 'Custom API Integration', quantity: 1, unitPrice: 15000 },
+  1217→    { description: 'Dedicated Account Manager', quantity: 12, unitPrice: 2000 },
+  1218→  ]);
+  1219→  const q2Subtotal = 100 * 180 + 100 * 100 + 100 * 80 + 12 * 5000 + 15000 + 12 * 2000;
+  1220→  const q2Tax = Math.round(q2Subtotal * 5 / 100 * 100) / 100;
+  1221→
+  1222→  await db.quotation.create({
+  1223→    data: {
+  1224→      quotationNumber: 'RTR-Q-2407-0002',
+  1225→      leadId: leads[9].id,
+  1226→      organizationId: rtrOrg.id,
+  1227→      items: q2Items,
+  1228→      subtotal: q2Subtotal,
+  1229→      taxRate: 5,
+  1230→      tax: q2Tax,
+  1231→      total: q2Subtotal + q2Tax,
+  1232→      status: 'accepted',
+  1233→      validUntil: new Date('2024-08-15'),
+  1234→      notes: 'Enterprise SLA with 99.9% uptime guarantee. Dedicated support channel included.',
+  1235→      terms: 'This quotation is valid for 30 days. Payment terms: 30% advance, 40% at half-installation, 30% upon completion. All prices in AED.',
+  1236→    },
+  1237→  });
+  1238→
+  1239→  const q3Items = JSON.stringify([
+  1240→    { description: 'GPS Tracking Device (GT06N)', quantity: 10, unitPrice: 150 },
+  1241→    { description: 'Temperature Sensor', quantity: 10, unitPrice: 75 },
+  1242→    { description: 'SIM Card (Annual Plan)', quantity: 10, unitPrice: 120 },
+  1243→    { description: 'Professional Installation', quantity: 10, unitPrice: 100 },
+  1244→    { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 500 },
+  1245→  ]);
+  1246→  const q3Subtotal = 10 * 150 + 10 * 75 + 10 * 120 + 10 * 100 + 12 * 500;
+  1247→  const q3Tax = Math.round(q3Subtotal * 5 / 100 * 100) / 100;
+  1248→
+  1249→  await db.quotation.create({
+  1250→    data: {
+  1251→      quotationNumber: 'RTR-Q-2408-0003',
+  1252→      leadId: leads[1].id,
+  1253→      organizationId: rtrOrg.id,
+  1254→      items: q3Items,
+  1255→      subtotal: q3Subtotal,
+  1256→      taxRate: 5,
+  1257→      tax: q3Tax,
+  1258→      total: q3Subtotal + q3Tax,
+  1259→      status: 'draft',
+  1260→      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  1261→      notes: 'Specialized quote for cold chain monitoring. Temperature sensors included.',
+  1262→      terms: 'This quotation is valid for 30 days. Payment terms: 50% advance, 50% upon installation. All prices in AED.',
+  1263→    },
+  1264→  });
+  1265→
+  1266→  console.log(`  ✅ Created 3 quotations`);
+  1267→
+  1268→  // ========================================
+  1269→  // 17. MAINTENANCE RECORDS (Phase 5)
+  1270→  // ========================================
+  1271→  console.log('\n🔧 Creating maintenance records...');
+  1272→
+  1273→  // Get the vehicles for maintenance records
+  1274→  const allVehicles = await db.vehicle.findMany({ where: { organizationId: customerOrg.id } });
+  1275→
+  1276→  await Promise.all([
+  1277→    db.maintenanceRecord.create({
+  1278→      data: {
+  1279→        vehicleId: allVehicles[0]?.id || '',
+  1280→        type: 'oil_change',
+  1281→        description: 'Regular oil change with synthetic 5W-30. Filter replaced.',
+  1282→        triggerType: 'mileage',
+  1283→        triggerValue: 10000,
+  1284→        scheduledDate: new Date('2025-07-15'),
+  1285→        completedDate: new Date('2025-07-16'),
+  1286→        cost: 450,
+  1287→        status: 'completed',
+  1288→        organizationId: customerOrg.id,
+  1289→      },
+  1290→    }),
+  1291→    db.maintenanceRecord.create({
+  1292→      data: {
+  1293→        vehicleId: allVehicles[1]?.id || '',
+  1294→        type: 'tire_rotation',
+  1295→        description: 'Full tire rotation and wheel alignment check.',
+  1296→        triggerType: 'mileage',
+  1297→        triggerValue: 20000,
+  1298→        scheduledDate: new Date('2025-08-20'),
+  1299→        cost: 350,
+  1300→        status: 'upcoming',
+  1301→        organizationId: customerOrg.id,
+  1302→      },
+  1303→    }),
+  1304→    db.maintenanceRecord.create({
+  1305→      data: {
+  1306→        vehicleId: allVehicles[2]?.id || '',
+  1307→        type: 'brake_service',
+  1308→        description: 'Front and rear brake pad replacement. Brake fluid flush.',
+  1309→        triggerType: 'manual',
+  1310→        scheduledDate: new Date('2025-08-05'),
+  1311→        completedDate: new Date('2025-08-06'),
+  1312→        cost: 1200,
+  1313→        status: 'completed',
+  1314→        organizationId: customerOrg.id,
+  1315→      },
+  1316→    }),
+  1317→    db.maintenanceRecord.create({
+  1318→      data: {
+  1319→        vehicleId: allVehicles[0]?.id || '',
+  1320→        type: 'ac_service',
+  1321→        description: 'AC compressor service and gas refill for UAE summer.',
+  1322→        triggerType: 'date',
+  1323→        scheduledDate: new Date('2025-06-01'),
+  1324→        cost: 800,
+  1325→        status: 'scheduled',
+  1326→        organizationId: customerOrg.id,
+  1327→      },
+  1328→    }),
+  1329→    db.maintenanceRecord.create({
+  1330→      data: {
+  1331→        vehicleId: allVehicles[3]?.id || '',
+  1332→        type: 'general_service',
+  1333→        description: '30,000 km full service. All fluids, filters, and belts checked.',
+  1334→        triggerType: 'mileage',
+  1335→        triggerValue: 30000,
+  1336→        scheduledDate: new Date('2025-09-10'),
+  1337→        cost: 2500,
+  1338→        status: 'upcoming',
+  1339→        organizationId: customerOrg.id,
+  1340→      },
+  1341→    }),
+  1342→    db.maintenanceRecord.create({
+  1343→      data: {
+  1344→        vehicleId: allVehicles[4]?.id || '',
+  1345→        type: 'inspection',
+  1346→        description: 'Annual vehicle inspection for registration renewal.',
+  1347→        triggerType: 'date',
+  1348→        scheduledDate: new Date('2025-08-01'),
+  1349→        completedDate: new Date('2025-08-01'),
+  1350→        cost: 500,
+  1351→        status: 'completed',
+  1352→        organizationId: customerOrg.id,
+  1353→      },
+  1354→    }),
+  1355→  ]);
+  1356→  console.log('  ✅ Created 6 maintenance records');
+  1357→
+  1358→  // ========================================
+  1359→  // 18. SUBSCRIPTIONS & INVOICES (Phase 5)
+  1360→  // ========================================
+  1361→  console.log('\n💳 Creating subscriptions & invoices...');
+  1362→
+  1363→  // Create subscription for customer org
+  1364→  const premiumPlanRef = premiumPlan; // Already defined above
+  1365→
+  1366→  if (premiumPlanRef) {
+  1367→    const custSubscription = await db.subscription.upsert({
+  1368→      where: { organizationId: customerOrg.id },
+  1369→      update: { planId: premiumPlanRef.id, vehicleCount: 5, status: 'active', startsAt: new Date('2025-01-01'), endsAt: new Date('2025-12-31') },
+  1370→      create: {
+  1371→        organizationId: customerOrg.id,
+  1372→        planId: premiumPlanRef.id,
+  1373→        status: 'active',
+  1374→        vehicleCount: 5,
+  1375→        startsAt: new Date('2025-01-01'),
+  1376→        endsAt: new Date('2025-12-31'),
+  1377→      },
+  1378→    });
+  1379→
+  1380→    // Create invoices for this subscription
+  1381→    await Promise.all([
+  1382→      db.invoice.create({
+  1383→        data: {
+  1384→          invoiceNumber: 'INV-20250101-001',
+  1385→          organizationId: customerOrg.id,
+  1386→          subscriptionId: custSubscription.id,
+  1387→          amount: 6250,
+  1388→          tax: 312.5,
+  1389→          total: 6562.5,
+  1390→          status: 'paid',
+  1391→          dueDate: new Date('2025-01-15'),
+  1392→          paidAt: new Date('2025-01-10'),
+  1393→          notes: 'January 2025 — Premium Plan (5 vehicles)',
+  1394→        },
+  1395→      }),
+  1396→      db.invoice.create({
+  1397→        data: {
+  1398→          invoiceNumber: 'INV-20250201-001',
+  1399→          organizationId: customerOrg.id,
+  1400→          subscriptionId: custSubscription.id,
+  1401→          amount: 6250,
+  1402→          tax: 312.5,
+  1403→          total: 6562.5,
+  1404→          status: 'paid',
+  1405→          dueDate: new Date('2025-02-15'),
+  1406→          paidAt: new Date('2025-02-12'),
+  1407→          notes: 'February 2025 — Premium Plan (5 vehicles)',
+  1408→        },
+  1409→      }),
+  1410→      db.invoice.create({
+  1411→        data: {
+  1412→          invoiceNumber: 'INV-20250701-001',
+  1413→          organizationId: customerOrg.id,
+  1414→          subscriptionId: custSubscription.id,
+  1415→          amount: 6250,
+  1416→          tax: 312.5,
+  1417→          total: 6562.5,
+  1418→          status: 'pending',
+  1419→          dueDate: new Date('2025-07-15'),
+  1420→          notes: 'July 2025 — Premium Plan (5 vehicles)',
+  1421→        },
+  1422→      }),
+  1423→      db.invoice.create({
+  1424→        data: {
+  1425→          invoiceNumber: 'INV-20250801-001',
+  1426→          organizationId: customerOrg.id,
+  1427→          subscriptionId: custSubscription.id,
+  1428→          amount: 6250,
+  1429→          tax: 312.5,
+  1430→          total: 6562.5,
+  1431→          status: 'pending',
+  1432→          dueDate: new Date('2025-08-15'),
+  1433→          notes: 'August 2025 — Premium Plan (5 vehicles)',
+  1434→        },
+  1435→      }),
+  1436→    ]);
+  1437→    console.log('  ✅ Created 1 subscription + 4 invoices');
+  1438→  } else {
+  1439→    console.log('  ⚠️ Plans not found, skipping subscription seed');
+  1440→  }
+  1441→
+  1442→  // ========================================
+  1443→  // 19. SUPPORT TICKETS (Phase 5)
+  1444→  // ========================================
+  1445→  console.log('\n🎫 Creating support tickets...');
+  1446→
+  1447→  await Promise.all([
+  1448→    db.ticket.create({
+  1449→      data: {
+  1450→        ticketNumber: 'TKT-20250810-001',
+  1451→        organizationId: customerOrg.id,
+  1452→        subject: 'GPS device offline — DXB-A-12345',
+  1453→        description: 'Vehicle DXB-A-12345 GPS tracker has not reported since yesterday afternoon. Last known location was near Al Quoz industrial area. Please check device connectivity.',
+  1454→        priority: 'high',
+  1455→        status: 'in_progress',
+  1456→        vehiclePlate: 'DXB-A-12345',
+  1457→        createdAt: new Date('2025-08-10T09:30:00'),
+  1458→      },
+  1459→    }),
+  1460→    db.ticket.create({
+  1461→      data: {
+  1462→        ticketNumber: 'TKT-20250811-001',
+  1463→        organizationId: customerOrg.id,
+  1464→        subject: 'Request for additional 10 tracking devices',
+  1465→        description: 'We are expanding our fleet by 10 vehicles next month. Please prepare a quotation for GPS devices, SIM cards, and installation for the new vehicles.',
+  1466→        priority: 'medium',
+  1467→        status: 'open',
+  1468→        createdAt: new Date('2025-08-11T14:15:00'),
+  1469→      },
+  1470→    }),
+  1471→    db.ticket.create({
+  1472→      data: {
+  1473→        ticketNumber: 'TKT-20250812-001',
+  1474→        organizationId: customerOrg.id,
+  1475→        subject: 'Geofence alert not triggering for Jebel Ali warehouse',
+  1476→        description: 'Configured a geofence around our Jebel Ali warehouse but exit alerts are not being triggered. Vehicles leave the area without any notification.',
+  1477→        priority: 'medium',
+  1478→        status: 'open',
+  1479→        vehiclePlate: 'DXB-C-67890',
+  1480→        createdAt: new Date('2025-08-12T10:00:00'),
+  1481→      },
+  1482→    }),
+  1483→    db.ticket.create({
+  1484→      data: {
+  1485→        ticketNumber: 'TKT-20250813-001',
+  1486→        organizationId: customerOrg.id,
+  1487→        subject: 'Driver app login issue for Mohammed Al Rashid',
+  1488→        description: 'Driver Mohammed Al Rashid (DRV-001) is unable to login to the driver mobile app. Reset password did not resolve the issue.',
+  1489→        priority: 'low',
+  1490→        status: 'resolved',
+  1491→        resolvedAt: new Date('2025-08-13T16:00:00'),
+  1492→        createdAt: new Date('2025-08-13T11:00:00'),
+  1493→      },
+  1494→    }),
+  1495→    db.ticket.create({
+  1496→      data: {
+  1497→        ticketNumber: 'TKT-20250814-001',
+  1498→        organizationId: rtrOrg.id,
+  1499→        subject: 'Monthly invoice discrepancy — July billing',
+  1500→        description: 'The July invoice shows 5 vehicles but we only have 4 active devices. One device was removed in mid-June. Please correct the billing amount.',
+  1501→        priority: 'urgent',
+  1502→        status: 'open',
+  1503→        createdAt: new Date('2025-08-14T08:45:00'),
+  1504→      },
+  1505→    }),
+  1506→  ]);
+  1507→  console.log('  ✅ Created 5 support tickets');
+  1508→
+  1509→  // ========================================
+  1510→  // 21. ALERT RULES (Phase 6)
+  1511→  // ========================================
+  1512→  console.log('\n🔔 Creating alert rules...');
+  1513→
+  1514→  await Promise.all([
+  1515→    db.alertRule.create({
+  1516→      data: { name: 'Speed Limit — 120 km/h', type: 'overspeed', conditions: JSON.stringify({ threshold: 120, unit: 'km/h' }), channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: customerOrg.id },
+  1517→    }),
+  1518→    db.alertRule.create({
+  1519→      data: { name: 'Jebel Ali Warehouse Exit', type: 'geofence_exit', conditions: JSON.stringify({ geofenceId: 'jebel-ali-wh' }), channels: JSON.stringify(['in_app', 'sms', 'whatsapp']), active: true, organizationId: customerOrg.id },
+  1520→    }),
+  1521→    db.alertRule.create({
+  1522→      data: { name: 'SOS Emergency', type: 'sos', conditions: null, channels: JSON.stringify(['in_app', 'email', 'sms', 'whatsapp']), active: true, organizationId: customerOrg.id },
+  1523→    }),
+  1524→    db.alertRule.create({
+  1525→      data: { name: 'Device Power Off Alert', type: 'power_off', conditions: null, channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: customerOrg.id },
+  1526→    }),
+  1527→    db.alertRule.create({
+  1528→      data: { name: 'Idle More Than 30 Minutes', type: 'idle', conditions: JSON.stringify({ timeoutMinutes: 30 }), channels: JSON.stringify(['in_app']), active: false, organizationId: customerOrg.id },
+  1529→    }),
+  1530→    db.alertRule.create({
+  1531→      data: { name: 'KIZAD Yard Geofence Enter', type: 'geofence_enter', conditions: JSON.stringify({ geofenceId: 'kizad-yard' }), channels: JSON.stringify(['in_app', 'whatsapp']), active: true, organizationId: customerOrg.id },
+  1532→    }),
+  1533→    db.alertRule.create({
+  1534→      data: { name: 'Low Battery Warning', type: 'low_battery', conditions: JSON.stringify({ threshold: 15 }), channels: JSON.stringify(['in_app', 'email']), active: true, organizationId: rtrOrg.id },
+  1535→    }),
+  1536→  ]);
+  1537→  console.log('  ✅ Created 7 alert rules');
+  1538→
+  1539→  // ========================================
+  1540→  // 22. GEOFENCES (Phase 6)
+  1541→  // ========================================
+  1542→  console.log('\n📍 Creating geofences...');
+  1543→
+  1544→  await Promise.all([
+  1545→    db.geofence.create({
+  1546→      data: { name: 'Jebel Ali Warehouse', type: 'circle', centerLat: 25.0225, centerLng: 55.0704, radius: 500, organizationId: customerOrg.id },
+  1547→    }),
+  1548→    db.geofence.create({
+  1549→      data: { name: 'KIZAD Yard', type: 'circle', centerLat: 24.5384, centerLng: 54.6726, radius: 1000, organizationId: customerOrg.id },
+  1550→    }),
+  1551→    db.geofence.create({
+  1552→      data: { name: 'Dubai Port (Jebel Ali Port)', type: 'circle', centerLat: 24.9894, centerLng: 55.0455, radius: 2000, organizationId: customerOrg.id },
+  1553→    }),
+  1554→    db.geofence.create({
+  1555→      data: { name: 'Mussafah Industrial Area', type: 'circle', centerLat: 24.3523, centerLng: 54.4876, radius: 1500, organizationId: customerOrg.id },
+  1556→    }),
+  1557→  ]);
+  1558→  console.log('  ✅ Created 4 geofences');
+  1559→
+  1560→  // ========================================
+  1561→  // 23. CONTRACTS (Phase 6)
+  1562→  // ========================================
+  1563→  console.log('\n📄 Creating contracts...');
+  1564→
+  1565→  await Promise.all([
+  1566→    db.contract.create({
+  1567→      data: { title: 'Fleet GPS Tracking Service Agreement — Al Fahim', startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31'), status: 'active', terms: 'Annual service agreement for GPS tracking of 5 vehicles. Includes 24/7 monitoring, monthly reports, and priority support. SLA: 99.5% uptime. Payment: Monthly AED 6,562.50 (inclusive of 5% VAT).', organizationId: customerOrg.id },
+  1568→    }),
+  1569→    db.contract.create({
+  1570→      data: { title: 'Device Supply Agreement — Concox GT06N', startDate: new Date('2025-03-01'), endDate: new Date('2026-02-28'), status: 'active', terms: 'Bulk supply agreement for Concox GT06N GPS devices. Minimum order quantity: 50 units. Unit price: AED 150. Delivery within 5 business days. Warranty: 12 months from delivery date.', organizationId: rtrOrg.id },
+  1571→    }),
+  1572→    db.contract.create({
+  1573→      data: { title: 'Etisalat SIM Bulk Agreement', startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31'), status: 'active', terms: 'Annual data-only SIM plan for GPS devices. 500MB/month per SIM. Annual cost: AED 100/SIM. Includes 100 SMS/month. Auto-renewal clause.', organizationId: rtrOrg.id },
+  1574→    }),
+  1575→  ]);
+  1576→  console.log('  ✅ Created 3 contracts');
+  1577→
+  1578→  // ========================================
+  1579→  // 24. ADDITIONAL TRIPS (Phase 6)
+  1580→  // ========================================
+  1581→  console.log('\n🚛 Creating trip history...');
+  1582→
+  1583→  const tripVehicles = await db.vehicle.findMany({ where: { organizationId: customerOrg.id } });
+  1584→  const tripDrivers = await db.driver.findMany({ where: { organizationId: customerOrg.id } });
+  1585→
+  1586→  await Promise.all([
+  1587→    // Completed trips
+  1588→    db.trip.create({
+  1589→      data: { vehicleId: tripVehicles[0]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-14T06:00:00'), endTime: new Date('2025-08-14T09:30:00'), distance: 245.5, duration: 12600, maxSpeed: 118, avgSpeed: 72, idleTime: 1800, overspeedCount: 2, harshBrakes: 1, harshAccel: 3, status: 'completed' },
+  1590→    }),
+  1591→    db.trip.create({
+  1592→      data: { vehicleId: tripVehicles[1]?.id || '', driverName: tripDrivers[1]?.name, startTime: new Date('2025-08-14T07:15:00'), endTime: new Date('2025-08-14T11:00:00'), distance: 312.8, duration: 14100, maxSpeed: 125, avgSpeed: 68, idleTime: 2400, overspeedCount: 5, harshBrakes: 3, harshAccel: 2, status: 'completed' },
+  1593→    }),
+  1594→    db.trip.create({
+  1595→      data: { vehicleId: tripVehicles[2]?.id || '', driverName: tripDrivers[2]?.name, startTime: new Date('2025-08-13T05:30:00'), endTime: new Date('2025-08-13T08:45:00'), distance: 198.2, duration: 11700, maxSpeed: 105, avgSpeed: 65, idleTime: 900, overspeedCount: 0, harshBrakes: 0, harshAccel: 1, status: 'completed' },
+  1596→    }),
+  1597→    db.trip.create({
+  1598→      data: { vehicleId: tripVehicles[0]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-13T10:00:00'), endTime: new Date('2025-08-13T14:30:00'), distance: 356.7, duration: 16200, maxSpeed: 132, avgSpeed: 78, idleTime: 3600, overspeedCount: 8, harshBrakes: 4, harshAccel: 6, status: 'completed' },
+  1599→    }),
+  1600→    db.trip.create({
+  1601→      data: { vehicleId: tripVehicles[3]?.id || '', driverName: tripDrivers[1]?.name, startTime: new Date('2025-08-12T06:00:00'), endTime: new Date('2025-08-12T10:00:00'), distance: 287.3, duration: 14400, maxSpeed: 110, avgSpeed: 70, idleTime: 1200, overspeedCount: 1, harshBrakes: 1, harshAccel: 2, status: 'completed' },
+  1602→    }),
+  1603→    // In-progress trip
+  1604→    db.trip.create({
+  1605→      data: { vehicleId: tripVehicles[4]?.id || '', driverName: tripDrivers[0]?.name, startTime: new Date('2025-08-15T06:30:00'), distance: 45.2, duration: 2700, maxSpeed: 95, avgSpeed: 62, idleTime: 300, overspeedCount: 0, harshBrakes: 0, harshAccel: 1, status: 'in_progress' },
+  1606→    }),
+  1607→  ]);
+  1608→  console.log('  ✅ Created 6 trips');
+  1609→
+  1610→  // ========================================
+  1611→  // 25. NOTIFICATIONS (Phase 6)
+  1612→  // ========================================
+  1613→  console.log('\n🔔 Creating notifications...');
+  1614→
+  1615→  await Promise.all([
+  1616→    db.notification.create({ data: { organizationId: customerOrg.id, type: 'alert', title: 'Overspeed Alert', body: 'Vehicle DXB-A-12345 exceeded 120 km/h on Sheikh Zayed Road near Dubai Marina.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 15) } }),
+  1617→    db.notification.create({ data: { organizationId: customerOrg.id, type: 'ticket', title: 'New Support Ticket', body: 'Ticket TKT-20250811-001 has been assigned to your organization.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3) } }),
+  1618→    db.notification.create({ data: { organizationId: customerOrg.id, type: 'maintenance', title: 'Maintenance Due Tomorrow', body: 'Vehicle DXB-B-54321 is due for tire rotation. Scheduled for Aug 20.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8) } }),
+  1619→    db.notification.create({ data: { organizationId: customerOrg.id, type: 'invoice', title: 'Invoice Generated', body: 'Invoice INV-20250801-001 for AED 6,562.50 is now available. Due: Aug 15.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48) } }),
+  1620→    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'system', title: 'New Lead Assigned', body: 'Lead "Al Futtaim Logistics" from Google Ads has been assigned to Fatima.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 30) } }),
+  1621→    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'info', title: 'Installation Completed', body: 'Installation INST-202508-004 has been completed by Hassan Ali Khan.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24) } }),
+  1622→    db.notification.create({ data: { organizationId: customerOrg.id, type: 'alert', title: 'Geofence Exit Alert', body: 'Vehicle DXB-C-67890 exited Jebel Ali Warehouse geofence at 14:32.', read: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36) } }),
+  1623→    db.notification.create({ data: { organizationId: rtrOrg.id, type: 'system', title: 'Platform Update', body: 'RTR 360 v2.5 deployed with new Reports & Analytics module.', read: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72) } }),
+  1624→  ]);
+  1625→  console.log('  ✅ Created 8 notifications');
+  1626→
+  1627→  // ========================================
+  1628→  // 26. PLATFORM SETTINGS (Phase 5)
+  1629→  // ========================================
+  1630→  console.log('\n⚙️ Creating platform settings...');
+  1631→
+  1632→  await Promise.all([
+  1633→    db.setting.upsert({ where: { key: 'org_name' }, update: { value: 'RTR 360' }, create: { key: 'org_name', value: 'RTR 360' } }),
+  1634→    db.setting.upsert({ where: { key: 'org_email' }, update: { value: 'info@rtr.ae' }, create: { key: 'org_email', value: 'info@rtr.ae' } }),
+  1635→    db.setting.upsert({ where: { key: 'org_phone' }, update: { value: '+971-4-123-4567' }, create: { key: 'org_phone', value: '+971-4-123-4567' } }),
+  1636→    db.setting.upsert({ where: { key: 'org_website' }, update: { value: 'https://rtr360.ae' }, create: { key: 'org_website', value: 'https://rtr360.ae' } }),
+  1637→    db.setting.upsert({ where: { key: 'org_address' }, update: { value: 'Office 1205, Aspect Tower, Business Bay, Dubai, UAE' }, create: { key: 'org_address', value: 'Office 1205, Aspect Tower, Business Bay, Dubai, UAE' } }),
+  1638→    db.setting.upsert({ where: { key: 'org_emirate' }, update: { value: 'Dubai' }, create: { key: 'org_emirate', value: 'Dubai' } }),
+  1639→    db.setting.upsert({ where: { key: 'notify_email' }, update: { value: 'true' }, create: { key: 'notify_email', value: 'true' } }),
+  1640→    db.setting.upsert({ where: { key: 'notify_sms' }, update: { value: 'false' }, create: { key: 'notify_sms', value: 'false' } }),
+  1641→    db.setting.upsert({ where: { key: 'notify_whatsapp' }, update: { value: 'true' }, create: { key: 'notify_whatsapp', value: 'true' } }),
+  1642→    db.setting.upsert({ where: { key: 'alert_overspeed' }, update: { value: 'true' }, create: { key: 'alert_overspeed', value: 'true' } }),
+  1643→    db.setting.upsert({ where: { key: 'alert_geofence' }, update: { value: 'true' }, create: { key: 'alert_geofence', value: 'true' } }),
+  1644→    db.setting.upsert({ where: { key: 'alert_sos' }, update: { value: 'true' }, create: { key: 'alert_sos', value: 'true' } }),
+  1645→    db.setting.upsert({ where: { key: 'gps_update_interval' }, update: { value: '30' }, create: { key: 'gps_update_interval', value: '30' } }),
+  1646→    db.setting.upsert({ where: { key: 'gps_idle_timeout' }, update: { value: '300' }, create: { key: 'gps_idle_timeout', value: '300' } }),
+  1647→    db.setting.upsert({ where: { key: 'gps_speed_threshold' }, update: { value: '120' }, create: { key: 'gps_speed_threshold', value: '120' } }),
+  1648→  ]);
+  1649→  console.log('  ✅ Created 15 platform settings');
+  1650→
+  1651→  console.log('\n' + '='.repeat(50));
+  1652→  console.log('🎉 Seed completed successfully!');
+  1653→  console.log('\n📊 Summary:');
+  1654→  console.log(`   Organizations: 7`);
+  1655→  console.log(`   Users: 4`);
+  1656→  console.log(`   Vehicles: 5`);
+  1657→  console.log(`   Drivers: 3`);
+  1658→  console.log(`   Devices: 8`);
+  1659→  console.log(`   Leads: 10`);
+  1660→  console.log(`   Contacts: 4`);
+  1661→  console.log(`   Activities: 6`);
+  1662→  console.log(`   Quotations: 3`);
+  1663→  console.log(`   Maintenance Records: 6`);
+  1664→  console.log(`   Subscriptions: 1`);
+  1665→  console.log(`   Invoices: 4`);
+  1666→  console.log(`   Tickets: 5`);
+  1667→  console.log(`   Alerts: 5`);
+  1668→  console.log(`   Trips: 9`);
+  1669→  console.log(`   Plans: 2`);
+  1670→  console.log(`   Geofences: 4`);
+  1671→  console.log(`   Alert Rules: 7`);
+  1672→  console.log(`   Contracts: 3`);
+  1673→  console.log(`   Notifications: 8`);
+  1674→  console.log(`   Settings: 15`);
+  1675→  console.log('\n🔑 Test credentials:');
+  1676→  console.log(`   Super Admin: admin@rtr.ae / REDACTED_DEMO_PASSWORD`);
+  1677→  console.log(`   Ops Manager: ahmed.ops@rtr.ae / REDACTED_DEMO_PASSWORD`);
+  1678→  console.log(`   Sales Manager: fatima.sales@rtr.ae / REDACTED_DEMO_PASSWORD`);
+  1679→  console.log(`   Customer Admin: khalid@alfahim.ae / REDACTED_DEMO_PASSWORD`);
+  1680→}
+  1681→
+  1682→main()
+  1683→  .catch((e) => {
+  1684→    console.error('❌ Seed failed:', e);
+  1685→    process.exit(1);
+  1686→  })
+  1687→  .finally(async () => {
+  1688→    await db.$disconnect();
+  1689→  });
+  1690→
