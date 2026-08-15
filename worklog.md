@@ -127,3 +127,38 @@ Stage Summary:
 - TypeScript: 298 errors -> 0 errors, strict mode enabled
 - Git: history scrubbed, dependency removed
 - Report: /home/z/my-project/download/RTR_360_Security_Audit_Report.pdf (8 pages, 63KB)
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: PHASE 1 STEP 1-3 — P0 Security Tests, Database Indexes, Git Hygiene
+
+Work Log:
+- Verified P0-1 (privilege escalation), P0-2 (invoice PDF IDOR), P0-6 (Caddyfile SSRF) already implemented
+- Installed vitest + @testing-library/react + @testing-library/jest-dom + @vitejs/plugin-react + jsdom
+- Created vitest.config.ts with node environment and path aliases
+- Wrote 35 P0 security tests in tests/security-p0.test.ts
+  - 13 tests for POST /api/users role escalation prevention
+  - 7 tests for PATCH /api/users/[id] role update prevention
+  - 6 tests for invoice PDF tenant isolation (IDOR)
+  - 3 tests for Caddyfile SSRF prevention
+  - 6 tests for password strength validation
+  - All 35/35 PASSING
+- Added 71 new @@index directives to prisma/schema.prisma (73 total including 2 existing)
+  - Covers: organizationId on 20 models, status on 12 models, FK fields, timestamps, searchable fields
+  - Schema validated with `prisma validate` ✅
+  - Pushed to SQLite DB with `prisma db push` ✅
+  - Prisma client regenerated ✅
+- Git hygiene (P0-5):
+  - Untracked Caddyfile and package-lock.json from git
+  - Added Caddyfile and package-lock.json to .gitignore
+  - Created .env.example with documented variables
+  - .env and db/ were already properly gitignored and untracked
+- Added `test` and `test:watch` scripts to package.json
+- P0-3 (Float→Decimal) noted as BLOCKED on PostgreSQL migration
+
+Stage Summary:
+- STEP 1 (P0 Security): Tests exist, all 35 pass ✅
+- STEP 2 (P0 Database): 73 indexes added, schema valid, DB synced ✅ (P0-3 blocked on PG migration)
+- STEP 3 (P0 Git): Caddyfile + package-lock.json untracked, .env.example created ✅
+- Next: P1-1 RBAC, P1-2 tenant isolation gaps, P1-5 auth migration

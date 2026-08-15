@@ -76,6 +76,9 @@ model Organization {
   maintenanceRecords MaintenanceRecord[]
   subscriptions  Subscription[]
   apiKeys        ApiKey[]
+
+  @@index([status])
+  @@index([emirate])
 }
 
 model Branch {
@@ -90,6 +93,7 @@ model Branch {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vehicles       Vehicle[]
+  @@index([organizationId])
 }
 
 // ----------------------
@@ -117,6 +121,9 @@ model User {
   assignedLeads  Lead[] @relation("LeadAssigned")
   sessions       Session[]
   apiKeys        ApiKey[]
+  @@index([organizationId])
+  @@index([role])
+  @@index([status])
 }
 
 model AuditLog {
@@ -131,6 +138,10 @@ model AuditLog {
   createdAt     DateTime @default(now()) @map("created_at")
 
   user          User?    @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 // ----------------------
@@ -165,6 +176,10 @@ model Lead {
   assignedTo     User?         @relation("LeadAssigned", fields: [assignedToId], references: [id])
   activities     Activity[]
   quotations     Quotation[]
+  @@index([organizationId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
 }
 
 model Contact {
@@ -178,6 +193,7 @@ model Contact {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
 }
 
 model Opportunity {
@@ -195,6 +211,9 @@ model Opportunity {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   activities     Activity[]
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([stage])
 }
 
 model Activity {
@@ -212,6 +231,9 @@ model Activity {
   user           User?       @relation(fields: [userId], references: [id])
   lead           Lead?       @relation(fields: [leadId], references: [id])
   opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+  @@index([userId])
+  @@index([leadId])
+  @@index([opportunityId])
 }
 
 // ----------------------
@@ -247,6 +269,11 @@ model Vehicle {
   device         Device?    @relation(fields: [deviceId], references: [id])
   trips          Trip[]
   maintenanceRecords MaintenanceRecord[]
+  @@index([organizationId])
+  @@index([plateNumber])
+  @@index([driverId])
+  @@index([deviceId])
+  @@index([status])
 }
 
 // ----------------------
@@ -280,6 +307,9 @@ model Driver {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vehicles       Vehicle[]
+  @@index([organizationId])
+  @@index([status])
+  @@index([licenseNumber])
 }
 
 // ----------------------
@@ -313,6 +343,8 @@ model Device {
   organization   Organization? @relation(fields: [organizationId], references: [id])
   vehicles       Vehicle[]
   sim            SIM?      @relation(fields: [simId], references: [id])
+  @@index([organizationId])
+  @@index([status])
 }
 
 model SIM {
@@ -327,6 +359,8 @@ model SIM {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   devices        Device[]
+  @@index([organizationId])
+  @@index([status])
 }
 
 // ----------------------
@@ -350,6 +384,8 @@ model Technician {
 
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   installations  Installation[]
+  @@index([organizationId])
+  @@index([status])
 }
 
 // ----------------------
@@ -383,6 +419,11 @@ model Installation {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   technician    Technician?  @relation(fields: [technicianId], references: [id])
+  @@index([organizationId])
+  @@index([status])
+  @@index([technicianId])
+  @@index([vehicleId])
+  @@index([deviceId])
 }
 
 // ----------------------
@@ -407,6 +448,9 @@ model Trip {
   createdAt      DateTime @default(now()) @map("created_at")
 
   vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+  @@index([vehicleId])
+  @@index([startTime])
+  @@index([status])
 }
 
 // ----------------------
@@ -426,6 +470,7 @@ model Geofence {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
 }
 
 // ----------------------
@@ -443,6 +488,8 @@ model AlertRule {
   createdAt      DateTime @default(now()) @map("created_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([type])
 }
 
 model Alert {
@@ -460,6 +507,10 @@ model Alert {
   resolvedAt     DateTime? @map("resolved_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([status])
+  @@index([vehicleId])
+  @@index([createdAt])
 }
 
 // ----------------------
@@ -483,6 +534,9 @@ model MaintenanceRecord {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
+  @@index([vehicleId])
+  @@index([organizationId])
+  @@index([status])
 }
 
 // ----------------------
@@ -536,6 +590,9 @@ model Invoice {
 
   organization   Organization  @relation(fields: [organizationId], references: [id])
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  @@index([organizationId])
+  @@index([status])
+  @@index([subscriptionId])
 }
 
 // ----------------------
@@ -562,6 +619,9 @@ model Quotation {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead           Lead?       @relation(fields: [leadId], references: [id])
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([status])
 }
 
 // ----------------------
@@ -583,6 +643,9 @@ model Ticket {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([status])
+  @@index([assignedToId])
 }
 
 // ----------------------
@@ -601,6 +664,8 @@ model Contract {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([status])
 }
 
 // ----------------------
@@ -619,6 +684,8 @@ model Document {
   createdAt      DateTime @default(now()) @map("created_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([type])
 }
 
 // ----------------------
@@ -637,6 +704,8 @@ model Notification {
   createdAt      DateTime @default(now()) @map("created_at")
 
   organization   Organization? @relation(fields: [organizationId], references: [id])
+  @@index([userId])
+  @@index([organizationId])
 }
 
 // ----------------------
@@ -650,6 +719,7 @@ model Session {
   expiresAt      DateTime @map("expires_at")
   createdAt      DateTime @default(now()) @map("created_at")
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
 }
 
 model Setting {
@@ -678,6 +748,8 @@ model ApiKey {
 
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([organizationId])
+  @@index([userId])
 }
 
 // ----------------------
@@ -692,4 +764,6 @@ model AIConversation {
   messages       String
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  @@index([userId])
+  @@index([organizationId])
 }
