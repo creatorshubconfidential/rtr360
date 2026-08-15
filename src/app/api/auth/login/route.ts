@@ -1,9 +1,27 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword, verifyPassword, createSession } from '@/lib/auth';
+import { verifyPassword, createSession, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { rateLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting: 5 login attempts per minute per IP
+    const ip = getClientIp(request);
+    const { allowed, remaining, resetAt } = rateLimiter.strict(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((resetAt - Date.now()) / 1000).toString(),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -12,26 +30,6 @@ export async function POST(request: Request) {
         { error: 'Email and password are required' },
         { status: 400 }
       );
-    }
-
-    // Ensure super admin exists
-    const existingAdmin = await db.user.findUnique({
-      where: { email: 'admin@rtr.ae' },
-    });
-
-    if (!existingAdmin) {
-      const hashedPw = await hashPassword('REDACTED_DEMO_PASSWORD');
-      await db.user.create({
-        data: {
-          email: 'admin@rtr.ae',
-          passwordHash: hashedPw,
-          name: 'RTR Admin',
-          role: 'super_admin',
-          organizationId: null,
-          status: 'active',
-          emailVerified: true,
-        },
-      });
     }
 
     // Find user by email
@@ -78,7 +76,7 @@ export async function POST(request: Request) {
       data: { lastLoginAt: new Date() },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
@@ -88,6 +86,20 @@ export async function POST(request: Request) {
       },
       token,
     });
+
+    // Set HttpOnly, Secure, SameSite cookie
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    // Rate limit headers
+    response.headers.set('X-RateLimit-Remaining', remaining.toString());
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

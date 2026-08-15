@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "This screenshot displays the **Vercel Dashboard**, specifically the **Integrations** page for a project named **\"rtr360\"**. This is a web application interface used for managing cloud deployments and third-party service connections.\n\n## **Overall Layout & Context**\n\nThe interface uses a **dark theme** (black/dark gray background with white text) and is displayed within a Google Chrome browser window on a Windows operating system (visible taskbar at bottom). The URL shows: `vercel.com/rtr-dd4d1e8e/rtr360/settings/integrations`\n\n---\n\n## **Top Navigation Bar**\n\n**Browser Elements (Chrome):**\n- Tab bar showing multiple open tabs including Gmail, Vercel, \"RTR 360 — Fleet Technology\", and an active \"Ask Gemini\" tab\n- Address bar with the current URL\n- Standard browser controls (back/forward, refresh, bookmark star, profile icon)\n\n**Vercel Header:**\n- **Left side:** Project selector showing \"RTR\" (with green \"Hobby\" plan badge) and dropdown arrow\n- **Center:** Project name \"rtr360\" with Vercel logo (green triangle)\n- **Right side:** \n  - \"Integrations\" breadcrumb/link\n  - \"Agent\" button with grid icon\n\n---\n\n## **Left Sidebar Navigation**\n\nA vertical navigation menu with the following items (top to bottom):\n\n1. **Search bar** - \"Find\" with keyboard shortcut \"F\"\n2. **Overview** (with green dashboard icon) - currently highlighted/selected\n3. **Deployments** (box icon)\n4. **Logs** (list icon)\n5. **Analytics** (chart icon)\n6. **Speed Insights** (gauge icon)\n7. **Observability** (eye icon) - with expand arrow (>)\n8. **Firewall** (shield icon) - with expand arrow (>)\n9. **CDN** (globe icon) - with expand arrow (>)\n10. **Environment Variables** (sliders icon)\n11. **Domains** (link icon)\n12. **Connect** (plug icon) - with blue \"Beta\" badge\n13. **Integrations** (puzzle piece icon) - **currently selected/active item** (highlighted in dark gray)\n14. **Storage** (database icon)\n15. **Flags** (flag icon) - with expand arrow (>)\n16. **Agent** (sparkles icon) - with expand arrow (>)\n17. **AI Gateway** (network icon) - with expand arrow (>)\n18. **Sandboxes** (container icon) - with expand arrow (>)\n19. **Workflows** (nodes icon)\n20. **Images** (image icon) - with blue \"Beta\" badge\n21. **Usage** (clock icon)\n22. **Support** (life preserver icon)\n\n**Bottom of sidebar:** User account \"creatorshubconfid...\" with notification bell icon\n\n---\n\n## **Main Content Area - Integrations Page**\n\n### **Header Section**\n- **Title:** \"Integrations\" (large bold text)\n- **Subtitle:** \"Connect your Vercel Project with third-party services to automate aspects of your workflow\"\n- **Action Buttons (top right):**\n  - \"Integrations Console\" (dark button)\n  - \"Browse Marketplace\" (white/light button)\n\n### **Search & Filter Bar**\n- **Search input:** \"Search integrations\" with search icon and \"/\" keyboard shortcut indicator\n- **Dropdown filter:** \"All Installed integrations\" with dropdown arrow\n\n### **Installed Integration Card**\nOne integration is currently installed:\n\n**Supabase**\n- **Icon:** Green lightning bolt logo\n- **Badge:** Green \"Billed Via Vercel\" label\n- **Category:** \"Authentication\"\n- **Status:** \"Updated 13h ago\" with green checkmark circle\n- **Action:** \"Manage\" button (dark outlined)\n\n---\n\n## **Right Sidebar - Latest Integrations Marketplace**\n\nA panel titled **\"Latest Integrations\"** with subtitle \"Explore more integrations to expand your Vercel development experience.\"\n\nList of available integrations (each with icon, name, and description):\n\n1. **LaunchDarkty** (rocket icon) - \"Feature flags, experimentation, and AI AgentControl to ship with confidence.\"\n\n2. **Exa** (blue X icon) - \"AI-powered search API for developers. Build smarter apps with webia search.\"\n\n3. **Algolia** (blue A icon) - \"Immediately show users what they want with AI-driven results that convert.\"\n\n4. **Endform** (colorful bars icon) - \"Run your Playwright end to end tests in seconds.\"\n\n5. **AgentMall** (robot head icon) - \"Agentic email inboxes for AI agents. Send and receive at a scale of millions.\"\n\n6. **MotherDuck** (orange duck icon) - \"The serverless backend for analytics\"\n\n7. **Resend** (partially visible at bottom)\n\n---\n\n## **System Tray / Taskbar (Windows)**\n\nVisible at the very bottom:\n- **Left:** Weather widget showing \"37°C Sunny\", date \"15/08/2026\", time \"13:19\"\n- **Center:** Windows Start button, Search box, pinned applications (File Explorer, Edge, Chrome, etc.)\n- **Right:** System icons (ENG UK keyboard, WiFi, volume, battery), notification area\n\n---\n\n## **Summary**\n\nThis is the **Vercel project management dashboard** showing that the user has **one integration installed (Supabase for Authentication)** and is browsing available marketplace integrations to add more third-party services to their \"rtr360\" deployment project. The interface indicates this is a Hobby plan account, and the user is currently viewing the settings/integrations section of their project configuration.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1786782135,
+  "id": "20260815162201163b51056ff8454c",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20260815162201163b51056ff8454c",
+  "usage": {
+    "completion_tokens": 1209,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 2761,
+    "prompt_tokens_details": {
+      "cached_tokens": 4
+    },
+    "total_tokens": 3970
+  }
+}

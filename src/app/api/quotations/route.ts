@@ -88,8 +88,12 @@ export async function POST(request: Request) {
     // Get org from lead if provided, otherwise from user
     let orgId = user.organizationId;
     if (leadId) {
-      const lead = await db.lead.findUnique({ where: { id: leadId } });
-      if (lead?.organizationId) orgId = lead.organizationId;
+      const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
+      if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      }
+      if (lead.organizationId) orgId = lead.organizationId;
     }
 
     if (!orgId) {

@@ -213,7 +213,10 @@ async function main() {
   // ========================================
   console.log('\n👤 Creating users...');
 
-  const adminPw = await hashPassword('REDACTED_DEMO_PASSWORD');
+  // Password from env var or a strong default (dev only)
+  const SEED_PASSWORD = process.env.SEED_PASSWORD || 'REDACTED_SEED_PASSWORD';
+
+  const adminPw = await hashPassword(SEED_PASSWORD);
   const superAdmin = await db.user.create({
     data: {
       email: 'admin@rtr.ae',
@@ -228,7 +231,7 @@ async function main() {
   });
   console.log(`  ✅ Super Admin: admin@rtr.ae`);
 
-  const opsPw = await hashPassword('REDACTED_DEMO_PASSWORD');
+  const opsPw = await hashPassword(SEED_PASSWORD);
   const opsManager = await db.user.create({
     data: {
       email: 'ahmed.ops@rtr.ae',
@@ -243,7 +246,7 @@ async function main() {
   });
   console.log(`  ✅ Operations Manager: ahmed.ops@rtr.ae`);
 
-  const salesPw = await hashPassword('REDACTED_DEMO_PASSWORD');
+  const salesPw = await hashPassword(SEED_PASSWORD);
   const salesManager = await db.user.create({
     data: {
       email: 'fatima.sales@rtr.ae',
@@ -259,7 +262,7 @@ async function main() {
   console.log(`  ✅ Sales Manager: fatima.sales@rtr.ae`);
 
   // Customer org user
-  const customerPw = await hashPassword('REDACTED_DEMO_PASSWORD');
+  const customerPw = await hashPassword(SEED_PASSWORD);
   const customerUser = await db.user.create({
     data: {
       email: 'khalid@alfahim.ae',

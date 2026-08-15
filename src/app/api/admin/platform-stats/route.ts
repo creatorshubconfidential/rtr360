@@ -4,7 +4,14 @@ import { verifySession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden. Super admin access required.' }, { status: 403 });

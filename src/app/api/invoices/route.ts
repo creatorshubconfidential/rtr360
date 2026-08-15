@@ -82,8 +82,8 @@ export async function POST(request: Request) {
     const numTax = Number(tax) || 0;
     const total = Math.round((numAmount + numTax) * 100) / 100;
 
-    // Determine organization
-    const orgId = organizationId || user.organizationId;
+    // Determine organization — non-super_admin cannot specify a different org
+    const orgId = user.role === 'super_admin' ? (organizationId || user.organizationId) : user.organizationId;
     if (!orgId) {
       return NextResponse.json({ error: 'Organization context required' }, { status: 400 });
     }

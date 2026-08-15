@@ -78,13 +78,44 @@ export async function deleteSession(token: string): Promise<boolean> {
 }
 
 /**
- * Helper to extract Bearer token from Authorization header
+ * Validates password strength.
+ * Requirements: 10+ chars, uppercase, lowercase, digit.
+ * Returns null if valid, or an error message string.
  */
-export function extractToken(authHeader: string | null): string | null {
-  if (!authHeader) return null;
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') return null;
-  return parts[1];
+export function validatePasswordStrength(password: string): string | null {
+  if (password.length < 10) {
+    return 'Password must be at least 10 characters long';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one digit';
+  }
+  return null;
+}
+
+export const SESSION_COOKIE_NAME = 'rtr_session';
+
+/**
+ * Helper to extract Bearer token from Authorization header
+ * or from HttpOnly cookie as fallback
+ */
+export function extractToken(authHeader: string | null, cookieHeader: string | null): string | null {
+  // 1. Try Authorization header first
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0] === 'Bearer') return parts[1];
+  }
+  // 2. Fallback to HttpOnly cookie
+  if (cookieHeader) {
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
+    if (match) return decodeURIComponent(match[1]);
+  }
+  return null;
 }
 
 /**
@@ -94,7 +125,10 @@ export function extractToken(authHeader: string | null): string | null {
 export async function getAuthUser(
   request: Request
 ): Promise<{ user: UserSession | null; error: Response | null }> {
-  const token = extractToken(request.headers.get('Authorization'));
+  const token = extractToken(
+    request.headers.get('Authorization'),
+    request.headers.get('Cookie')
+  );
 
   if (!token) {
     return {

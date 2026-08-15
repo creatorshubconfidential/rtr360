@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { getTenantFilter } from '@/lib/tenant';
 
 const VALID_TYPES = ['call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'visit'];
 
@@ -14,9 +15,19 @@ export async function GET(request: Request) {
     const opportunityId = searchParams.get('opportunityId');
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')));
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = getTenantFilter(user);
+
     if (leadId) where.leadId = leadId;
     if (opportunityId) where.opportunityId = opportunityId;
+
+    // Verify lead/opportunity belongs to user's org
+    if (leadId) {
+      const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
+      if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+    }
 
     const activities = await db.activity.findMany({
       where,
@@ -51,6 +62,15 @@ export async function POST(request: Request) {
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    }
+
+    // Verify lead belongs to user's org if provided
+    if (leadId) {
+      const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
+      if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
     }
 
     const activity = await db.activity.create({

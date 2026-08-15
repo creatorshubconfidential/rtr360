@@ -1,21 +1,42 @@
 import { NextResponse } from 'next/server';
-import { deleteSession } from '@/lib/auth';
+import { deleteSession, SESSION_COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { token } = body;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
-      );
+    // Try to read token from body (for backward compat) or from cookie
+    let token: string | null = null;
+    try {
+      const body = await request.json();
+      if (body.token) token = body.token;
+    } catch {
+      // No body — that's fine, we'll try cookie
     }
 
-    await deleteSession(token);
+    // Fallback to cookie
+    if (!token) {
+      const cookieHeader = request.headers.get('Cookie');
+      if (cookieHeader) {
+        const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
+        if (match) token = decodeURIComponent(match[1]);
+      }
+    }
 
-    return NextResponse.json({ success: true });
+    if (token) {
+      await deleteSession(token);
+    }
+
+    const response = NextResponse.json({ success: true });
+
+    // Clear the cookie
+    response.cookies.set(SESSION_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+
+    return response;
   } catch (error) {
     console.error('Logout error:', error);
     return NextResponse.json(

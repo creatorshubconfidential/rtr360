@@ -1,12 +1,19 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession, hashPassword, createSession } from '@/lib/auth';
+import { verifySession, hashPassword, createSession, validatePasswordStrength } from '@/lib/auth';
 import { randomBytes } from 'crypto';
 
 // GET /api/admin/organizations — List all orgs with usage stats
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden. Super admin access required.' }, { status: 403 });
@@ -111,7 +118,14 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/organizations — Create new org + admin user (onboarding)
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden. Super admin access required.' }, { status: 403 });
@@ -147,7 +161,9 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) return Response.json({ error: 'Organization name is required' }, { status: 400 });
     if (!adminName?.trim()) return Response.json({ error: 'Admin name is required' }, { status: 400 });
     if (!adminEmail?.trim()) return Response.json({ error: 'Admin email is required' }, { status: 400 });
-    if (!adminPassword || adminPassword.length < 6) return Response.json({ error: 'Admin password must be at least 6 characters' }, { status: 400 });
+    if (!adminPassword) return Response.json({ error: 'Admin password is required' }, { status: 400 });
+    const pwError = validatePasswordStrength(adminPassword);
+    if (pwError) return Response.json({ error: pwError }, { status: 400 });
 
     // Check if org email exists
     if (email) {

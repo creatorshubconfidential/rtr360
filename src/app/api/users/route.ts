@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser, hashPassword } from '@/lib/auth';
+import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'];
 
@@ -70,6 +70,13 @@ export async function POST(request: Request) {
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 });
     }
+
+    // Password strength validation
+    const pwError = validatePasswordStrength(password);
+    if (pwError) {
+      return NextResponse.json({ error: pwError }, { status: 400 });
+    }
+
     if (role && !VALID_ROLES.includes(role)) {
       return NextResponse.json({ error: `Invalid role. Valid: ${VALID_ROLES.join(', ')}` }, { status: 400 });
     }

@@ -71,8 +71,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
     }
 
-    // Determine the organization
-    const orgId = organizationId || user.organizationId;
+    // Determine the organization — non-super_admin cannot specify a different org
+    const orgId = user.role === 'super_admin' ? (organizationId || user.organizationId) : user.organizationId;
 
     if (!orgId) {
       return NextResponse.json({ error: 'Organization context required' }, { status: 400 });

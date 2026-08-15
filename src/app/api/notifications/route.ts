@@ -54,6 +54,14 @@ export async function POST(request: Request) {
 
     // Mark single as read
     if (body.id) {
+      // Verify the notification belongs to user's org
+      const notification = await db.notification.findUnique({ where: { id: body.id } });
+      if (!notification) {
+        return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
+      }
+      if (user.role !== 'super_admin' && notification.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
       await db.notification.update({ where: { id: body.id }, data: { read: true } });
       return NextResponse.json({ success: true });
     }

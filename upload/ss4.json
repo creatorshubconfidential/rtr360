@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "This screenshot shows the **Vercel Dashboard**, specifically the **Storage** section for a project named **\"rtr360\"**. This is a web-based application interface used for managing cloud deployments and infrastructure.\n\n## Overall Layout & Context\n\n**Browser Environment:**\n- Running in Google Chrome on Windows 11\n- URL: `vercel.com/rtr-dd4d1e8e/rtr360/stores`\n- Multiple tabs open, including \"RTR 360 — Fleet Technology\" and \"Ask Gemini\"\n- Dark theme enabled throughout the Vercel interface\n- System time shows **13:14, 15/08/2026** (UK locale)\n\n---\n\n## Left Sidebar Navigation (Project Menu)\n\nThe left sidebar contains a vertical navigation menu with the following items:\n\n**Top Section (Project Identity):**\n- **RTR** (project name) with \"Hobby\" plan badge\n- Search bar labeled \"Find\" with keyboard shortcut \"F\"\n\n**Main Navigation Items:**\n1. **Overview** (with green icon)\n2. **Deployments** (box/stack icon)\n3. **Logs** (list icon)\n4. **Analytics** (chart icon)\n5. **Speed Insights** (gauge icon)\n6. **Observability** (eye icon) → has submenu arrow\n7. **Firewall** (shield icon) → has submenu arrow\n8. **CDN** (globe icon) → has submenu arrow\n9. **Environment Variables** (sliders icon)\n10. **Domains** (globe/link icon)\n11. **Connect** (plug icon) - marked as **Beta** (blue badge)\n12. **Integrations** (puzzle piece icon)\n13. **Storage** (database cylinder icon) - **Currently Selected/Active** (highlighted with dark background)\n14. **Flags** (flag icon) → has submenu arrow\n15. **Agent** (sparkle/bot icon) → has submenu arrow\n16. **AI Gateway** (brain/AI icon) → has submenu arrow\n17. **Sandboxes** (container icon) → has submenu arrow\n18. **Workflows** (flowchart icon)\n19. **Images** (image icon) - marked as **Beta** (blue badge)\n20. **Usage** (clock/timer icon)\n21. **Support** (life preserver icon - grayed out)\n\n**Bottom of Sidebar:**\n- User profile: **creatorshubconfid...** with notification bell and settings dots\n\n---\n\n## Main Content Area (Storage Dashboard)\n\n### Header Bar:\n- **Left:** Project identifier \"rtr360\" with dropdown arrow and green status indicator\n- **Center:** Page title \"**Storage**\"\n- **Right:** \"**Agent**\" button with grid icon\n\n### Action Toolbar (below header):\n1. **Search field:** Placeholder text \"Search provider or database...\" with search icon and keyboard shortcut \"/\"\n2. **Filter dropdown:** Currently set to \"**All**\" with dropdown arrow\n3. **Connect Database** button (dark/outlined style)\n4. **Create Database** button (white/filled style - primary action)\n\n### Storage Resource Card:\nOne database resource is displayed:\n\n**Card Details:**\n- **Icon:** Green lightning bolt logo (Supabase branding)\n- **Name:** `supabase-pink-nest`\n- **Provider:** Supabase - Supabase Free Plan\n- **Metadata:** \"Created 13h ago\" (top right of card)\n- **Environment Tags:** \"Production, Preview\" (in a pill/tag format with dropdown arrow)\n\n---\n\n## System Tray (Windows Taskbar)\n- Weather widget showing **37°C, Sunny**\n- System icons: Network, Volume, Battery\n- Date/Time: **13:14, 15/08/2026**\n- Language: **ENG UK**\n\n## Summary\nThis is the **Vercel cloud platform's Storage management interface**, showing that the user has one connected database (a Supabase instance called \"supabase-pink-nest\") linked to their \"rtr360\" project. The interface allows the user to manage database connections, create new databases, and monitor storage resources associated with their deployment.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1786782115,
+  "id": "2026081516214799f8793b807b4cda",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026081516214799f8793b807b4cda",
+  "usage": {
+    "completion_tokens": 875,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 2761,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3636
+  }
+}

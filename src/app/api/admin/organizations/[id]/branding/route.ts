@@ -9,7 +9,14 @@ interface RouteContext {
 // GET /api/admin/organizations/[id]/branding — Get white-label branding
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -38,7 +45,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (!org) return Response.json({ error: 'Organization not found' }, { status: 404 });
 
     return Response.json({ data: org });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Branding get error:', error);
     return Response.json({ error: 'Failed to fetch branding' }, { status: 500 });
   }
@@ -47,7 +54,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // PUT /api/admin/organizations/[id]/branding — Update white-label branding
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -103,7 +117,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         customDomain: updated.customDomain,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Branding update error:', error);
     return Response.json({ error: 'Failed to update branding' }, { status: 500 });
   }

@@ -1,14 +1,11 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# RTR 360 — robots.txt
+# Block all bots from API, setup, and internal routes
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /setup
+Disallow: /debug
+
+# Sitemap
+# Sitemap: https://rtr360.app/sitemap.xml

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser, hashPassword } from '@/lib/auth';
+import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'];
 
@@ -30,7 +30,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (phone !== undefined) updateData.phone = phone;
     if (status !== undefined) updateData.status = status;
     if (role !== undefined && VALID_ROLES.includes(role)) updateData.role = role;
-    if (password) updateData.passwordHash = await hashPassword(password);
+    if (password) {
+      const pwError = validatePasswordStrength(password);
+      if (pwError) {
+        return NextResponse.json({ error: pwError }, { status: 400 });
+      }
+      updateData.passwordHash = await hashPassword(password);
+    }
 
     const updatedUser = await db.user.update({
       where: { id },

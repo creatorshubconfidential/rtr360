@@ -9,7 +9,14 @@ interface RouteContext {
 // GET /api/admin/organizations/[id] — Full org detail
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -93,7 +100,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           : 0,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Org detail error:', error);
     return Response.json({ error: 'Failed to fetch organization' }, { status: 500 });
   }
@@ -102,7 +109,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // PATCH /api/admin/organizations/[id] — Update org info
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -137,7 +151,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     });
 
     return Response.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Org update error:', error);
     return Response.json({ error: 'Failed to update organization' }, { status: 500 });
   }
@@ -146,7 +160,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 // DELETE /api/admin/organizations/[id] — Soft delete (set status inactive)
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    if (authHeader) token = authHeader.replace('Bearer ', '');
+    if (!token && cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
+      if (match) token = decodeURIComponent(match[1]);
+    }
     const session = await verifySession(token || '');
     if (!session || session.role !== 'super_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -169,7 +190,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     ]);
 
     return Response.json({ success: true, message: `Organization "${org.name}" has been deactivated` });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Org delete error:', error);
     return Response.json({ error: 'Failed to deactivate organization' }, { status: 500 });
   }
