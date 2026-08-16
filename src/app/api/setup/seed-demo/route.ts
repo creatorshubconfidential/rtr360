@@ -180,36 +180,53 @@ export async function POST(request: Request) {
     });
     results.branches = 2;
 
-    // ========== 3. FIND EXISTING VEHICLES & DRIVERS ==========
-    const vehicles = await db.vehicle.findMany({ where: { organizationId: org.id } });
-    const drivers = await db.driver.findMany({ where: { organizationId: org.id } });
+    // ========== 3. CREATE VEHICLES ==========
+    let vehicles = await db.vehicle.findMany({ where: { organizationId: org.id } });
+    if (vehicles.length === 0) {
+      const vehicleData = [
+        { plateNumber: 'DXB-A-12345', vehicleType: 'Heavy Truck', make: 'Isuzu', model: 'FTR 800', year: 2023, mileage: 45230, color: 'White' },
+        { plateNumber: 'AUH-C-11111', vehicleType: 'Light Truck', make: 'Toyota', model: 'Hilux', year: 2024, mileage: 78500, color: 'Silver' },
+        { plateNumber: 'DXB-D-22222', vehicleType: 'Van', make: 'Nissan', model: 'Urvan', year: 2022, mileage: 123400, color: 'White' },
+        { plateNumber: 'SHJ-E-33333', vehicleType: 'Heavy Truck', make: 'Mitsubishi', model: 'Fuso Canter', year: 2023, mileage: 56780, color: 'Blue' },
+        { plateNumber: 'DXB-B-67890', vehicleType: 'Refrigerated Truck', make: 'Hino', model: '500 Series', year: 2024, mileage: 156200, color: 'White' },
+        { plateNumber: 'DXB-F-44444', vehicleType: 'Light Truck', make: 'Ford', model: 'Transit', year: 2023, mileage: 89300, color: 'White' },
+        { plateNumber: 'DXB-G-55555', vehicleType: 'Pickup', make: 'Toyota', model: 'Land Cruiser 79', year: 2024, mileage: 34100, color: 'Black' },
+      ];
+      for (const vd of vehicleData) {
+        const v = await db.vehicle.create({
+          data: { ...vd, status: 'active', organizationId: org.id, installDate: new Date(2025, 0, 15) },
+        });
+        vehicles.push(v);
+      }
+    }
+    results.vehicles = vehicles.length;
 
-    // Link vehicles to branches and update mileage
+    // ========== 3b. CREATE DRIVERS ==========
+    let drivers = await db.driver.findMany({ where: { organizationId: org.id } });
+    if (drivers.length === 0) {
+      const driverData = [
+        { name: 'Ali Hassan', phone: '+971501112233', emirate: 'Dubai', nationality: 'Pakistani', licenseType: 'Heavy', licenseExpiry: new Date(2027, 5, 15), score: 92, totalDistance: 125400, totalViolations: 2, totalTrips: 342 },
+        { name: 'Omar Khalid', phone: '+971502223344', emirate: 'Abu Dhabi', nationality: 'Egyptian', licenseType: 'Heavy', licenseExpiry: new Date(2027, 3, 20), score: 78, totalDistance: 189300, totalViolations: 8, totalTrips: 489 },
+        { name: 'Rajesh Kumar', phone: '+971503334455', emirate: 'Sharjah', nationality: 'Indian', licenseType: 'Light', licenseExpiry: new Date(2027, 1, 10), score: 65, totalDistance: 95600, totalViolations: 15, totalTrips: 267 },
+      ];
+      for (const dd of driverData) {
+        const d = await db.driver.create({
+          data: { ...dd, status: 'active', organizationId: org.id },
+        });
+        drivers.push(d);
+      }
+    }
+    results.drivers = drivers.length;
+
+    // Link vehicles to drivers and branches
     for (let i = 0; i < vehicles.length; i++) {
       await db.vehicle.update({
         where: { id: vehicles[i].id },
         data: {
           branchId: i < 5 ? dubaiHq.id : abuDhabi.id,
+          driverId: drivers[i % drivers.length].id,
           mileage: [45230, 78500, 123400, 56780, 156200, 89300, 34100][i] || 50000,
           installDate: new Date(2025, Math.floor(Math.random() * 6), Math.floor(Math.random() * 28) + 1),
-        },
-      });
-    }
-
-    // Update driver scores for realistic variety
-    const driverScores = [92, 78, 65];
-    const driverDistances = [125400, 189300, 95600];
-    const driverViolations = [2, 8, 15];
-    const driverTrips = [342, 489, 267];
-    for (let i = 0; i < drivers.length; i++) {
-      await db.driver.update({
-        where: { id: drivers[i].id },
-        data: {
-          score: driverScores[i] || 80,
-          totalDistance: driverDistances[i] || 100000,
-          totalViolations: driverViolations[i] || 5,
-          totalTrips: driverTrips[i] || 300,
-          licenseExpiry: new Date(2027, i, 15),
         },
       });
     }
