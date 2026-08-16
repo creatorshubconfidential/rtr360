@@ -1610,6 +1610,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
     } catch { /* silent */ }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch; setState runs after await, not synchronously
   useEffect(() => { fetchNotifPreview(); }, [fetchNotifPreview]);
 
   const viewTitle: Record<ViewType, string> = {

@@ -1,7 +1,7 @@
 'use client';
 import { authFetch } from '@/lib/api';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   AlertTriangle, Gauge, MapPin, Fuel, Wrench, Car,
@@ -26,8 +26,9 @@ const EVENT_COLORS: Record<string, string> = {
 };
 
 export default function RealtimeEventToasts({ enabled }: { enabled: boolean }) {
-  const [active, setActive] = useState(false);
   const esRef = useRef<EventSource | null>(null);
+  // Ref to hold latest connect fn so onerror can reconnect without circular reference
+  const connectRef = useRef<() => void>(() => {});
 
   const connect = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
@@ -52,21 +53,24 @@ export default function RealtimeEventToasts({ enabled }: { enabled: boolean }) {
 
     es.onerror = () => {
       es.close();
-      // Reconnect after 10s
+      // Reconnect after 10s via ref to avoid accessing connect before declaration
       setTimeout(() => {
-        if (esRef.current === es) connect();
+        if (esRef.current === es) connectRef.current();
       }, 10000);
     };
   }, [enabled]);
 
+  // Keep ref in sync so onerror always calls the latest version
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
   useEffect(() => {
     if (enabled) {
       connect();
-      setActive(true);
     } else {
       esRef.current?.close();
       esRef.current = null;
-      setActive(false);
     }
     return () => {
       esRef.current?.close();
