@@ -3,8 +3,6 @@ import { db } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { Prisma } from '@prisma/client';
-import { execSync } from 'child_process';
-import path from 'path';
 
 /**
  * POST /api/setup/seed-demo
@@ -19,23 +17,9 @@ export async function POST(request: Request) {
     // ========== 0. SCHEMA SYNC (fixes P2022 missing column errors) ==========
     let schemaSyncResult = 'skipped';
 
-    // Attempt 1: Try prisma db push CLI
+    // Add missing columns directly via SQL (safe for serverless/edge)
     try {
-      const schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma');
-      logger.info('Running prisma db push to sync schema...', { schemaPath });
-      const output = execSync(
-        `npx prisma db push --accept-data-loss --skip-generate 2>&1`,
-        { timeout: 60000, cwd: process.cwd(), encoding: 'utf-8' }
-      );
-      schemaSyncResult = `cli: ${output.trim().slice(-200)}`;
-      logger.info('Schema sync completed via CLI', { output: schemaSyncResult });
-    } catch (cliError: unknown) {
-      const cliMsg = cliError instanceof Error ? cliError.message : String(cliError);
-      logger.warn('CLI schema sync failed, trying raw SQL fallback', { error: cliMsg });
-
-      // Attempt 2: Raw SQL fallback — add missing columns directly
-      try {
-        const columnsToAdd: string[] = [];
+      const columnsToAdd: string[] = [];
 
         // Check each column and add if missing
         const checks: { col: string; tbl: string; def: string }[] = [
@@ -110,12 +94,12 @@ export async function POST(request: Request) {
             // Table might not exist — skip
           }
         }
-        schemaSyncResult = `sql_fallback: added ${columnsToAdd.length} columns (${columnsToAdd.join(', ')})`;
-        logger.info('Schema sync completed via SQL fallback', { columnsAdded: columnsToAdd });
+        schemaSyncResult = `sql: added ${columnsToAdd.length} columns (${columnsToAdd.join(', ')})`;
+        logger.info('Schema sync completed via SQL', { columnsAdded: columnsToAdd });
       } catch (sqlError: unknown) {
         const sqlMsg = sqlError instanceof Error ? sqlError.message : String(sqlError);
-        logger.warn('SQL fallback also failed', { error: sqlMsg });
-        schemaSyncResult = `both_failed: cli=${cliMsg.slice(0, 100)} sql=${sqlMsg.slice(0, 100)}`;
+        logger.warn('Schema sync failed', { error: sqlMsg });
+        schemaSyncResult = `failed: ${sqlMsg.slice(0, 200)}`;
       }
     }
 
