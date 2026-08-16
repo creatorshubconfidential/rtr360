@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
 
@@ -51,6 +52,9 @@ export async function PATCH(
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
+
+    const permErr = requirePermission(user, QUOTATIONS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const body = await request.json();

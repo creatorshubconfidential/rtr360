@@ -273,3 +273,49 @@ STEP 9 (P2 Hardening):  P2-1 through P2-12
 5. Lint passes (`npm run lint`)
 6. Build passes (`npm run build`)
 7. Documentation is updated (this file + relevant audit doc)
+
+---
+
+## Sprint 1 — Security Re-Audit & Gap Fix (2026-08-16)
+
+### Scope
+Re-audit all 13 P0/P1 findings from SECURITY-AUDIT.md. Verify each fix. Run 11/11 tenant isolation test matrix.
+
+### Results
+- **12/13 findings** verified as already FIXED from prior remediation work
+- **1 new vulnerability found**: `PATCH /api/quotations/[id]` missing `requirePermission(user, QUOTATIONS_MANAGE)`
+- **Root cause**: During P1-1 RBAC rollout, the PATCH handler on quotations/[id] was missed
+- **Impact**: Any authenticated user (including viewer) in the same org could modify quotation status, notes, and line items
+
+### Fix Applied
+- **File:** `src/app/api/quotations/[id]/route.ts`
+- **Action:** Added `import { requirePermission, QUOTATIONS_MANAGE }` and permission gate before PATCH handler
+
+### Tests Added
+- **File:** `tests/security-tenant-isolation.test.ts` (55 tests)
+  - P0-1: POST users privilege escalation (6 tests)
+  - P0-2: PATCH users privilege escalation (4 tests)
+  - P0-3: Invoice PDF IDOR (4 tests)
+  - P1-4: Revenue forecast tenant leak (4 tests)
+  - P1-5: Maintenance ownership (5 tests)
+  - P1-6: Installation ownership (6 tests)
+  - P1-7: AI conversation ownership (5 tests)
+  - P1-8: Settings RBAC (2 tests)
+  - P1-9: Quotation PATCH RBAC (5 tests)
+  - P1-10: Rate limiting (2 tests)
+  - P1-11: localStorage auth (4 tests)
+  - P1-12: SSE token leak (2 tests)
+  - P1-13: Caddy SSRF (2 tests)
+  - Infrastructure: security libraries (4 tests)
+
+### Verification
+- 336/336 tests PASS
+- 0 TypeScript errors
+- 0 ESLint errors
+- Build passes
+- 11/11 tenant isolation test matrix PASS
+
+### db.ts Fix
+- Made `resolveDatabaseUrl()` graceful during build (no throw for missing PG URL)
+- Fallback chain: DATABASE_URL (postgres) → POSTGRES_PRISMA_URL → POSTGRES_URL_NON_POOLING → POSTGRES_URL → DATABASE_URL as-is → placeholder
+- Ensures `next build` succeeds even without a local Postgres connection

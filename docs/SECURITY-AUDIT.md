@@ -1,6 +1,7 @@
 # SECURITY-AUDIT.md — RTR360
 
 > **Audit Date:** 2026-08-16
+> **Last Verified:** 2026-08-16 (Sprint 1 re-audit)
 > **Severity:** P0=Critical (exploitable now), P1=High (should fix before production), P2=Medium (hardening)
 > **Scope:** Full codebase — API routes, frontend, database, infrastructure, git history
 
@@ -139,20 +140,42 @@
 
 ---
 
-## Tenant Isolation Test Matrix (Required)
+## Tenant Isolation Test Matrix
 
-| Test Case | Expected Result | Current Status |
-|-----------|---------------|----------------|
-| Cross-tenant GET (vehicles) | 403/404 | PASS (inline filter) |
-| Cross-tenant GET (invoice PDF) | 403/404 | **FAIL (P0-3)** |
-| Cross-tenant POST (users with role) | 403 | **FAIL (P0-1)** |
-| Cross-tenant PATCH (users with role) | 403 | **FAIL (P0-2)** |
-| Cross-tenant POST (maintenance) | 403 | **FAIL (P1-2)** |
-| Cross-tenant POST (installations) | 403 | **FAIL (P1-3)** |
-| Cross-tenant GET (revenue forecast) | 403/404 | **FAIL (P1-1)** |
-| Cross-tenant GET (AI conversations) | 403/404 | **FAIL (P1-4)** |
-| Viewer creates invoice | 403 | **FAIL (P1-6)** |
-| Viewer deletes driver | 403 | **FAIL (P1-6)** |
-| Org owner assigns super_admin | 403 | **FAIL (P0-1)** |
+| Test Case | Expected Result | Status | Test File |
+|-----------|---------------|--------|-----------|
+| Cross-tenant GET (invoice PDF) | 404 | PASS | security-tenant-isolation.test.ts |
+| Cross-tenant POST (users with role) | 403 | PASS | security-p0.test.ts |
+| Cross-tenant PATCH (users with role) | 403 | PASS | security-p0.test.ts |
+| Cross-tenant POST (maintenance) | 404 | PASS | security-tenant-isolation.test.ts |
+| Cross-tenant POST (installations) | 404 | PASS | security-tenant-isolation.test.ts |
+| Cross-tenant GET (revenue forecast) | filtered | PASS | security-tenant-isolation.test.ts |
+| Cross-tenant GET (AI conversations) | 404 | PASS | security-tenant-isolation.test.ts |
+| Viewer creates invoice | 403 | PASS | security-p1-rbac.test.ts |
+| Viewer deletes driver | 403 | PASS | security-p1-rbac.test.ts |
+| Org owner assigns super_admin | 403 | PASS | security-p0.test.ts |
+| Viewer PATCHes quotation | 403 | PASS | security-tenant-isolation.test.ts |
 
-**Result: 3/11 tests pass. 8/11 tests FAIL.**
+**Result: 11/11 tests PASS.**
+
+---
+
+## Sprint 1 Re-Audit (2026-08-16)
+
+Full re-audit of all 13 findings (3 P0 + 10 P1). 12/13 were already fixed from prior remediation work. 1 new vulnerability found and fixed:
+
+| # | Finding | Status | Action Taken |
+|---|---------|--------|---------------|
+| P0-1 | POST /api/users privilege escalation | FIXED (verified) | requirePermission + role hierarchy |
+| P0-2 | PATCH /api/users/[id] privilege escalation | FIXED (verified) | requirePermission + role hierarchy |
+| P0-3 | Invoice PDF cross-tenant IDOR | FIXED (verified) | organizationId check, returns 404 |
+| P1-1 | Revenue forecast tenant leak | FIXED (verified) | orgFilter + orgFilterStrict |
+| P1-2 | Maintenance ownership | FIXED (verified) | vehicle org check + permission |
+| P1-3 | Installation ownership | FIXED (verified) | vehicle + device org check |
+| P1-4 | AI conversation ownership | FIXED (verified) | conversation org check |
+| P1-5 | Settings RBAC | FIXED (verified) | SETTINGS_MANAGE permission |
+| P1-6 | Missing RBAC on write routes | FIXED (1 gap found + fixed) | Added QUOTATIONS_MANAGE to PATCH quotations/[id] |
+| P1-7 | Rate limiting | FIXED (verified) | checkRateLimit on all 42 write routes |
+| P1-8 | localStorage authentication | FIXED (verified) | Cookie-only auth, zero localStorage |
+| P1-9 | SSE token leak | FIXED (verified) | Relative EventSource URLs, cookie auth |
+| P1-10 | Caddy SSRF | FIXED (verified) | No XTransformPort, localhost-only proxy |

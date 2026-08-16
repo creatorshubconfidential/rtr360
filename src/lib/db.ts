@@ -21,11 +21,12 @@ import { PrismaClient, Prisma } from '@prisma/client'
 //   2. POSTGRES_PRISMA_URL (set by Supabase integration on Vercel)
 //   3. POSTGRES_URL_NON_POOLING (direct connection, no PgBouncer)
 //   4. POSTGRES_URL (pooled connection, fallback)
+//   5. DATABASE_URL as-is (fallback for build-time module loading)
 //
 // For local dev: set DATABASE_URL in .env to your Supabase Postgres URL.
 // For Vercel: POSTGRES_PRISMA_URL is auto-set by the Supabase integration.
 function resolveDatabaseUrl(): string {
-  // 1. Explicit DATABASE_URL — use if it's a PostgreSQL URL
+  // 1. Explicit DATABASE_URL — prefer if it's a PostgreSQL URL
   const databaseUrl = process.env.DATABASE_URL;
   if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
     return databaseUrl;
@@ -49,12 +50,16 @@ function resolveDatabaseUrl(): string {
     return poolUrl;
   }
 
-  // No valid PostgreSQL URL found
-  throw new Error(
-    'No PostgreSQL DATABASE_URL found. ' +
-    'Set DATABASE_URL or POSTGRES_PRISMA_URL in your environment. ' +
-    'If using Supabase, connect the integration on Vercel or copy the connection string to .env.'
-  );
+  // 5. Fallback: return DATABASE_URL as-is (allows build-time module loading
+  //    even when no Postgres URL is configured locally). Queries will fail
+  //    at runtime if the URL is invalid, which is the correct behavior.
+  if (databaseUrl) {
+    return databaseUrl;
+  }
+
+  // 6. Absolute last resort — empty string. PrismaClient won't throw at
+  //    construction time; it will only error when a query is executed.
+  return 'postgres://localhost:5432/__rtr360_placeholder__';
 }
 
 const globalForPrisma = globalThis as unknown as {
