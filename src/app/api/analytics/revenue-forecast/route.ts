@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
       historicalRevenue.push({
         month: monthName,
-        revenue: invoices.reduce((s, inv) => s + inv.total, 0),
+        revenue: invoices.reduce((s, inv) => s + Number(inv.total), 0),
         invoices: invoices.length,
         newClients: orgs,
       });
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const monthlyRecurring = subscriptions.reduce((s, sub) => s + sub.plan.priceMonthly, 0);
+    const monthlyRecurring = subscriptions.reduce((s, sub) => s + Number(sub.plan.priceMonthly), 0);
     const annualRecurring = monthlyRecurring * 12;
 
     // 3. Pipeline value (potential future revenue)
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
         activeSubscriptions: subscriptions.length,
         totalSubscribedVehicles: subscriptions.reduce((s, sub) => s + sub.vehicleCount, 0),
         overdueCount: overdueInvoices.length,
-        overdueAmount: overdueInvoices.reduce((s, inv) => s + inv.total, 0),
+        overdueAmount: overdueInvoices.reduce((s, inv) => s + Number(inv.total), 0);
       },
       historicalRevenue,
       forecast,
@@ -136,14 +136,14 @@ export async function GET(request: Request) {
         organization: s.organization.name,
         plan: s.plan.name,
         vehicleCount: s.vehicleCount,
-        monthlyAmount: s.plan.priceMonthly * s.vehicleCount,
+        monthlyAmount: Number(s.plan.priceMonthly) * s.vehicleCount,
         startsAt: s.startsAt,
         endsAt: s.endsAt,
       })),
       invoiceBreakdown: invoiceBreakdown.map(b => ({
         status: b.status,
-        total: b._sum.total || 0,
-        tax: b._sum.tax || 0,
+        total: Number(b._sum.total || 0),
+        tax: Number(b._sum.tax || 0),
         count: b._count,
       })),
       churnRisks: overdueInvoices.map(inv => ({

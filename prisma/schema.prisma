@@ -351,7 +351,7 @@ model Device {
   warehouse      String?
   status         String   @default("warehouse")
   purchaseDate   DateTime? @map("purchase_date")
-  purchaseCost   Float?   @map("purchase_cost")
+  purchaseCost   Decimal? @map("purchase_cost")
   installDate    DateTime? @map("install_date")
   warrantyExpiry DateTime? @map("warranty_expiry")
   lastPingAt     DateTime? @map("last_ping_at")
@@ -557,7 +557,7 @@ model MaintenanceRecord {
   triggerValue   Float?
   scheduledDate  DateTime? @map("scheduled_date")
   completedDate  DateTime? @map("completed_date")
-  cost           Float?
+  cost           Decimal?
   status         String   @default("upcoming")
   organizationId String   @map("organization_id")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -578,8 +578,8 @@ model Plan {
   id             String   @id @default(cuid())
   name           String
   description    String?
-  priceMonthly   Float    @map("price_monthly")
-  priceAnnual    Float?   @map("price_annual")
+  priceMonthly   Decimal  @map("price_monthly")
+  priceAnnual    Decimal? @map("price_annual")
   vehicleLimit   Int      @default(0) @map("vehicle_limit")
   features       String?
   active         Boolean  @default(true)
@@ -610,9 +610,9 @@ model Invoice {
   invoiceNumber  String   @unique @map("invoice_number")
   organizationId String   @map("organization_id")
   subscriptionId String?  @map("subscription_id")
-  amount         Float
-  tax            Float    @default(0)
-  total          Float
+  amount         Decimal
+  tax            Decimal  @default(0)
+  total          Decimal
   status         String   @default("pending")
   dueDate        DateTime @map("due_date")
   paidAt         DateTime? @map("paid_at")
@@ -636,10 +636,10 @@ model Quotation {
   leadId          String?         @map("lead_id")
   contactId       String?         @map("contact_id")
   organizationId  String          @map("organization_id")
-  subtotal        Float
-  taxRate         Float           @default(5) @map("tax_rate")
-  tax             Float           @default(0)
-  total           Float
+  subtotal        Decimal
+  taxRate         Decimal         @default(5) @map("tax_rate")
+  tax             Decimal         @default(0)
+  total           Decimal
   status          String          @default("draft")
   validUntil      DateTime?       @map("valid_until")
   notes           String?
@@ -663,7 +663,7 @@ model QuotationItem {
   sortOrder   Int       @default(0) @map("sort_order")
   description String
   quantity    Int
-  unitPrice   Float    @map("unit_price")
+  unitPrice   Decimal  @map("unit_price")
 
   quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 

@@ -30,9 +30,9 @@ export async function GET(request: Request) {
       db.invoice.findMany({ where: { ...orgFilterStrict, status: 'pending', createdAt: { gte: startDate } } }),
       db.invoice.findMany({ where: { ...orgFilterStrict, status: 'overdue', createdAt: { gte: startDate } } }),
     ]);
-    const totalRevenue = paidInvoices.reduce((s, i) => s + i.total, 0);
-    const pendingRevenue = pendingInvoices.reduce((s, i) => s + i.total, 0);
-    const overdueRevenue = overdueInvoices.reduce((s, i) => s + i.total, 0);
+    const totalRevenue = paidInvoices.reduce((s, i) => s + Number(i.total), 0);
+    const pendingRevenue = pendingInvoices.reduce((s, i) => s + Number(i.total), 0);
+    const overdueRevenue = overdueInvoices.reduce((s, i) => s + Number(i.total), 0);
 
     // Monthly revenue
     const monthlyRevenue: { month: string; revenue: number; invoices: number }[] = [];
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       });
       monthlyRevenue.push({
         month: monthName,
-        revenue: mInvoices.reduce((s, inv) => s + inv.total, 0),
+        revenue: mInvoices.reduce((s, inv) => s + Number(inv.total), 0),
         invoices: mInvoices.length,
       });
     }
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       });
       monthlyMaintenance.push({
         month: monthName,
-        cost: mRecords.reduce((s, r) => s + (r.cost || 0), 0),
+        cost: mRecords.reduce((s, r) => s + Number(r.cost || 0), 0),
         count: mRecords.length,
       });
     }
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       summary: {
         totalRevenue, pendingRevenue, overdueRevenue,
         totalVehicles, activeVehicles,
-        totalMaintenance, totalMaintenanceCost: maintenanceCost._sum?.cost ?? 0,
+        totalMaintenance, totalMaintenanceCost: Number(maintenanceCost._sum?.cost ?? 0),
         totalLeads, conversionRate,
         totalTrips, totalDistance: tripAgg._sum?.distance ?? 0,
       },

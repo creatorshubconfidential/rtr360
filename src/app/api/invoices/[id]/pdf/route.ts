@@ -94,12 +94,12 @@ export async function GET(
     </div>
   </div>
   <table><thead><tr><th>Description</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Amount (AED)</th></tr></thead><tbody>
-    <tr><td>${plan ? plan.name + ' Plan Subscription' : 'Fleet Management Subscription'}<br/><span style="font-size:11px;color:#94a3b8;">Monthly subscription fee</span></td><td style="text-align:right;">${invoice.subscription?.vehicleCount || 1}</td><td style="text-align:right;">${(invoice.amount / (invoice.subscription?.vehicleCount || 1)).toFixed(2)}</td><td style="text-align:right;font-weight:600;">${invoice.amount.toFixed(2)}</td></tr>
+    <tr><td>${plan ? plan.name + ' Plan Subscription' : 'Fleet Management Subscription'}<br/><span style="font-size:11px;color:#94a3b8;">Monthly subscription fee</span></td><td style="text-align:right;">${invoice.subscription?.vehicleCount || 1}</td><td style="text-align:right;">${Number(invoice.amount / (invoice.subscription?.vehicleCount || 1)).toFixed(2)}</td><td style="text-align:right;font-weight:600;">${Number(invoice.amount).toFixed(2)}</td></tr>
   </tbody></table>
   <div class="totals"><div class="totals-table">
-    <div class="totals-row"><span>Subtotal</span><span>AED ${invoice.amount.toFixed(2)}</span></div>
-    <div class="totals-row"><span>VAT (5%)</span><span>AED ${invoice.tax.toFixed(2)}</span></div>
-    <div class="totals-row total"><span>Total</span><span>AED ${invoice.total.toFixed(2)}</span></div>
+    <div class="totals-row"><span>Subtotal</span><span>AED ${Number(invoice.amount).toFixed(2)}</span></div>
+    <div class="totals-row"><span>VAT (5%)</span><span>AED ${Number(invoice.tax).toFixed(2)}</span></div>
+    <div class="totals-row total"><span>Total</span><span>AED ${Number(invoice.total).toFixed(2)}</span></div>
   </div></div>
   <div class="footer"><p>Thank you for your business.<br/>Payment via bank transfer to: RTR Technology Solutions LLC<br/>Bank: Emirates NBD | IBAN: AE07 0331 2345 6789 0123 456 | SWIFT: EBILAEAD<br/><span class="brand-mark">Powered by Mianx.ai</span></p></div>
 </body></html>`;

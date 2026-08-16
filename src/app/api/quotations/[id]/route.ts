@@ -98,7 +98,7 @@ export async function PATCH(
       const subtotal = items.reduce((sum: number, item: { quantity: number; unitPrice: number }) => {
         return sum + (item.quantity * item.unitPrice);
       }, 0);
-      const taxRate = quotation.taxRate || 5;
+      const taxRate = Number(quotation.taxRate || 5);
       const tax = Math.round(subtotal * taxRate / 100 * 100) / 100;
       const total = Math.round((subtotal + tax) * 100) / 100;
 
