@@ -1,11 +1,5 @@
-# RTR 360 — robots.txt
-# Block all bots from API, setup, and internal routes
+# RTR 360 — Private SaaS Platform
+# Block all bots — this is a private application
 
 User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /setup
-Disallow: /debug
-
-# Sitemap
-# Sitemap: https://rtr360.app/sitemap.xml
+Disallow: /
