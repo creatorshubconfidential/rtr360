@@ -94,7 +94,7 @@ export async function GET(
     </div>
   </div>
   <table><thead><tr><th>Description</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Amount (AED)</th></tr></thead><tbody>
-    <tr><td>${plan ? plan.name + ' Plan Subscription' : 'Fleet Management Subscription'}<br/><span style="font-size:11px;color:#94a3b8;">Monthly subscription fee</span></td><td style="text-align:right;">${invoice.subscription?.vehicleCount || 1}</td><td style="text-align:right;">${Number(invoice.amount / (invoice.subscription?.vehicleCount || 1)).toFixed(2)}</td><td style="text-align:right;font-weight:600;">${Number(invoice.amount).toFixed(2)}</td></tr>
+    <tr><td>${plan ? plan.name + ' Plan Subscription' : 'Fleet Management Subscription'}<br/><span style="font-size:11px;color:#94a3b8;">Monthly subscription fee</span></td><td style="text-align:right;">${invoice.subscription?.vehicleCount || 1}</td><td style="text-align:right;">${(Number(invoice.amount) / (invoice.subscription?.vehicleCount || 1)).toFixed(2)}</td><td style="text-align:right;font-weight:600;">${Number(invoice.amount).toFixed(2)}</td></tr>
   </tbody></table>
   <div class="totals"><div class="totals-table">
     <div class="totals-row"><span>Subtotal</span><span>AED ${Number(invoice.amount).toFixed(2)}</span></div>

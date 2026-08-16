@@ -34,7 +34,7 @@ describe('P1-9: Quotation Items Normalization', () => {
       expect(model).toMatch(/sortOrder\s+Int/);
       expect(model).toMatch(/description\s+String/);
       expect(model).toMatch(/quantity\s+Int/);
-      expect(model).toMatch(/unitPrice\s+Float/);
+      expect(model).toMatch(/unitPrice\s+Decimal/);
       
       // Relation
       expect(model).toMatch(/quotation\s+Quotation/);

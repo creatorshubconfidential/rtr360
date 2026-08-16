@@ -127,7 +127,7 @@ export async function GET(request: Request) {
         activeSubscriptions: subscriptions.length,
         totalSubscribedVehicles: subscriptions.reduce((s, sub) => s + sub.vehicleCount, 0),
         overdueCount: overdueInvoices.length,
-        overdueAmount: overdueInvoices.reduce((s, inv) => s + Number(inv.total), 0);
+        overdueAmount: overdueInvoices.reduce((s, inv) => s + Number(inv.total), 0),
       },
       historicalRevenue,
       forecast,

@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const predictions = vehicles.map(v => {
       const records = v.maintenanceRecords;
       const completed = records.filter(r => r.status === 'completed');
-      const totalCost = completed.reduce((s, r) => s + (r.cost || 0), 0);
+      const totalCost = completed.reduce((s, r) => s + Number(r.cost || 0), 0);
       const avgCost = completed.length > 0 ? totalCost / completed.length : 0;
 
       // Recent trip distance
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
       });
       costTrend.push({
         month: monthName,
-        cost: records.reduce((s, r) => s + (r.cost || 0), 0),
+        cost: records.reduce((s, r) => s + Number(r.cost || 0), 0),
         count: records.length,
       });
     }

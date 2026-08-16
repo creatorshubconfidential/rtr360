@@ -20,12 +20,16 @@
 - **Tests:** 6 tests in `tests/security-p0.test.ts` — cross-tenant returns 404, super_admin bypasses. ALL PASS.
 - **Acceptance:** Org A user cannot access Org B invoice PDF. ✅
 
-### P0-3: Fix Money Fields (Float → Decimal) ⏳ BLOCKED
-- **Files:** `prisma/schema.prisma` + all API routes that write money values
-- **Action:** Migrate to PostgreSQL first (SQLite doesn't support Decimal). Change 12 Float fields to `Decimal @db.Decimal(15, 2)`. Update all application code.
-- **Blocker:** Requires PostgreSQL migration (P1 infrastructure). SQLite has no native Decimal type.
-- **Tests:** Pending (blocked).
-- **Acceptance:** All financial values use Decimal type. No Float in money context.
+### P0-3: Fix Money Fields (Float → Decimal) ✅ DONE
+- **Files:** `prisma/schema.prisma`, `src/lib/db.ts`, 5 API route files, `tests/money-decimal-p0.test.ts`
+- **Action:**
+  1. ✅ Changed 12 Float fields to Decimal across 6 models (Device.purchaseCost, MaintenanceRecord.cost, Plan.priceMonthly/priceAnnual, Invoice.amount/tax/total, Quotation.subtotal/taxRate/tax/total, QuotationItem.unitPrice)
+  2. ✅ Added `Decimal.prototype.toJSON` patch in `db.ts` — serializes Decimal as number in JSON responses (transparent to frontend)
+  3. ✅ Fixed 5 API routes with server-side Decimal arithmetic: `Number()` wrapping in reports, revenue-forecast, maintenance-prediction, invoice PDF, quotations PATCH
+  4. ✅ 15 non-money Float fields verified unchanged (mileage, coordinates, speed, rating, etc.)
+  5. ✅ SQLite stores Decimal as TEXT (exact precision); PostgreSQL migration will use `@db.Decimal(15,2)`
+- **Tests:** 38 tests in `tests/money-decimal-p0.test.ts` — schema field types, non-money Float preservation, toJSON patch, precision verification, route Number() usage. ALL PASS.
+- **Acceptance:** All financial values use Decimal type. No Float in money context. `0.1 + 0.2 = 0.3` (not 0.30000000000000004). ✅
 
 ### P0-4: Fix Zero Database Indexes ✅ DONE
 - **File:** `prisma/schema.prisma`
