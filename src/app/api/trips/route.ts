@@ -76,6 +76,7 @@ export async function POST(request: Request) {
     const trip = await db.trip.create({
       data: {
         vehicleId,
+        organizationId: user.organizationId || null,
         driverName: driverName || null,
         startTime: new Date(startTime),
         endTime: endTime ? new Date(endTime) : null,

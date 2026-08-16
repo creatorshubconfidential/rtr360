@@ -76,6 +76,9 @@ model Organization {
   maintenanceRecords MaintenanceRecord[]
   subscriptions  Subscription[]
   apiKeys        ApiKey[]
+  auditLogs      AuditLog[] @relation("AuditLogOrganization")
+  sims           SIM[]
+  aiConversations AIConversation[]
 
   @@index([status])
   @@index([emirate])
@@ -119,6 +122,11 @@ model User {
   auditLogs      AuditLog[]
   activities     Activity[]
   assignedLeads  Lead[] @relation("LeadAssigned")
+  assignedOpportunities Opportunity[] @relation("OpportunityAssigned")
+  assignedTickets  Ticket[] @relation("TicketAssigned")
+  documents      Document[] @relation("DocumentUploader")
+  notifications  Notification[] @relation("NotificationUser")
+  aiConversations AIConversation[] @relation("AIConversationUser")
   sessions       Session[]
   apiKeys        ApiKey[]
   @@index([organizationId])
@@ -138,6 +146,7 @@ model AuditLog {
   createdAt     DateTime @default(now()) @map("created_at")
 
   user          User?    @relation(fields: [userId], references: [id])
+  organization   Organization? @relation("AuditLogOrganization", fields: [organizationId], references: [id])
   @@index([userId])
   @@index([organizationId])
   @@index([action])
@@ -175,6 +184,7 @@ model Lead {
   organization   Organization? @relation(fields: [organizationId], references: [id])
   assignedTo     User?         @relation("LeadAssigned", fields: [assignedToId], references: [id])
   activities     Activity[]
+  opportunities  Opportunity[] @relation("OpportunityLead")
   quotations     Quotation[]
   @@index([organizationId])
   @@index([assignedToId])
@@ -193,6 +203,7 @@ model Contact {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  quotations     Quotation[]
   @@index([organizationId])
 }
 
@@ -210,6 +221,8 @@ model Opportunity {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedTo     User?         @relation("OpportunityAssigned", fields: [assignedToId], references: [id])
+  lead           Lead?         @relation("OpportunityLead", fields: [leadId], references: [id])
   activities     Activity[]
   @@index([organizationId])
   @@index([leadId])
@@ -268,6 +281,8 @@ model Vehicle {
   driver         Driver?    @relation(fields: [driverId], references: [id])
   device         Device?    @relation(fields: [deviceId], references: [id])
   trips          Trip[]
+  installations  Installation[]
+  alerts         Alert[] @relation("AlertVehicle")
   maintenanceRecords MaintenanceRecord[]
   @@index([organizationId])
   @@index([plateNumber])
@@ -342,6 +357,7 @@ model Device {
 
   organization   Organization? @relation(fields: [organizationId], references: [id])
   vehicles       Vehicle[]
+  installations  Installation[]
   sim            SIM?      @relation(fields: [simId], references: [id])
   @@index([organizationId])
   @@index([status])
@@ -359,6 +375,7 @@ model SIM {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   devices        Device[]
+  organization   Organization? @relation(fields: [organizationId], references: [id])
   @@index([organizationId])
   @@index([status])
 }
@@ -419,6 +436,8 @@ model Installation {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   technician    Technician?  @relation(fields: [technicianId], references: [id])
+  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+  device        Device     @relation(fields: [deviceId], references: [id])
   @@index([organizationId])
   @@index([status])
   @@index([technicianId])
@@ -507,6 +526,7 @@ model Alert {
   resolvedAt     DateTime? @map("resolved_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle?    @relation("AlertVehicle", fields: [vehicleId], references: [id])
   @@index([organizationId])
   @@index([status])
   @@index([vehicleId])
@@ -618,6 +638,7 @@ model Quotation {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact?   @relation(fields: [contactId], references: [id])
   lead           Lead?       @relation(fields: [leadId], references: [id])
   @@index([organizationId])
   @@index([leadId])
@@ -643,6 +664,7 @@ model Ticket {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedTo     User? @relation("TicketAssigned", fields: [assignedToId], references: [id])
   @@index([organizationId])
   @@index([status])
   @@index([assignedToId])
@@ -684,6 +706,7 @@ model Document {
   createdAt      DateTime @default(now()) @map("created_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedByUser User?      @relation("DocumentUploader", fields: [uploadedBy], references: [id])
   @@index([organizationId])
   @@index([type])
 }
@@ -703,6 +726,7 @@ model Notification {
   metadata       String?
   createdAt      DateTime @default(now()) @map("created_at")
 
+  user           User? @relation("NotificationUser", fields: [userId], references: [id])
   organization   Organization? @relation(fields: [organizationId], references: [id])
   @@index([userId])
   @@index([organizationId])
@@ -764,6 +788,10 @@ model AIConversation {
   messages       String
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user           User? @relation("AIConversationUser", fields: [userId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([userId])
   @@index([organizationId])
 }
