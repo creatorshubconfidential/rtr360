@@ -1,7 +1,4 @@
 import { PrismaClient, Prisma } from '@prisma/client'
-import { execSync } from 'child_process'
-import path from 'path'
-import fs from 'fs'
 
 // ────────────────────────────────────────
 // Decimal JSON Serialization Patch
@@ -17,64 +14,52 @@ import fs from 'fs'
 };
 
 // ────────────────────────────────────────
-// Database Path Resolution
+// Database URL Resolution
 // ────────────────────────────────────────
-// Local dev: uses .env DATABASE_URL (file:./db/custom.db)
-// Vercel/production: uses /tmp (writable ephemeral filesystem)
+// Priority:
+//   1. DATABASE_URL (if it's a postgres/postgresql URL)
+//   2. POSTGRES_PRISMA_URL (set by Supabase integration on Vercel)
+//   3. POSTGRES_URL_NON_POOLING (direct connection, no PgBouncer)
+//   4. POSTGRES_URL (pooled connection, fallback)
+//
+// For local dev: set DATABASE_URL in .env to your Supabase Postgres URL.
+// For Vercel: POSTGRES_PRISMA_URL is auto-set by the Supabase integration.
 function resolveDatabaseUrl(): string {
-  const envUrl = process.env.DATABASE_URL;
-
-  // If DATABASE_URL is a PostgreSQL/MySQL URL, use it as-is
-  if (envUrl && (envUrl.startsWith('postgres://') || envUrl.startsWith('postgresql://') || envUrl.startsWith('mysql://'))) {
-    return envUrl;
+  // 1. Explicit DATABASE_URL — use if it's a PostgreSQL URL
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
+    return databaseUrl;
   }
 
-  // For SQLite: ensure the directory is writable
-  // On Vercel, only /tmp is writable
-  const isVercel = !!process.env.VERCEL;
-  const dbPath = isVercel
-    ? '/tmp/rtr360.db'
-    : path.join(process.cwd(), 'db', 'custom.db');
-
-  // Ensure directory exists
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  // 2. Supabase Vercel integration sets this (direct connection, Prisma-compatible)
+  const prismaUrl = process.env.POSTGRES_PRISMA_URL;
+  if (prismaUrl) {
+    return prismaUrl;
   }
 
-  return `file:${dbPath}`;
+  // 3. Non-pooling URL (direct connection)
+  const nonPoolingUrl = process.env.POSTGRES_URL_NON_POOLING;
+  if (nonPoolingUrl) {
+    return nonPoolingUrl;
+  }
+
+  // 4. Pooled URL (last resort — may have issues with Prisma)
+  const poolUrl = process.env.POSTGRES_URL;
+  if (poolUrl) {
+    return poolUrl;
+  }
+
+  // No valid PostgreSQL URL found
+  throw new Error(
+    'No PostgreSQL DATABASE_URL found. ' +
+    'Set DATABASE_URL or POSTGRES_PRISMA_URL in your environment. ' +
+    'If using Supabase, connect the integration on Vercel or copy the connection string to .env.'
+  );
 }
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
-  dbInitialized: boolean | undefined
 }
-
-/**
- * Ensure database schema is pushed (tables exist).
- * Runs once per process lifetime.
- */
-function ensureSchema(): void {
-  if (globalForPrisma.dbInitialized) return;
-  globalForPrisma.dbInitialized = true;
-
-  try {
-    // Only auto-push for SQLite (safe for dev/demo)
-    const url = resolveDatabaseUrl();
-    if (url.startsWith('file:')) {
-      execSync('npx prisma db push --skip-generate --accept-data-loss 2>&1', {
-        stdio: 'pipe',
-        timeout: 30000,
-        cwd: path.join(__dirname, '../../'),
-      });
-    }
-  } catch (_e) {
-    // Schema push failed — tables may already exist or DB is locked
-    // Non-fatal: the app will show a 500 on first request if tables are truly missing
-  }
-}
-
-ensureSchema();
 
 export const db =
   globalForPrisma.prisma ??
@@ -84,7 +69,7 @@ export const db =
         url: resolveDatabaseUrl(),
       },
     },
-    log: process.env.NODE_ENV === 'production' ? [] : ['error'],
+    log: process.env.NODE_ENV === 'production' ? [] : ['error', 'warn'],
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
