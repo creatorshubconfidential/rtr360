@@ -268,3 +268,40 @@ Stage Summary:
 - requireAuth() eliminates entire class of null-safety bugs
 - All 198 tests pass, build passes
 - Pushed to GitHub: commit 4950f98
+
+---
+Task ID: 10
+Agent: Main Agent
+Task: STEP 7 (P1-7 Rate Limiting + P1-8 TypeScript Strict Mode)
+
+Work Log:
+- Enhanced src/lib/rate-limit.ts:
+  - Added checkRateLimit() middleware helper (returns 429 NextResponse or null)
+  - Added perEndpointRateLimit() with IP+path keying (isolates buckets per endpoint)
+  - Added RateLimitTier type ('auth'|'api'|'strict'|'analytics')
+  - Added 'analytics' tier (20 req/min) for AI routes
+  - Imported NextResponse at module level (no require() calls)
+- Applied checkRateLimit() to ALL 42 write-method API routes:
+  - 41 routes via checkRateLimit import + call
+  - 1 route (login) retains custom strict rate limiter (5 req/min)
+  - AI routes use 'analytics' tier, all others use 'api' tier (60 req/min)
+- Fixed 3 broken files from multi-line signature script (devices, drivers, etc.)
+- Fixed 2 noImplicitAny errors:
+  - page.tsx: added Record<string, string> type for fleetGrade color map
+  - SuperAdminView.tsx: added (s: string) type to replace callback parameter
+- Enabled noImplicitAny: true in tsconfig.json
+- Verified: 0 TS errors with full strict mode
+- Created tests/rate-limit-p1.test.ts with 17 tests:
+  - Core rateLimit function (4 tests)
+  - Per-endpoint isolation (3 tests)
+  - IP extraction (4 tests)
+  - checkRateLimit integration pattern (2 tests)
+  - Tier limit verification (4 tests)
+- All 215 tests pass (35 P0 + 148 RBAC + 15 cookie + 17 rate limit)
+- Updated REMEDIATION-PLAN.md: P1-5 ✅, P1-7 ✅, P1-8 ✅
+
+Stage Summary:
+- P1-7 Rate Limiting COMPLETE: 42/42 write routes rate-limited with per-endpoint isolation
+- P1-8 TypeScript COMPLETE: 0 errors, noImplicitAny: true, no ignoreBuildErrors
+- 215 total tests passing
+- Pushing to GitHub

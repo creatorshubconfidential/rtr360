@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
@@ -51,6 +54,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;

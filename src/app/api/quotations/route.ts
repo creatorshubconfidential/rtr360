@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
@@ -63,6 +64,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    const rl = checkRateLimit(request, 'api');
+    if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;

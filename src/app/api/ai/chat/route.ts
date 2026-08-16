@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
@@ -516,6 +517,8 @@ ${ctx.openAlertsCount > 5 ? '- **Priority**: You have a high number of open aler
 // POST /api/ai/chat — Send a message
 // ────────────────────────────────────────────────
 export async function POST(request: Request) {
+    const rl = checkRateLimit(request, 'analytics');
+    if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;

@@ -854,7 +854,8 @@ function DashboardPredictiveInsights() {
 
   if (fleetData) {
     const grade = fleetData.fleetGrade;
-    const gradeColor = { A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', D: 'text-red-600' }[grade] || 'text-slate-600';
+    const gradeColorMap: Record<string, string> = { A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', D: 'text-red-600' };
+    const gradeColor = gradeColorMap[grade as string] || 'text-slate-600';
     insights.push({
       icon: Shield, color: gradeColor, bgColor: grade === 'A' ? 'bg-emerald-50' : grade === 'B' ? 'bg-blue-50' : grade === 'C' ? 'bg-amber-50' : 'bg-red-50',
       label: 'Fleet Health Score', value: `${fleetData.fleetScore}/100 (Grade ${grade})`,

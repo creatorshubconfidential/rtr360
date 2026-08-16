@@ -964,7 +964,7 @@ function OrganizationsTable() {
                   {Object.entries(usageData.featureUsage).map(([key, val]: any) => (
                     <Badge key={key} className={`text-[11px] border-0 ${val ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
                       {val ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
-                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}
                     </Badge>
                   ))}
                 </div>

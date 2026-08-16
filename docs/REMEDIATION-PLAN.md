@@ -91,27 +91,42 @@
 ### P1-6: Fix Cross-Tenant Revenue Forecast ✅ N/A (ALREADY CORRECT)
 - **Action:** Verified all 6 queries in revenue-forecast already have org filtering.
 
-### P1-5: Migrate Auth to HttpOnly Cookies
+### P1-5: Migrate Auth to HttpOnly Cookies ✅ DONE
 - **Files:** Login route, logout route, auth.ts, all 24 frontend files
 - **Action:**
-  1. Login sets `rtr_session` HttpOnly cookie (already exists)
-  2. Remove `localStorage` token usage from all 24 frontend files
-  3. `authFetch` stops sending Authorization header (cookie is automatic)
-  4. Fix SSE to use cookie auth instead of token in URL
-- **Tests:** Verify token not accessible via JavaScript.
-- **Acceptance:** `document.cookie` does not contain `rtr_session`. XSS cannot exfiltrate token.
+  1. ✅ Login sets `rtr_session` HttpOnly cookie (already exists)
+  2. ✅ Remove `localStorage` token usage from all 24 frontend files
+  3. ✅ `authFetch` stops sending Authorization header (cookie is automatic)
+  4. ✅ Fix SSE to use cookie auth instead of token in URL
+- **Tests:** 15 tests in `tests/auth-cookie-only.test.ts` — cookie-first token extraction, zero localStorage, login no token leak, EventSource no token. ALL PASS.
+- **Acceptance:** `document.cookie` does not contain `rtr_session`. XSS cannot exfiltrate token. ✅
 
 ### P1-6: Fix Cross-Tenant Revenue Forecast
 - **File:** `src/app/api/analytics/revenue-forecast/route.ts`
 - **Action:** Add org filter to subscriptions query.
 
-### P1-7: Apply Rate Limiting to All Routes
-- **Files:** All API routes
-- **Action:** Create a `withRateLimit()` wrapper. Apply `rateLimiter.api()` to all POST/PUT/PATCH/DELETE. Apply stricter limits to analytics/AI.
+### P1-7: Apply Rate Limiting to All Routes ✅ DONE
+- **Files:** `src/lib/rate-limit.ts`, 42 API route files
+- **Action:**
+  1. ✅ Enhanced `rate-limit.ts`: added `checkRateLimit()` middleware helper, `perEndpointRateLimit()` with IP+path keying, `RateLimitTier` type
+  2. ✅ Applied `checkRateLimit(request, tier)` to ALL 42 write-method routes (POST/PUT/PATCH/DELETE)
+  3. ✅ Tier system: `api` (60/min), `auth` (10/min), `strict` (5/min for login), `analytics` (20/min for AI routes)
+  4. ✅ Login retains custom strict rate limiter (5 req/min)
+  5. ✅ Per-endpoint isolation: each endpoint has its own bucket per IP
+  6. ✅ 429 responses include `Retry-After` and `X-RateLimit-Remaining` headers
+- **Tests:** 17 tests in `tests/rate-limit-p1.test.ts` — core logic, per-endpoint isolation, IP extraction, tier limits, integration pattern. ALL PASS.
+- **Acceptance:** Every POST/PUT/PATCH/DELETE route returns 429 when limit exceeded. ✅
 
-### P1-8: Fix TypeScript Errors
-- **Action:** Fix 326 errors (235 null-safety, 26 missing properties, 21 type mismatches). Remove `ignoreBuildErrors: true`. Enable `noImplicitAny: true`.
-- **Acceptance:** `npx tsc --noEmit` returns 0 errors. `npm run build` passes without `ignoreBuildErrors`.
+### P1-8: Fix TypeScript Errors ✅ DONE
+- **Files:** `tsconfig.json`, `src/app/page.tsx`, `src/components/views/SuperAdminView.tsx`, `next.config.ts`
+- **Action:**
+  1. ✅ Fixed implicit `any` index access in `page.tsx` (fleetGrade color map)
+  2. ✅ Fixed implicit `any` parameter in `SuperAdminView.tsx` (string replace callback)
+  3. ✅ Enabled `noImplicitAny: true` in `tsconfig.json`
+  4. ✅ `ignoreBuildErrors` was already removed from `next.config.ts` (previous session)
+  5. ✅ `npx tsc --noEmit` returns 0 errors
+- **Tests:** All 215 tests pass with strict TS config.
+- **Acceptance:** `npx tsc --noEmit` returns 0 errors. `noImplicitAny: true` enabled. ✅
 
 ### P1-9: Normalize Quotation Items
 - **Action:** Create `QuotationItem` model. Migrate JSON blob to normalized records. Update API and frontend.

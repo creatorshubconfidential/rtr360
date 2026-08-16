@@ -1,5 +1,6 @@
 
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
@@ -103,6 +104,8 @@ export async function GET(request: Request, context: RouteContext) {
 
 // PATCH /api/admin/organizations/[id] — Update org info
 export async function PATCH(request: Request, context: RouteContext) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
@@ -148,6 +151,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 // DELETE /api/admin/organizations/[id] — Soft delete (set status inactive)
 export async function DELETE(request: Request, context: RouteContext) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;

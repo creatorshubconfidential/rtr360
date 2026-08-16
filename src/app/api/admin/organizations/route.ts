@@ -1,5 +1,6 @@
 
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 
@@ -111,6 +112,8 @@ export async function GET(request: Request) {
 
 // POST /api/admin/organizations — Create new org + admin user (onboarding)
 export async function POST(request: Request) {
+    const rl = checkRateLimit(request, 'api');
+    if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
@@ -19,6 +20,8 @@ const ROLE_HIERARCHY: Record<string, number> = {
 const NON_PLATFORM_ROLES = ['viewer', 'dispatcher', 'fleet_manager', 'sales_manager', 'operations_manager', 'org_owner'] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
@@ -104,6 +107,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(request, 'api');
+  if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
