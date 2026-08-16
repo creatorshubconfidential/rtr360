@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { authFetch } from '@/lib/api';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -71,17 +72,6 @@ const CHANNEL_COLORS: Record<string, string> = {
 
 // ─── Auth Helper ─────────────────────────────────────────────────────
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-}
 
 // ─── Animation Variants ──────────────────────────────────────────────
 

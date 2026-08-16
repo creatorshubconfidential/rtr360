@@ -25,14 +25,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { exportCSV, INVOICE_COLUMNS } from '@/lib/export';
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
-  });
-}
 
+import { authFetch } from '@/lib/api';
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   paid: 'bg-emerald-100 text-emerald-700',

@@ -21,23 +21,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { authFetch } from '@/lib/api';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 
-const authFetch = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('rtr_token');
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json();
-};
 
 const aedFmt = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED' });
 const fmt = (v: number) => aedFmt.format(v);

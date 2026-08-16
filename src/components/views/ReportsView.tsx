@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { authFetch } from '@/lib/api';
 import {
   TrendingUp,
   DollarSign,
@@ -53,21 +54,6 @@ const aedFmt = new Intl.NumberFormat('en-AE', {
 
 const formatAED = (value: number) => aedFmt.format(value);
 
-const authFetch = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('rtr_token');
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
-  return res.json();
-};
 
 // ────────────────────────────────────────
 // Types

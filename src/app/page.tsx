@@ -375,12 +375,11 @@ const VALID_LEAD_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negot
 // ────────────────────────────────────────
 
 function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
+  // Auth is handled via HttpOnly cookie (rtr_session) — browser sends it automatically.
   return fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -390,7 +389,7 @@ function authFetch(url: string, options: RequestInit = {}) {
 // LoginScreen
 // ────────────────────────────────────────
 
-function LoginScreen({ onLogin }: { onLogin: (user: UserSession, token: string) => void }) {
+function LoginScreen({ onLogin }: { onLogin: (user: UserSession) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -413,9 +412,8 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserSession, token: string) 
         toast.error(data.error || 'Login failed');
         return;
       }
-      localStorage.setItem('rtr_token', data.token);
-      localStorage.setItem('rtr_user', JSON.stringify(data.user));
-      onLogin(data.user, data.token);
+      // Token is delivered via HttpOnly cookie — no localStorage needed.
+      onLogin(data.user);
       toast.success('Welcome back!');
     } catch {
       toast.error('Network error. Please try again.');
@@ -1605,10 +1603,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
 
   const fetchNotifPreview = useCallback(async () => {
     try {
-      const token = localStorage.getItem('rtr_token');
-      const res = await fetch('/api/notifications?limit=8', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await fetch('/api/notifications?limit=8');
       if (res.ok) {
         const data = await res.json();
         setNotifList(data.notifications || []);
@@ -1887,19 +1882,13 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('rtr_token');
-        if (!token) {
-          return;
-        }
-        const res = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Invalid token');
+        // Cookie is sent automatically by the browser — no localStorage check needed.
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) throw new Error('Not authenticated');
         const data = await res.json();
         setUser(data.user);
       } catch {
-        localStorage.removeItem('rtr_token');
-        localStorage.removeItem('rtr_user');
+        // Session invalid or expired — stay on login screen
       } finally {
         setLoading(false);
       }
@@ -1908,20 +1897,15 @@ export default function Home() {
     checkAuth();
   }, []);
 
-  const handleLogin = (loggedInUser: UserSession, _token: string) => {
+  const handleLogin = (loggedInUser: UserSession) => {
     setUser(loggedInUser);
   };
 
-  const handleLogout = () => {
-    const token = localStorage.getItem('rtr_token');
-    if (token) {
-      fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
-    localStorage.removeItem('rtr_token');
-    localStorage.removeItem('rtr_user');
+  const handleLogout = async () => {
+    try {
+      // Cookie is sent automatically — logout endpoint clears it server-side
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch { /* silent */ }
     setUser(null);
     toast.info('You have been logged out');
   };

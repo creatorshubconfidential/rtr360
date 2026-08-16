@@ -1,4 +1,5 @@
 'use client';
+import { authFetch } from '@/lib/api';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -30,9 +31,7 @@ export default function RealtimeEventToasts({ enabled }: { enabled: boolean }) {
 
   const connect = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
-
-    const token = localStorage.getItem('rtr_token');
-    if (!token) return;
+if (!token) return;
 
     const es = new EventSource(`/api/realtime/events?token=${token}`);
     esRef.current = es;

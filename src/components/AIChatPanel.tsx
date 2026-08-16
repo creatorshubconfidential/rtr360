@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+import { authFetch } from '@/lib/api';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -22,17 +23,6 @@ interface Conversation {
   createdAt: string;
 }
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-}
 
 // Simple markdown-like rendering
 function renderContent(content: string) {

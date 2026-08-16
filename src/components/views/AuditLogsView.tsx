@@ -19,14 +19,8 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
-  });
-}
 
+import { authFetch } from '@/lib/api';
 const ACTION_COLORS: Record<string, string> = {
   create: 'bg-emerald-100 text-emerald-700',
   update: 'bg-blue-100 text-blue-700',

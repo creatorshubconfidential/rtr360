@@ -101,19 +101,18 @@ export function validatePasswordStrength(password: string): string | null {
 export const SESSION_COOKIE_NAME = 'rtr_session';
 
 /**
- * Helper to extract Bearer token from Authorization header
- * or from HttpOnly cookie as fallback
+ * Extract session token from HttpOnly cookie (primary) or Authorization header (fallback for non-browser clients).
  */
 export function extractToken(authHeader: string | null, cookieHeader: string | null): string | null {
-  // 1. Try Authorization header first
-  if (authHeader) {
-    const parts = authHeader.split(' ');
-    if (parts.length === 2 && parts[0] === 'Bearer') return parts[1];
-  }
-  // 2. Fallback to HttpOnly cookie
+  // 1. HttpOnly cookie (primary — used by browser clients)
   if (cookieHeader) {
     const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
     if (match) return decodeURIComponent(match[1]);
+  }
+  // 2. Authorization header fallback (for non-browser API consumers)
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0] === 'Bearer') return parts[1];
   }
   return null;
 }

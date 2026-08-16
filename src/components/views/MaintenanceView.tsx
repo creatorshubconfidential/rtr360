@@ -26,18 +26,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-}
 
+import { authFetch } from '@/lib/api';
 const STATUS_COLORS: Record<string, string> = {
   upcoming: 'bg-blue-100 text-blue-700',
   scheduled: 'bg-yellow-100 text-yellow-700',

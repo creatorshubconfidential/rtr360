@@ -146,17 +146,6 @@ interface OrgDetail extends OrgSummary {
 // Helper
 // ────────────────────────────────────────
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-}
 
 function formatAED(amount: number) {
   return `AED ${(amount || 0).toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1348,3 +1337,5 @@ function MiniStat({ icon: Icon, label, value }: { icon: any; label: string; valu
 
 // Extra icon imports needed
 import { Route as RouteIcon, Trophy, Gauge } from 'lucide-react';
+
+import { authFetch } from '@/lib/api';

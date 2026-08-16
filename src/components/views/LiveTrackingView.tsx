@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { authFetch } from '@/lib/api';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -53,13 +54,6 @@ function generatePositions(vehicles: any[]): VehiclePosition[] {
   });
 }
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
-  });
-}
 
 export default function LiveTrackingView() {
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -189,11 +183,7 @@ export default function LiveTrackingView() {
       setSseConnected(false);
       return;
     }
-
-    const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-    if (!token) return;
-
-    const es = new EventSource(`/api/realtime/vehicles?token=${token}`);
+    const es = new EventSource('/api/realtime/vehicles');
     esRef.current = es;
 
     es.onmessage = (event) => {

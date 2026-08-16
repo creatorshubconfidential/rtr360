@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         role: user.role,
         organizationId: user.organizationId,
       },
-      token,
+      // Token is ONLY delivered via HttpOnly cookie — not in response body
     });
 
     // Set HttpOnly, Secure, SameSite cookie

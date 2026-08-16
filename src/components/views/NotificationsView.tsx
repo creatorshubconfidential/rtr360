@@ -13,18 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-}
 
+import { authFetch } from '@/lib/api';
 type NotificationType = 'alert' | 'ticket' | 'maintenance' | 'invoice' | 'system' | 'info';
 
 const TYPE_CONFIG: Record<NotificationType, { icon: any; color: string; bg: string; label: string }> = {

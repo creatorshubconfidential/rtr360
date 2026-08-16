@@ -4,12 +4,12 @@
 // ────────────────────────────────────────
 
 export function authFetch(url: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('rtr_token') : null;
+  // Auth is handled via HttpOnly cookie (rtr_session) — browser sends it automatically.
+  // No localStorage token needed.
   return fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
