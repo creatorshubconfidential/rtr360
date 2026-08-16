@@ -19,9 +19,12 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   // Content Security Policy
+  // TODO: Move to nonce-based CSP in next.config.ts to fully remove 'unsafe-inline' from script-src.
+  // 'unsafe-inline' in style-src is required for Tailwind CSS runtime classes.
+  // 'wasm-unsafe-eval' is required by Next.js server component runtime.
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; font-src 'self' data:; connect-src 'self' https://*.tile.openstreetmap.org; frame-ancestors 'none';"
   );
 
   // Prevent clickjacking
