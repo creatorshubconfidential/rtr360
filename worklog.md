@@ -305,3 +305,31 @@ Stage Summary:
 - P1-8 TypeScript COMPLETE: 0 errors, noImplicitAny: true, no ignoreBuildErrors
 - 215 total tests passing
 - Pushing to GitHub
+
+---
+Task ID: 11
+Agent: Main Agent
+Task: STEP 8 (P1-9) — Normalize Quotation Items (JSON blob → QuotationItem model)
+
+Work Log:
+- Audited current state: Quotation.items was String storing JSON blob, parsed via JSON.parse in 3 frontend locations
+- Created QuotationItem model in prisma/schema.prisma (id, quotationId, sortOrder, description, quantity Int, unitPrice Float, onDelete Cascade, @@index)
+- Removed `items` String column from Quotation model, added `items QuotationItem[]` relation
+- Migrated 3 existing quotation records (15 items total) from JSON to normalized QuotationItem rows
+- Updated quotations/route.ts POST: creates items via $transaction with nested create, validates each item
+- Updated quotations/route.ts GET: includes items ordered by sortOrder
+- Updated quotations/[id]/route.ts GET: includes items + organization
+- Updated quotations/[id]/route.ts PATCH: supports items replacement (deleteMany + create), recalculates subtotal/tax/total
+- Updated src/lib/types.ts: QuotationItem now has id/quotationId/sortOrder, created QuotationItemInput for form state
+- Updated QuotationsView: removed parseItems(), all q.items references now direct property access
+- Updated PipelineView: uses QuotationItemInput type for quotation form state
+- Fixed seed.ts: replaced JSON.stringify + items: stringVal with items: { create: [...] } nested syntax
+- Fixed sed-caused Promise.all closing bracket corruption in seed.ts
+- Created tests/quotation-items-p1.test.ts with 13 tests (schema, API, frontend, seed)
+- All 228 tests pass, 0 TS errors
+
+Stage Summary:
+- P1-9 Quotation Items Normalization COMPLETE: JSON blob → normalized QuotationItem model
+- 32 Prisma models now (was 31), proper 1:N relation with cascade delete
+- Frontend zero JSON.parse for items, type-safe QuotationItemInput for forms
+- 228 total tests passing, pushing to GitHub

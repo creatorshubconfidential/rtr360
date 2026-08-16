@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       db.quotation.findMany({
         where,
         include: {
+          items: { orderBy: { sortOrder: 'asc' } },
           lead: { select: { id: true, name: true, company: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -82,11 +83,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
     }
 
+    // Validate each item
+    for (const item of items) {
+      if (!item.description || typeof item.description !== 'string') {
+        return NextResponse.json({ error: 'Each item must have a description' }, { status: 400 });
+      }
+      if (typeof item.quantity !== 'number' || item.quantity < 1) {
+        return NextResponse.json({ error: 'Each item quantity must be at least 1' }, { status: 400 });
+      }
+      if (typeof item.unitPrice !== 'number' || item.unitPrice < 0) {
+        return NextResponse.json({ error: 'Each item unitPrice must be non-negative' }, { status: 400 });
+      }
+    }
+
     // Calculate totals
-    const subtotal = items.reduce((sum: number, item: Record<string, unknown>) => {
-      const qty = Number(item.quantity) || 0;
-      const price = Number(item.unitPrice) || 0;
-      return sum + (qty * price);
+    const subtotal = items.reduce((sum: number, item: { quantity: number; unitPrice: number }) => {
+      return sum + (item.quantity * item.unitPrice);
     }, 0);
 
     const rate = Number(taxRate) || 5; // UAE VAT default 5%
@@ -120,24 +132,36 @@ export async function POST(request: Request) {
       }
     }
 
-    const quotation = await db.quotation.create({
-      data: {
-        quotationNumber,
-        leadId: leadId || null,
-        organizationId: orgId,
-        items: JSON.stringify(items),
-        subtotal,
-        taxRate: rate,
-        tax,
-        total,
-        status: 'draft',
-        validUntil: validUntil ? new Date(validUntil) : null,
-        notes: notes?.trim() || null,
-        terms: terms?.trim() || null,
-      },
-      include: {
-        lead: { select: { id: true, name: true, company: true } },
-      },
+    // Create quotation with items in a transaction
+    const quotation = await db.$transaction(async (tx) => {
+      const q = await tx.quotation.create({
+        data: {
+          quotationNumber,
+          leadId: leadId || null,
+          organizationId: orgId,
+          subtotal,
+          taxRate: rate,
+          tax,
+          total,
+          status: 'draft',
+          validUntil: validUntil ? new Date(validUntil) : null,
+          notes: notes?.trim() || null,
+          terms: terms?.trim() || null,
+          items: {
+            create: items.map((item: { description: string; quantity: number; unitPrice: number }, idx: number) => ({
+              sortOrder: idx,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            })),
+          },
+        },
+        include: {
+          items: { orderBy: { sortOrder: 'asc' } },
+          lead: { select: { id: true, name: true, company: true } },
+        },
+      });
+      return q;
     });
 
     return NextResponse.json({ quotation }, { status: 201 });

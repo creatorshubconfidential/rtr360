@@ -628,29 +628,43 @@ model Invoice {
 // ----------------------
 
 model Quotation {
-  id              String    @id @default(cuid())
-  quotationNumber String    @unique @map("quotation_number")
-  leadId          String?   @map("lead_id")
-  contactId       String?   @map("contact_id")
-  organizationId  String    @map("organization_id")
-  items           String
+  id              String          @id @default(cuid())
+  quotationNumber String          @unique @map("quotation_number")
+  leadId          String?         @map("lead_id")
+  contactId       String?         @map("contact_id")
+  organizationId  String          @map("organization_id")
   subtotal        Float
-  taxRate         Float     @default(5) @map("tax_rate")
-  tax             Float     @default(0)
+  taxRate         Float           @default(5) @map("tax_rate")
+  tax             Float           @default(0)
   total           Float
-  status          String    @default("draft")
-  validUntil      DateTime? @map("valid_until")
+  status          String          @default("draft")
+  validUntil      DateTime?       @map("valid_until")
   notes           String?
   terms           String?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact        Contact?   @relation(fields: [contactId], references: [id])
-  lead           Lead?       @relation(fields: [leadId], references: [id])
+  items          QuotationItem[]
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact?         @relation(fields: [contactId], references: [id])
+  lead           Lead?            @relation(fields: [leadId], references: [id])
+
   @@index([organizationId])
   @@index([leadId])
   @@index([status])
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String    @map("quotation_id")
+  sortOrder   Int       @default(0) @map("sort_order")
+  description String
+  quantity    Int
+  unitPrice   Float    @map("unit_price")
+
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
 }
 
 // ----------------------

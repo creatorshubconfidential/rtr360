@@ -79,7 +79,7 @@ export interface Quotation {
   quotationNumber: string;
   leadId: string | null;
   organizationId: string;
-  items: string; // JSON
+  items: QuotationItem[];
   subtotal: number;
   taxRate: number;
   tax: number;
@@ -102,6 +102,16 @@ export interface Quotation {
 }
 
 export interface QuotationItem {
+  id: string;
+  quotationId: string;
+  sortOrder: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** Input type for creating/editing quotation items (before server assigns id/quotationId) */
+export interface QuotationItemInput {
   description: string;
   quantity: number;
   unitPrice: number;

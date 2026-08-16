@@ -128,8 +128,21 @@
 - **Tests:** All 215 tests pass with strict TS config.
 - **Acceptance:** `npx tsc --noEmit` returns 0 errors. `noImplicitAny: true` enabled. ✅
 
-### P1-9: Normalize Quotation Items
-- **Action:** Create `QuotationItem` model. Migrate JSON blob to normalized records. Update API and frontend.
+### P1-9: Normalize Quotation Items ✅ DONE
+- **Files:** `prisma/schema.prisma`, `src/app/api/quotations/route.ts`, `src/app/api/quotations/[id]/route.ts`, `src/lib/types.ts`, `src/components/views/QuotationsView.tsx`, `src/components/views/PipelineView.tsx`, `src/lib/seed.ts`
+- **Action:**
+  1. ✅ Created `QuotationItem` model (id, quotationId, sortOrder, description, quantity, unitPrice) with onDelete Cascade + index
+  2. ✅ Removed `items` String (JSON blob) column from Quotation model, replaced with `items QuotationItem[]` relation
+  3. ✅ Migrated 3 existing quotation records (15 items) from JSON to normalized rows
+  4. ✅ Updated POST: creates QuotationItem records via `$transaction` with nested `create`
+  5. ✅ Updated GET (list + detail): includes `items` ordered by `sortOrder`
+  6. ✅ Updated PATCH: supports items replacement with `deleteMany` + `create`, recalculates totals
+  7. ✅ Added item validation (description required, quantity >= 1, unitPrice >= 0)
+  8. ✅ Updated `QuotationItem` type (added id, quotationId, sortOrder), created `QuotationItemInput` for form state
+  9. ✅ Removed `parseItems()` / `JSON.parse` from QuotationsView, updated PipelineView to use `QuotationItemInput`
+  10. ✅ Updated seed.ts to use nested `items: { create: [...] }` instead of `JSON.stringify`
+- **Tests:** 13 tests in `tests/quotation-items-p1.test.ts` — schema structure, API patterns, frontend types, seed file. ALL PASS.
+- **Acceptance:** No `items` String column in Quotation model. All items stored as normalized QuotationItem records. ✅
 
 ---
 

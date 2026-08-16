@@ -18,6 +18,7 @@ export async function GET(
     const quotation = await db.quotation.findUnique({
       where: { id },
       include: {
+        items: { orderBy: { sortOrder: 'asc' } },
         lead: { select: { id: true, name: true, company: true, email: true, phone: true, emirate: true } },
         organization: { select: { id: true, name: true, email: true, phone: true, address: true, emirate: true } },
       },
@@ -51,9 +52,12 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, notes } = body;
+    const { status, notes, items } = body;
 
-    const quotation = await db.quotation.findUnique({ where: { id } });
+    const quotation = await db.quotation.findUnique({
+      where: { id },
+      include: { items: true },
+    });
 
     if (!quotation) {
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
@@ -71,10 +75,50 @@ export async function PATCH(
       updateData.notes = notes?.trim() || null;
     }
 
+    // If items are provided, replace all items and recalculate totals
+    if (Array.isArray(items)) {
+      if (items.length === 0) {
+        return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
+      }
+
+      for (const item of items) {
+        if (!item.description || typeof item.description !== 'string') {
+          return NextResponse.json({ error: 'Each item must have a description' }, { status: 400 });
+        }
+        if (typeof item.quantity !== 'number' || item.quantity < 1) {
+          return NextResponse.json({ error: 'Each item quantity must be at least 1' }, { status: 400 });
+        }
+        if (typeof item.unitPrice !== 'number' || item.unitPrice < 0) {
+          return NextResponse.json({ error: 'Each item unitPrice must be non-negative' }, { status: 400 });
+        }
+      }
+
+      const subtotal = items.reduce((sum: number, item: { quantity: number; unitPrice: number }) => {
+        return sum + (item.quantity * item.unitPrice);
+      }, 0);
+      const taxRate = quotation.taxRate || 5;
+      const tax = Math.round(subtotal * taxRate / 100 * 100) / 100;
+      const total = Math.round((subtotal + tax) * 100) / 100;
+
+      updateData.subtotal = subtotal;
+      updateData.tax = tax;
+      updateData.total = total;
+      updateData.items = {
+        deleteMany: { quotationId: id },
+        create: items.map((item: { description: string; quantity: number; unitPrice: number }, idx: number) => ({
+          sortOrder: idx,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      };
+    }
+
     const updated = await db.quotation.update({
       where: { id },
       data: updateData,
       include: {
+        items: { orderBy: { sortOrder: 'asc' } },
         lead: { select: { id: true, name: true, company: true } },
       },
     });

@@ -1182,12 +1182,12 @@ async function main() {
   // ========================================
   console.log('\n💰 Creating quotations...');
 
-  const q1Items = JSON.stringify([
+  const q1Items = [
     { description: 'GPS Tracking Device (GT06N)', quantity: 25, unitPrice: 150 },
     { description: 'SIM Card (Annual Plan)', quantity: 25, unitPrice: 120 },
     { description: 'Professional Installation', quantity: 25, unitPrice: 100 },
     { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 1250 },
-  ]);
+  ];
   const q1Subtotal = 25 * 150 + 25 * 120 + 25 * 100 + 12 * 1250;
   const q1Tax = Math.round(q1Subtotal * 5 / 100 * 100) / 100;
 
@@ -1196,7 +1196,7 @@ async function main() {
       quotationNumber: 'RTR-Q-2408-0001',
       leadId: leads[0].id,
       organizationId: rtrOrg.id,
-      items: q1Items,
+      items: { create: q1Items.map((item: Record<string, unknown>, i: number) => ({ sortOrder: i, description: item.description as string, quantity: item.quantity as number, unitPrice: item.unitPrice as number })) },
       subtotal: q1Subtotal,
       taxRate: 5,
       tax: q1Tax,
@@ -1208,14 +1208,14 @@ async function main() {
     },
   });
 
-  const q2Items = JSON.stringify([
+  const q2Items = [
     { description: 'GPS Tracking Device (FM1200)', quantity: 100, unitPrice: 180 },
     { description: 'SIM Card (Annual Plan)', quantity: 100, unitPrice: 100 },
     { description: 'Professional Installation', quantity: 100, unitPrice: 80 },
     { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 5000 },
     { description: 'Custom API Integration', quantity: 1, unitPrice: 15000 },
     { description: 'Dedicated Account Manager', quantity: 12, unitPrice: 2000 },
-  ]);
+  ];
   const q2Subtotal = 100 * 180 + 100 * 100 + 100 * 80 + 12 * 5000 + 15000 + 12 * 2000;
   const q2Tax = Math.round(q2Subtotal * 5 / 100 * 100) / 100;
 
@@ -1224,7 +1224,7 @@ async function main() {
       quotationNumber: 'RTR-Q-2407-0002',
       leadId: leads[9].id,
       organizationId: rtrOrg.id,
-      items: q2Items,
+      items: { create: q2Items.map((item: Record<string, unknown>, i: number) => ({ sortOrder: i, description: item.description as string, quantity: item.quantity as number, unitPrice: item.unitPrice as number })) },
       subtotal: q2Subtotal,
       taxRate: 5,
       tax: q2Tax,
@@ -1236,13 +1236,13 @@ async function main() {
     },
   });
 
-  const q3Items = JSON.stringify([
+  const q3Items = [
     { description: 'GPS Tracking Device (GT06N)', quantity: 10, unitPrice: 150 },
     { description: 'Temperature Sensor', quantity: 10, unitPrice: 75 },
     { description: 'SIM Card (Annual Plan)', quantity: 10, unitPrice: 120 },
     { description: 'Professional Installation', quantity: 10, unitPrice: 100 },
     { description: 'Premium Plan — Monthly Fee (x12)', quantity: 12, unitPrice: 500 },
-  ]);
+  ];
   const q3Subtotal = 10 * 150 + 10 * 75 + 10 * 120 + 10 * 100 + 12 * 500;
   const q3Tax = Math.round(q3Subtotal * 5 / 100 * 100) / 100;
 
@@ -1251,7 +1251,7 @@ async function main() {
       quotationNumber: 'RTR-Q-2408-0003',
       leadId: leads[1].id,
       organizationId: rtrOrg.id,
-      items: q3Items,
+      items: { create: q3Items.map((item: Record<string, unknown>, i: number) => ({ sortOrder: i, description: item.description as string, quantity: item.quantity as number, unitPrice: item.unitPrice as number })) },
       subtotal: q3Subtotal,
       taxRate: 5,
       tax: q3Tax,

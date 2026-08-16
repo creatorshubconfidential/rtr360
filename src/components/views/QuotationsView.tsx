@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/table';
 import { authFetch, formatAED, formatDate, formatDateTime } from '@/lib/api';
 import { STATUS_COLORS, QUOTATION_STATUSES, DEFAULT_QUOTATION_ITEMS, QUOTATION_TERMS } from '@/lib/constants';
-import type { Quotation, QuotationItem } from '@/lib/types';
+import type { Quotation, QuotationItem, QuotationItemInput } from '@/lib/types';
 
 export default function QuotationsView() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -63,7 +63,7 @@ export default function QuotationsView() {
   // Create quotation
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [items, setItems] = useState<QuotationItem[]>([...DEFAULT_QUOTATION_ITEMS]);
+  const [items, setItems] = useState<QuotationItemInput[]>([...DEFAULT_QUOTATION_ITEMS]);
   const [leadSearch, setLeadSearch] = useState('');
   const [leadResults, setLeadResults] = useState<Array<{ id: string; name: string; company: string | null }>>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -167,10 +167,6 @@ export default function QuotationsView() {
     }
   };
 
-  // Parse items from JSON string
-  const parseItems = (itemsJson: string): QuotationItem[] => {
-    try { return JSON.parse(itemsJson); } catch { return []; }
-  };
 
   return (
     <div className="space-y-5">
@@ -318,7 +314,7 @@ export default function QuotationsView() {
           {/* Mobile Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
             {quotations.map((q) => {
-              const qItems = parseItems(q.items);
+              const qItems = q.items;
               return (
                 <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card className="rounded-xl border-slate-200/60 shadow-sm cursor-pointer hover:border-emerald-200 transition-colors"
@@ -362,7 +358,7 @@ export default function QuotationsView() {
               </TableHeader>
               <TableBody>
                 {quotations.map((q) => {
-                  const qItems = parseItems(q.items);
+                  const qItems = q.items;
                   return (
                     <TableRow key={q.id} className="hover:bg-slate-50/50">
                       <TableCell className="font-mono text-sm font-semibold">{q.quotationNumber}</TableCell>
@@ -434,7 +430,7 @@ export default function QuotationsView() {
             </DialogTitle>
           </DialogHeader>
           {selectedQuotation && (() => {
-            const qItems = parseItems(selectedQuotation.items);
+            const qItems = selectedQuotation.items;
             return (
               <div className="space-y-6 py-2">
                 {/* Company Info */}

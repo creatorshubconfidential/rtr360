@@ -45,7 +45,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authFetch, formatAED, formatDate } from '@/lib/api';
 import { STATUS_COLORS, PRIORITY_COLORS, PIPELINE_STAGES, EMIRATES, VEHICLE_TYPES, LEAD_SOURCES, ACTIVITY_TYPES, ACTIVITY_ICONS, DEFAULT_QUOTATION_ITEMS, QUOTATION_TERMS } from '@/lib/constants';
-import type { Lead, LeadDetail, Quotation, QuotationItem, Activity, PipelineSummary } from '@/lib/types';
+import type { Lead, LeadDetail, Quotation, QuotationItemInput, Activity, PipelineSummary } from '@/lib/types';
 
 // ────────────────────────────────────────
 // PipelineView — CRM Kanban Board
@@ -63,7 +63,7 @@ export default function PipelineView() {
 
   // Quotation dialog state
   const [quotationOpen, setQuotationOpen] = useState(false);
-  const [quotationItems, setQuotationItems] = useState<QuotationItem[]>([...DEFAULT_QUOTATION_ITEMS]);
+  const [quotationItems, setQuotationItems] = useState<QuotationItemInput[]>([...DEFAULT_QUOTATION_ITEMS]);
   const [quotationNotes, setQuotationNotes] = useState('');
   const [quotationLeadId, setQuotationLeadId] = useState<string | null>(null);
   const [quotationSubmitting, setQuotationSubmitting] = useState(false);
@@ -233,7 +233,7 @@ export default function PipelineView() {
     setQuotationItems(quotationItems.filter((_, i) => i !== idx));
   };
 
-  const updateQuotationItem = (idx: number, field: keyof QuotationItem, value: string | number) => {
+  const updateQuotationItem = (idx: number, field: keyof QuotationItemInput, value: string | number) => {
     const updated = [...quotationItems];
     (updated[idx] as unknown as Record<string, unknown>)[field] = value;
     setQuotationItems(updated);
