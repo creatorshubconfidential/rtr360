@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
       else where.userId = user.id;
 
       await db.notification.updateMany({ where, data: { read: true } });
+      await logAudit({ user, action: 'update', entity: 'Notification', metadata: { markAllRead: true }, ipAddress: getClientIp(request) });
       return NextResponse.json({ success: true });
     }
 
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
       await db.notification.update({ where: { id: body.id }, data: { read: true } });
+      await logAudit({ user, action: 'update', entity: 'Notification', entityId: body.id, ipAddress: getClientIp(request) });
       return NextResponse.json({ success: true });
     }
 

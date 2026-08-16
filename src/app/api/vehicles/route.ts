@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, VEHICLES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 export async function GET(request: Request) {
@@ -132,6 +133,7 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vehicle = await db.vehicle.create({ data: vehicleData as any });
+        await logAudit({ user, action: 'create', entity: 'Vehicle', entityId: vehicle?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ vehicle }, { status: 201 });
   } catch (error) {

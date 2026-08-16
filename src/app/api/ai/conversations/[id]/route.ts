@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 // ────────────────────────────────────────────────
 // GET /api/ai/conversations/:id — Load a single conversation
@@ -96,6 +97,7 @@ export async function DELETE(
     await db.aIConversation.delete({
       where: { id },
     });
+        await logAudit({ user, action: 'delete', entity: 'AIConversation', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 // Valid lead statuses for pipeline
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lead = await db.lead.create({ data: leadData as any });
+        await logAudit({ user, action: 'create', entity: 'Lead', entityId: lead?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {

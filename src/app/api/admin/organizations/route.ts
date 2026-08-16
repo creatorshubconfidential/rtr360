@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 // GET /api/admin/organizations — List all orgs with usage stats
 export async function GET(request: Request) {
@@ -222,6 +223,8 @@ export async function POST(request: Request) {
 
       return newOrg;
     });
+
+    await logAudit({ user, action: 'create', entity: 'Organization', entityId: org.id, metadata: { adminEmail }, ipAddress: getClientIp(request) });
 
     return Response.json({
       success: true,

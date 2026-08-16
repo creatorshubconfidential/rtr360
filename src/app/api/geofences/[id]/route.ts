@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -39,6 +40,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data: updateData,
       include: { organization: { select: { id: true, name: true } } },
     });
+        await logAudit({ user, action: 'update', entity: 'Geofence', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ geofence });
   } catch (error) {
@@ -66,6 +68,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     await db.geofence.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'Geofence', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('Geofences DELETE error', { error });

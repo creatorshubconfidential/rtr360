@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
 export async function GET(
@@ -106,6 +107,7 @@ export async function PATCH(
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'Invoice', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ invoice: updated });
   } catch (error) {

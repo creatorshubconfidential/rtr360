@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
@@ -139,6 +140,7 @@ export async function POST(request: Request) {
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'create', entity: 'Invoice', entityId: invoice?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ invoice }, { status: 201 });
   } catch (error) {

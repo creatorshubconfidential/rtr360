@@ -5,6 +5,7 @@ import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth'
 
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 // Role hierarchy: higher index = more powerful. A user can only assign roles <= their own level.
@@ -169,6 +170,7 @@ export async function POST(request: Request) {
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'create', entity: 'User', entityId: newUser.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ user: newUser }, { status: 201 });
   } catch (error) {

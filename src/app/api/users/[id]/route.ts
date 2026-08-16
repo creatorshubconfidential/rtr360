@@ -5,6 +5,7 @@ import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth'
 
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -99,6 +100,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'User', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
@@ -135,6 +137,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // Delete user's sessions
     await db.session.deleteMany({ where: { userId: id } });
     await db.user.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'User', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('Users DELETE error', { error });

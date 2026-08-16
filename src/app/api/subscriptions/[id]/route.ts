@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
 export async function GET(
@@ -105,6 +106,7 @@ export async function PATCH(
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'Subscription', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ subscription: updated });
   } catch (error) {

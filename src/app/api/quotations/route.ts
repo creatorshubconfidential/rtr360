@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -164,6 +165,8 @@ export async function POST(request: Request) {
       });
       return q;
     });
+
+    await logAudit({ user, action: 'create', entity: 'Quotation', entityId: quotation.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ quotation }, { status: 201 });
   } catch (error) {

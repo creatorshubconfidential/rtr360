@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function PATCH(
@@ -44,6 +45,7 @@ export async function PATCH(
     if (notes !== undefined) updateData.notes = notes?.trim() || null;
 
     const technician = await db.technician.update({ where: { id }, data: updateData });
+        await logAudit({ user, action: 'update', entity: 'Technician', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ technician });
   } catch (error) {
     logger.error('Technician PATCH error', { error });
@@ -77,6 +79,7 @@ export async function DELETE(
 
     await db.installation.updateMany({ where: { technicianId: id }, data: { technicianId: null } });
     await db.technician.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'Technician', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('Technician DELETE error', { error });

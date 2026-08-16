@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -143,6 +144,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       where: { id },
       data: updateData,
     });
+        await logAudit({ user, action: 'update', entity: 'Organization', entityId: id, ipAddress: getClientIp(request) });
 
     return Response.json({ success: true, data: updated });
   } catch (error: unknown) {
@@ -178,6 +180,8 @@ export async function DELETE(request: Request, context: RouteContext) {
         data: { status: 'inactive' },
       }),
     ]);
+
+    await logAudit({ user, action: 'delete', entity: 'Organization', entityId: id, ipAddress: getClientIp(request) });
 
     return Response.json({ success: true, message: `Organization "${org.name}" has been deactivated` });
   } catch (error: unknown) {

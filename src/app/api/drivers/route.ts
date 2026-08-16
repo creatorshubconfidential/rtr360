@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DRIVERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
 const LICENSE_TYPES = ['Light Vehicle', 'Heavy Vehicle', 'Motorcycle', 'Heavy Bus', 'Light Bus', 'Trailer', 'Forklift'];
 
@@ -123,6 +124,7 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const driver = await db.driver.create({ data: driverData as any });
+        await logAudit({ user, action: 'create', entity: 'Driver', entityId: driver?.id, ipAddress: getClientIp(request) });
     return NextResponse.json({ driver }, { status: 201 });
   } catch (error) {
     logger.error('Drivers POST error', { error });

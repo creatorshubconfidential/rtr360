@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -82,6 +83,7 @@ export async function PATCH(
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'Ticket', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ ticket });
   } catch (error) {
@@ -117,6 +119,7 @@ export async function DELETE(
     }
 
     await db.ticket.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'Ticket', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ success: true });
   } catch (error) {

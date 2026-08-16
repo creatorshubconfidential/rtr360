@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 const VALID_TYPES = [
   'oil_change', 'tire_rotation', 'brake_service', 'engine_service',
@@ -163,6 +164,7 @@ export async function POST(request: Request) {
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'create', entity: 'MaintenanceRecord', entityId: maintenanceRecord?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ maintenanceRecord }, { status: 201 });
   } catch (error) {

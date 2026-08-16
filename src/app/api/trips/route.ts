@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 const VALID_STATUSES = ['in_progress', 'completed', 'cancelled'];
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       },
       include: { vehicle: { select: { id: true, plateNumber: true, make: true, model: true } } },
     });
+        await logAudit({ user, action: 'create', entity: 'Trip', entityId: trip?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ trip }, { status: 201 });
   } catch (error) {

@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ALERT_RULES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_TYPES = ['overspeed', 'geofence_enter', 'geofence_exit', 'sos', 'idle', 'fuel_drop', 'tamper', 'power_off', 'low_battery', 'harsh_braking', 'harsh_acceleration'];
 const VALID_CHANNELS = ['in_app', 'email', 'sms', 'whatsapp'];
 
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
       },
       include: { organization: { select: { id: true, name: true } } },
     });
+        await logAudit({ user, action: 'create', entity: 'AlertRule', entityId: alertRule?.id, ipAddress: getClientIp(request) });
 
     const parsed = {
       ...alertRule,

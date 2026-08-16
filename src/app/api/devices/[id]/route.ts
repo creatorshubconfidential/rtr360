@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 
 export async function PATCH(
@@ -50,6 +51,7 @@ export async function PATCH(
       data: updateData,
       include: { sim: true },
     });
+        await logAudit({ user, action: 'update', entity: 'Device', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ device });
   } catch (error) {
     logger.error('Device PATCH error', { error });
@@ -87,6 +89,7 @@ export async function DELETE(
 
     await db.vehicle.updateMany({ where: { deviceId: id }, data: { deviceId: null } });
     await db.device.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'Device', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('Device DELETE error', { error });

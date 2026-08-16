@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -95,6 +96,7 @@ export async function PUT(request: Request, context: RouteContext) {
       where: { id },
       data: updateData,
     });
+        await logAudit({ user, action: 'update', entity: 'Organization', entityId: id, ipAddress: getClientIp(request) });
 
     return Response.json({
       success: true,

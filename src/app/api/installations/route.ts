@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['scheduled', 'in_progress', 'testing', 'completed', 'failed', 'cancelled'];
 
 // Generate installation number: INST-YYYYMM-NNN
@@ -183,6 +184,7 @@ export async function POST(request: Request) {
       },
       include: { technician: { select: { id: true, name: true, phone: true } } },
     });
+        await logAudit({ user, action: 'create', entity: 'Installation', entityId: installation?.id, ipAddress: getClientIp(request) });
 
     // Mark device as reserved
     await db.device.update({ where: { id: deviceId }, data: { status: 'reserved' } });

@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DRIVERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
 
 export async function PATCH(
@@ -49,6 +50,7 @@ export async function PATCH(
     if (notes !== undefined) updateData.notes = notes?.trim() || null;
 
     const driver = await db.driver.update({ where: { id }, data: updateData });
+        await logAudit({ user, action: 'update', entity: 'Driver', entityId: id, ipAddress: getClientIp(request) });
     return NextResponse.json({ driver });
   } catch (error) {
     logger.error('Driver PATCH error', { error });
@@ -83,6 +85,7 @@ export async function DELETE(
     // Unassign from vehicles first
     await db.vehicle.updateMany({ where: { driverId: id }, data: { driverId: null } });
     await db.driver.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'Driver', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ success: true });
   } catch (error) {

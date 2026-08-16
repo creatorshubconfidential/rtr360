@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -147,6 +148,7 @@ export async function POST(request: Request) {
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'create', entity: 'Ticket', entityId: ticket?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ ticket }, { status: 201 });
   } catch (error) {

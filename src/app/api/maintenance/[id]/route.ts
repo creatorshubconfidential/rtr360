@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 
 export async function PATCH(
@@ -73,6 +74,7 @@ export async function PATCH(
         organization: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'MaintenanceRecord', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ maintenanceRecord });
   } catch (error) {
@@ -108,6 +110,7 @@ export async function DELETE(
     }
 
     await db.maintenanceRecord.delete({ where: { id } });
+        await logAudit({ user, action: 'delete', entity: 'MaintenanceRecord', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ success: true });
   } catch (error) {

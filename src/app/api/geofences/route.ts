@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
       },
       include: { organization: { select: { id: true, name: true } } },
     });
+        await logAudit({ user, action: 'create', entity: 'Geofence', entityId: geofence?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ geofence }, { status: 201 });
   } catch (error) {

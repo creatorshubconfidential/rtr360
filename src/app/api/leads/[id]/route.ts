@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = [
   'new',
   'contacted',
@@ -102,6 +103,7 @@ export async function PATCH(
         assignedTo: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'Lead', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ lead: updated });
   } catch (error) {

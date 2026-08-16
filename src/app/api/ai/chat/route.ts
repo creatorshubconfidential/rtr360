@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, AI_USE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -579,6 +580,7 @@ export async function POST(request: Request) {
           messages: '[]',
         },
       });
+          await logAudit({ user, action: 'create', entity: 'AIConversation', entityId: conversation?.id, ipAddress: getClientIp(request) });
     }
 
     // Build fleet context for AI response

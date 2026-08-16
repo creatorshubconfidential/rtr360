@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 const DEVICE_TYPES = ['GPS Tracker', 'OBD Tracker', 'Wired Tracker', 'Personal Tracker', 'Asset Tracker', 'Camera', 'Temperature Sensor'];
 const PROVIDERS = ['Etisalat', 'du', 'Virgin Mobile', 'Swyp'];
@@ -148,6 +149,7 @@ export async function POST(request: Request) {
       data: deviceData as any,
       include: { sim: true },
     });
+        await logAudit({ user, action: 'create', entity: 'Device', entityId: device?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ device }, { status: 201 });
   } catch (error) {

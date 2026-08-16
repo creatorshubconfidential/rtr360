@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function GET(request: Request) {
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const technician = await db.technician.create({ data: techData as any });
+        await logAudit({ user, action: 'create', entity: 'Technician', entityId: technician?.id, ipAddress: getClientIp(request) });
     return NextResponse.json({ technician }, { status: 201 });
   } catch (error) {
     logger.error('Technicians POST error', { error });

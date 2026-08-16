@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['in_progress', 'cancelled'],
   in_progress: ['testing', 'failed', 'cancelled'],
@@ -63,6 +64,7 @@ export async function PATCH(
           where: { id: existing.vehicleId },
           data: { deviceId: existing.deviceId, installDate: new Date() },
         });
+            await logAudit({ user, action: 'update', entity: 'Installation', entityId: id, ipAddress: getClientIp(request) });
         // Mark device as installed
         await db.device.update({
           where: { id: existing.deviceId },

@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -123,6 +124,7 @@ export async function PATCH(
         lead: { select: { id: true, name: true, company: true } },
       },
     });
+        await logAudit({ user, action: 'update', entity: 'Quotation', entityId: id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ quotation: updated });
   } catch (error) {

@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, ACTIVITIES_MANAGE } from '@/lib/permissions';
 import { getTenantFilter } from '@/lib/tenant';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 const VALID_TYPES = ['call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'visit'];
 
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
         user: { select: { id: true, name: true } },
       },
     });
+        await logAudit({ user, action: 'create', entity: 'Activity', entityId: activity?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ activity }, { status: 201 });
   } catch (error) {

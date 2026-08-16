@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, CONTACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 
 export async function GET(request: Request) {
   try {
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
         organizationId: targetOrgId,
       },
     });
+        await logAudit({ user, action: 'create', entity: 'Contact', entityId: contact?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ contact }, { status: 201 });
   } catch (error) {

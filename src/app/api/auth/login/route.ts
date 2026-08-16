@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { verifyPassword, createSession, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { rateLimiter, getClientIp } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { logAudit } from '@/lib/audit';
 
 export async function POST(request: Request) {
   try {
@@ -99,6 +100,9 @@ export async function POST(request: Request) {
 
     // Rate limit headers
     response.headers.set('X-RateLimit-Remaining', remaining.toString());
+
+    // Audit log successful login
+    await logAudit({ user: { id: user.id, email: user.email, name: user.name, role: user.role, organizationId: user.organizationId }, action: 'login', entity: 'Session', ipAddress: ip });
 
     return response;
   } catch (error) {

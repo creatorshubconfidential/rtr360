@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { logAudit, getClientIp } from '@/lib/audit';
 const VALID_STATUSES = ['active', 'expired', 'terminated', 'draft'];
 
 export async function GET(request: Request) {
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       },
       include: { organization: { select: { id: true, name: true } } },
     });
+        await logAudit({ user, action: 'create', entity: 'Contract', entityId: contract?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ contract }, { status: 201 });
   } catch (error) {
