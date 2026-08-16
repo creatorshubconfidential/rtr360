@@ -3,16 +3,30 @@
 // Powered by Mianx.ai
 // ────────────────────────────────────────
 
-export function authFetch(url: string, options: RequestInit = {}) {
-  // Auth is handled via HttpOnly cookie (rtr_session) — browser sends it automatically.
-  // No localStorage token needed.
-  return fetch(url, {
+/**
+ * Authenticated fetch helper.
+ * - Auth is handled via HttpOnly cookie (rtr_session) — browser sends it automatically.
+ * - Intercepts 401 responses and redirects to login.
+ * - Sets Content-Type to JSON by default.
+ */
+export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
   });
+
+  // 401 interceptor: redirect to login when session expires
+  if (response.status === 401 && typeof window !== 'undefined') {
+    // Avoid redirect loop on login page itself
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/?tab=login';
+    }
+  }
+
+  return response;
 }
 
 export function formatAED(amount: number): string {
