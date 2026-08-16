@@ -471,6 +471,7 @@ model Trip {
   harshAccel     Int?     @map("harsh_accel")
   status         String   @default("in_progress")
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   vehicle        Vehicle      @relation(fields: [vehicleId], references: [id])
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -513,6 +514,7 @@ model AlertRule {
   organizationId String   @map("organization_id")
   active         Boolean  @default(true)
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   @@index([organizationId])
@@ -531,6 +533,7 @@ model Alert {
   status         String   @default("open")
   organizationId String   @map("organization_id")
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
   resolvedAt     DateTime? @map("resolved_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -726,6 +729,7 @@ model Document {
   organizationId String   @map("organization_id")
   uploadedBy     String?
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   uploadedByUser User?      @relation("DocumentUploader", fields: [uploadedBy], references: [id])
@@ -747,6 +751,7 @@ model Notification {
   read           Boolean  @default(false)
   metadata       String?
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   user           User? @relation("NotificationUser", fields: [userId], references: [id])
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -769,10 +774,12 @@ model Session {
 }
 
 model Setting {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String
-  type  String @default("string")
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 }
 
 // ----------------------
@@ -791,6 +798,7 @@ model ApiKey {
   lastUsedAt     DateTime? @map("last_used_at")
   active         Boolean  @default(true)
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
