@@ -3,16 +3,122 @@ import { db } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { Prisma } from '@prisma/client';
+import { execSync } from 'child_process';
+import path from 'path';
 
 /**
  * POST /api/setup/seed-demo
  *
- * Populates the database with comprehensive demo data for client demonstrations.
+ * 1) Syncs Prisma schema to database (fixes missing columns)
+ * 2) Populates the database with comprehensive demo data
  * Idempotent — checks if demo data already exists before creating.
  * Call this AFTER the initial /api/setup/seed has been run.
  */
 export async function POST(request: Request) {
   try {
+    // ========== 0. SCHEMA SYNC (fixes P2022 missing column errors) ==========
+    let schemaSyncResult = 'skipped';
+
+    // Attempt 1: Try prisma db push CLI
+    try {
+      const schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma');
+      logger.info('Running prisma db push to sync schema...', { schemaPath });
+      const output = execSync(
+        `npx prisma db push --accept-data-loss --skip-generate 2>&1`,
+        { timeout: 60000, cwd: process.cwd(), encoding: 'utf-8' }
+      );
+      schemaSyncResult = `cli: ${output.trim().slice(-200)}`;
+      logger.info('Schema sync completed via CLI', { output: schemaSyncResult });
+    } catch (cliError: unknown) {
+      const cliMsg = cliError instanceof Error ? cliError.message : String(cliError);
+      logger.warn('CLI schema sync failed, trying raw SQL fallback', { error: cliMsg });
+
+      // Attempt 2: Raw SQL fallback — add missing columns directly
+      try {
+        const columnsToAdd: string[] = [];
+
+        // Check each column and add if missing
+        const checks: { col: string; tbl: string; def: string }[] = [
+          // Trip table
+          { tbl: 'Trip', col: 'driverName', def: 'TEXT' },
+          { tbl: 'Trip', col: 'organization_id', def: 'TEXT' },
+          { tbl: 'Trip', col: 'start_time', def: 'TIMESTAMPTZ' },
+          { tbl: 'Trip', col: 'end_time', def: 'TIMESTAMPTZ' },
+          { tbl: 'Trip', col: 'distance', def: 'DOUBLE PRECISION' },
+          { tbl: 'Trip', col: 'duration', def: 'INTEGER' },
+          { tbl: 'Trip', col: 'max_speed', def: 'DOUBLE PRECISION' },
+          { tbl: 'Trip', col: 'avg_speed', def: 'DOUBLE PRECISION' },
+          { tbl: 'Trip', col: 'idle_time', def: 'INTEGER' },
+          { tbl: 'Trip', col: 'overspeed_count', def: 'INTEGER' },
+          { tbl: 'Trip', col: 'harsh_brakes', def: 'INTEGER' },
+          { tbl: 'Trip', col: 'harsh_accel', def: 'INTEGER' },
+          { tbl: 'Trip', col: 'status', def: 'TEXT DEFAULT \'in_progress\'' },
+          // Device table
+          { tbl: 'Device', col: 'phoneNumber', def: 'TEXT' },
+          { tbl: 'Device', col: 'serial_number', def: 'TEXT' },
+          { tbl: 'Device', col: 'device_type', def: 'TEXT' },
+          { tbl: 'Device', col: 'protocol', def: 'TEXT' },
+          { tbl: 'Device', col: 'firmware', def: 'TEXT' },
+          { tbl: 'Device', col: 'sim_id', def: 'TEXT' },
+          { tbl: 'Device', col: 'warehouse', def: 'TEXT' },
+          { tbl: 'Device', col: 'purchase_date', def: 'TIMESTAMPTZ' },
+          { tbl: 'Device', col: 'purchase_cost', def: 'DECIMAL(10,2)' },
+          { tbl: 'Device', col: 'install_date', def: 'TIMESTAMPTZ' },
+          { tbl: 'Device', col: 'warranty_expiry', def: 'TIMESTAMPTZ' },
+          { tbl: 'Device', col: 'last_ping_at', def: 'TIMESTAMPTZ' },
+          { tbl: 'Device', col: 'battery_level', def: 'INTEGER' },
+          // Vehicle table
+          { tbl: 'Vehicle', col: 'internal_id', def: 'TEXT' },
+          { tbl: 'Vehicle', col: 'vin', def: 'TEXT' },
+          { tbl: 'Vehicle', col: 'color', def: 'TEXT' },
+          { tbl: 'Vehicle', col: 'engine_hours', def: 'DOUBLE PRECISION' },
+          { tbl: 'Vehicle', col: 'install_date', def: 'TIMESTAMPTZ' },
+          { tbl: 'Vehicle', col: 'warranty_expiry', def: 'TIMESTAMPTZ' },
+          // Notification table
+          { tbl: 'Notification', col: 'user_id', def: 'TEXT' },
+          { tbl: 'Notification', col: 'organization_id', def: 'TEXT' },
+          { tbl: 'Notification', col: 'body', def: 'TEXT' },
+          { tbl: 'Notification', col: 'read', def: 'BOOLEAN DEFAULT false' },
+          { tbl: 'Notification', col: 'metadata', def: 'TEXT' },
+          // MaintenanceRecord table
+          { tbl: 'MaintenanceRecord', col: 'trigger_type', def: 'TEXT' },
+          { tbl: 'MaintenanceRecord', col: 'trigger_value', def: 'DOUBLE PRECISION' },
+          { tbl: 'MaintenanceRecord', col: 'completed_date', def: 'TIMESTAMPTZ' },
+          // Installation table
+          { tbl: 'Installation', col: 'installation_number', def: 'TEXT' },
+          { tbl: 'Installation', col: 'scheduled_time', def: 'TEXT' },
+          { tbl: 'Installation', col: 'latitude', def: 'DOUBLE PRECISION' },
+          { tbl: 'Installation', col: 'longitude', def: 'DOUBLE PRECISION' },
+          { tbl: 'Installation', col: 'photos', def: 'TEXT' },
+          { tbl: 'Installation', col: 'test_result', def: 'TEXT' },
+          { tbl: 'Installation', col: 'gps_signal', def: 'BOOLEAN' },
+          { tbl: 'Installation', col: 'power_wiring', def: 'BOOLEAN' },
+          { tbl: 'Installation', col: 'antenna_mounted', def: 'BOOLEAN' },
+          { tbl: 'Installation', col: 'signature', def: 'TEXT' },
+        ];
+
+        for (const c of checks) {
+          try {
+            const exists = await db.$queryRawUnsafe(
+              `SELECT column_name FROM information_schema.columns WHERE table_name = '${c.tbl.toLowerCase()}' AND column_name = '${c.col}'`
+            );
+            if (!Array.isArray(exists) || (exists as unknown[]).length === 0) {
+              await db.$executeRawUnsafe(`ALTER TABLE "${c.tbl}" ADD COLUMN IF NOT EXISTS "${c.col}" ${c.def}`);
+              columnsToAdd.push(`${c.tbl}.${c.col}`);
+            }
+          } catch {
+            // Table might not exist — skip
+          }
+        }
+        schemaSyncResult = `sql_fallback: added ${columnsToAdd.length} columns (${columnsToAdd.join(', ')})`;
+        logger.info('Schema sync completed via SQL fallback', { columnsAdded: columnsToAdd });
+      } catch (sqlError: unknown) {
+        const sqlMsg = sqlError instanceof Error ? sqlError.message : String(sqlError);
+        logger.warn('SQL fallback also failed', { error: sqlMsg });
+        schemaSyncResult = `both_failed: cli=${cliMsg.slice(0, 100)} sql=${sqlMsg.slice(0, 100)}`;
+      }
+    }
+
     // Find the existing organization
     const org = await db.organization.findFirst();
     if (!org) {
@@ -730,6 +836,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Demo data seeded successfully',
       seeded: true,
+      schemaSync: schemaSyncResult,
       results,
     });
   } catch (error) {
