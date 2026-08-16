@@ -136,6 +136,7 @@ export async function POST(request: Request) {
       purchaseCost: purchaseCost ?? null,
       warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : null,
       notes: notes?.trim() || null,
+      organizationId: user.organizationId || null,
     };
 
     const device = await db.device.create({

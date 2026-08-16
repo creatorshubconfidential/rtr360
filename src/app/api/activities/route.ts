@@ -88,6 +88,7 @@ export async function POST(request: Request) {
         userId: user.id,
         leadId: leadId || null,
         opportunityId: opportunityId || null,
+        organizationId: user.organizationId || null,
       },
       include: {
         user: { select: { id: true, name: true } },

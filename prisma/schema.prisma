@@ -79,6 +79,8 @@ model Organization {
   auditLogs      AuditLog[] @relation("AuditLogOrganization")
   sims           SIM[]
   aiConversations AIConversation[]
+  trips          Trip[]
+  activities     Activity[]
 
   @@index([status])
   @@index([emirate])
@@ -239,14 +241,17 @@ model Activity {
   userId         String?  @map("user_id")
   leadId         String?  @map("lead_id")
   opportunityId  String?  @map("opportunity_id")
+  organizationId String?  @map("organization_id")
   createdAt      DateTime @default(now()) @map("created_at")
 
   user           User?       @relation(fields: [userId], references: [id])
   lead           Lead?       @relation(fields: [leadId], references: [id])
   opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
   @@index([userId])
   @@index([leadId])
   @@index([opportunityId])
+  @@index([organizationId])
 }
 
 // ----------------------
@@ -452,6 +457,7 @@ model Installation {
 model Trip {
   id             String   @id @default(cuid())
   vehicleId      String   @map("vehicle_id")
+  organizationId String?  @map("organization_id")
   driverName     String?
   startTime      DateTime @map("start_time")
   endTime        DateTime? @map("end_time")
@@ -466,8 +472,10 @@ model Trip {
   status         String   @default("in_progress")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
   @@index([vehicleId])
+  @@index([organizationId])
   @@index([startTime])
   @@index([status])
 }

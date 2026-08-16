@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
 
-    if (user.role !== 'super_admin' && user.role !== 'platform_admin') {
-      return NextResponse.json(
-        { error: 'Only super_admin or platform_admin can view audit logs' },
-        { status: 403 }
-      );
-    }
+    // RBAC: Only super_admin and platform_admin can view audit logs
+    const permErr = requirePermission(user, SETTINGS_MANAGE);
+    if (permErr) return permErr;
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
@@ -22,6 +20,11 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
 
     const where: Record<string, unknown> = {};
+
+    // Tenant isolation: platform_admin sees only their org's logs
+    if (user.role !== 'super_admin' && user.organizationId) {
+      where.organizationId = user.organizationId;
+    }
 
     if (action) {
       where.action = action;
