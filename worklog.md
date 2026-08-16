@@ -384,3 +384,32 @@ Stage Summary:
 - 3 ESLint rules enabled: exhaustive-deps, no-console, no-explicit-any
 - 94 console.error → logger.error in API routes
 - 233 tests passing, 0 TS errors, 0 ESLint errors, build passes, Vercel GREEN
+
+---
+Task ID: 14
+Agent: Main Agent
+Task: STEP 9 (P2 Hardening) — P2-1 through P2-12
+
+Work Log:
+- P2-1: Already done (243 tests in 8 test files)
+- P2-2: Already done (ESLint rules enabled in Task 13)
+- P2-3: Created src/lib/audit.ts (logAudit + getClientIp), injected into all 42 write routes
+  - Handled special cases: login/logout, notifications (mark-read), settings (upsert), $transaction routes
+  - 10 new tests in tests/audit-p2.test.ts
+- P2-4: Confirmed authFetch single source (27 files import from @/lib/api), added 401 interceptor
+- P2-5: Created prisma/migrations/0_init/migration.sql (848 lines), marked as applied
+- P2-6: Added updatedAt to 7 models (AlertRule, Alert, Trip, Document, Notification, Setting, ApiKey), createdAt to Setting
+  - Manual SQL migration for SQLite (DEFAULT constraint for existing rows)
+- P2-7: Removed tailwind.config.ts (v3 leftover), project uses pure v4
+- P2-8: Changed robots.txt to Disallow: / (private SaaS)
+- P2-9: Removed unsafe-eval from CSP, removed unused supabase.co, added openstreetmap.org
+- P2-10: Created GET /api/health endpoint (status, uptime, version, DB ping)
+- P2-11: Verified git hygiene (already clean from P0-5)
+- P2-12: Created .github/workflows/ci.yml (lint → typecheck → test → build)
+- Updated docs/REMEDIATION-PLAN.md with all P2 items marked DONE
+
+Stage Summary:
+- STEP 9 COMPLETE: All 12 P2 hardening items done
+- 253 tests passing (243 + 10 audit), 0 TS errors, 0 ESLint errors, build passes
+- 8 commits pushed to GitHub (8028944 → 39aa6e1)
+- Only P0-3 (Float→Decimal) remains BLOCKED on PostgreSQL migration
