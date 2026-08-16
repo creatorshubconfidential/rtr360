@@ -6,10 +6,11 @@ export function proxy(request: NextRequest) {
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Block sensitive endpoints in production
+  // Note: /api/setup/seed-demo is allowed for demo data seeding
   if (isProduction) {
-    const blockedPaths = ['/api/setup', '/api/migrate', '/api/debug', '/setup'];
+    const blockedPaths = ['/api/setup/seed', '/api/migrate', '/api/debug'];
     for (const blocked of blockedPaths) {
-      if (pathname.startsWith(blocked)) {
+      if (pathname === blocked || pathname.startsWith(blocked + '/')) {
         return new NextResponse(null, { status: 404 });
       }
     }
