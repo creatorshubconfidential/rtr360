@@ -153,8 +153,18 @@
 - Write first tests: auth, tenant isolation, RBAC.
 - Target: 50+ tests covering security-critical paths.
 
-### P2-2: Enable ESLint Rules
-- **Action:** Re-enable at minimum: `react-hooks/exhaustive-deps`, `no-console`, `@typescript-eslint/no-explicit-any`. Fix resulting warnings.
+### P2-2: Enable ESLint Rules ✅ DONE
+- **Files:** `eslint.config.mjs`, `src/lib/logger.ts`, 54 API routes, 15+ component files, `tests/eslint-p2.test.ts`
+- **Action:**
+  1. ✅ Created `src/lib/logger.ts` structured logger (debug/info/warn/error) with `LogContext`
+  2. ✅ Replaced 94 `console.error` calls across 54 API routes with `logger.error`
+  3. ✅ Fixed 2 `exhaustive-deps` violations (GeofencesView ref pattern, LiveTrackingView positionsRef)
+  4. ✅ Fixed 75 `no-explicit-any` violations — typed where easy, block-disable where dynamic (charts, Leaflet, admin)
+  5. ✅ Enabled 3 rules as "error" in ESLint config: `react-hooks/exhaustive-deps`, `no-console`, `@typescript-eslint/no-explicit-any`
+  6. ✅ Added `seed.ts` to ESLint ignores (dev-only script)
+ 7. ✅ New `any` usage in source code is blocked at ESLint error level
+- **Tests:** 5 tests in `tests/eslint-p2.test.ts` — config checks + logger existence. ALL PASS.
+- **Acceptance:** `npx eslint src/` returns 0 errors. New `any` in code causes build failure. ✅
 
 ### P2-3: Implement Audit Logging
 - **Action:** Create `src/lib/audit.ts` helper. Call in every POST/PUT/PATCH/DELETE route.
