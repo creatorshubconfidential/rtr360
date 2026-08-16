@@ -87,9 +87,10 @@ export async function GET(request: Request) {
       })
     );
 
-    // Status counts
+    // Status counts (must use same where clause for tenant isolation)
     const statusCounts = await db.installation.groupBy({
       by: ['status'],
+      where,
       _count: { status: true },
     });
     const counts: Record<string, number> = {};

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
 
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only org_owner, platform_admin, super_admin can manage subscriptions
+    const permErr = requirePermission(user, SUBSCRIPTIONS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { organizationId, planId, startsAt, endsAt } = body;

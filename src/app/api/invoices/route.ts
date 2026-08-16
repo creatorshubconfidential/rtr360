@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
@@ -62,6 +63,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only org_owner, platform_admin, super_admin can create invoices (financial data)
+    const permErr = requirePermission(user, INVOICES_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { organizationId, subscriptionId, amount, tax, dueDate, notes } = body;

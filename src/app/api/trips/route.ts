@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
 
 const VALID_STATUSES = ['in_progress', 'completed', 'cancelled'];
 
@@ -52,6 +53,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only dispatcher+ and operations roles can create trips
+    const permErr = requirePermission(user, TRIPS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { vehicleId, driverName, startTime, endTime, distance, duration, maxSpeed, avgSpeed, idleTime, overspeedCount, harshBrakes, harshAccel, status } = body;

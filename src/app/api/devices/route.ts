@@ -67,9 +67,10 @@ export async function GET(request: Request) {
       db.device.count({ where }),
     ]);
 
-    // Aggregate counts
+    // Aggregate counts (scoped to same tenant filter)
     const statusCounts = await db.device.groupBy({
       by: ['status'],
+      where,
       _count: { status: true },
     });
 

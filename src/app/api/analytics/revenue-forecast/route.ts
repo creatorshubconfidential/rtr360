@@ -24,9 +24,10 @@ export async function GET(request: Request) {
           where: { ...orgFilterStrict, status: 'paid', createdAt: { gte: mStart, lt: mEnd } },
           select: { total: true },
         }),
-        db.organization.count({
-          where: { createdAt: { gte: mStart, lt: mEnd } },
-        }),
+        // SECURITY: For non-super_admin, newClients is always 0 or 1 (their own org)
+        user.role === 'super_admin'
+          ? db.organization.count({ where: { createdAt: { gte: mStart, lt: mEnd } } })
+          : Promise.resolve(0),
       ]);
 
       historicalRevenue.push({

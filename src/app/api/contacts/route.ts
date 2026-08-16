@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, CONTACTS_MANAGE } from '@/lib/permissions';
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only sales/ops roles and above can create contacts
+    const permErr = requirePermission(user, CONTACTS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { name, email, phone, position, organizationId } = body;

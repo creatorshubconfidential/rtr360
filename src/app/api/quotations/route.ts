@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -65,6 +66,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only sales roles and above can create quotations
+    const permErr = requirePermission(user, QUOTATIONS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { leadId, items, taxRate, notes, terms, validUntil } = body;

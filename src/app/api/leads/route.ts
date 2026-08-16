@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 
 // Valid lead statuses for pipeline
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
@@ -78,6 +79,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: Only sales_manager, operations_manager, org_owner, platform_admin, super_admin can create leads
+    const permErr = requirePermission(user, LEADS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { name, email, phone, company, emirate, vehicleCount, vehicleType, requirement, source, campaign, priority, notes } = body;
