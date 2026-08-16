@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ settings: settingsMap });
   } catch (error) {
-    console.error('Settings GET error:', error);
+    logger.error('Settings GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -66,7 +67,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ setting });
   } catch (error) {
-    console.error('Settings PUT error:', error);
+    logger.error('Settings PUT error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

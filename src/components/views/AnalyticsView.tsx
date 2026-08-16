@@ -56,6 +56,7 @@ function ScoreGauge({ score, label, size = 120 }: { score: number; label: string
   );
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function AnalyticsView() {
   const [activeTab, setActiveTab] = useState('fleet-health');
 

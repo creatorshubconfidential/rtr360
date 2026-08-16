@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 
 export async function PATCH(
@@ -51,7 +52,7 @@ export async function PATCH(
     });
     return NextResponse.json({ device });
   } catch (error) {
-    console.error('Device PATCH error:', error);
+    logger.error('Device PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -88,7 +89,7 @@ export async function DELETE(
     await db.device.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Device DELETE error:', error);
+    logger.error('Device DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

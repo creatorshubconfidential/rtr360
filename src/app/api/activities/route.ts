@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, ACTIVITIES_MANAGE } from '@/lib/permissions';
 import { getTenantFilter } from '@/lib/tenant';
+import { logger } from '@/lib/logger';
 
 const VALID_TYPES = ['call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'visit'];
 
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ activities });
   } catch (error) {
-    console.error('Activities GET error:', error);
+    logger.error('Activities GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ activity }, { status: 201 });
   } catch (error) {
-    console.error('Activities POST error:', error);
+    logger.error('Activities POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

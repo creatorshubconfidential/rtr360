@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -84,7 +85,7 @@ export async function PATCH(
 
     return NextResponse.json({ ticket });
   } catch (error) {
-    console.error('Ticket PATCH error:', error);
+    logger.error('Ticket PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -119,7 +120,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Ticket DELETE error:', error);
+    logger.error('Ticket DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

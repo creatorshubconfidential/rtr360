@@ -195,7 +195,7 @@ export default function TripsView() {
     try {
       const url = editingTrip ? `/api/trips/${editingTrip.id}` : '/api/trips';
       const method = editingTrip ? 'PATCH' : 'POST';
-      const body: any = {
+      const body = {
         vehicleId: form.vehicleId,
         driverName: form.driverName,
         startTime: form.startTime,

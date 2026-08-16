@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DRIVERS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
 const LICENSE_TYPES = ['Light Vehicle', 'Heavy Vehicle', 'Motorcycle', 'Heavy Bus', 'Light Bus', 'Trailer', 'Forklift'];
 
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Drivers GET error:', error);
+    logger.error('Drivers GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -120,10 +121,11 @@ export async function POST(request: Request) {
       driverData.organizationId = user.organizationId;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const driver = await db.driver.create({ data: driverData as any });
     return NextResponse.json({ driver }, { status: 201 });
   } catch (error) {
-    console.error('Drivers POST error:', error);
+    logger.error('Drivers POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -101,7 +102,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
-    console.error('Users PATCH error:', error);
+    logger.error('Users PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -136,7 +137,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await db.user.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Users DELETE error:', error);
+    logger.error('Users DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

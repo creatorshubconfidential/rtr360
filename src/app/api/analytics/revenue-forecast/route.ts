@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -154,7 +155,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (err) {
-    console.error('Revenue forecast error:', err);
+    logger.error('Revenue forecast error', { err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

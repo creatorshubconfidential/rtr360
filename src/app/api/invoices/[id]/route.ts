@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
 export async function GET(
@@ -39,7 +40,7 @@ export async function GET(
 
     return NextResponse.json({ invoice });
   } catch (error) {
-    console.error('Invoice GET error:', error);
+    logger.error('Invoice GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -108,7 +109,7 @@ export async function PATCH(
 
     return NextResponse.json({ invoice: updated });
   } catch (error) {
-    console.error('Invoice PATCH error:', error);
+    logger.error('Invoice PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

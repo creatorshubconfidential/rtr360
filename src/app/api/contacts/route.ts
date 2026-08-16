@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, CONTACTS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Contacts GET error:', error);
+    logger.error('Contacts GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ contact }, { status: 201 });
   } catch (error) {
-    console.error('Contacts POST error:', error);
+    logger.error('Contacts POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

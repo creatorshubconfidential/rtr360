@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -100,7 +101,7 @@ export async function GET(request: Request) {
       activeTechnicians,
     });
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    logger.error('Dashboard stats error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

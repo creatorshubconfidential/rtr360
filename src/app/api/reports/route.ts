@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -139,7 +140,7 @@ export async function GET(request: Request) {
       installationsByStatus: installationsByStatus.map(i => ({ status: i.status, count: i._count.status })),
     });
   } catch (error) {
-    console.error('Reports GET error:', error);
+    logger.error('Reports GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

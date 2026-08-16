@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -42,7 +43,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     return Response.json({ data: org });
   } catch (error: unknown) {
-    console.error('Branding get error:', error);
+    logger.error('Branding get error', { error });
     return Response.json({ error: 'Failed to fetch branding' }, { status: 500 });
   }
 }
@@ -77,6 +78,7 @@ export async function PUT(request: Request, context: RouteContext) {
       hideMianxBranding,
     } = body;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (primaryColor !== undefined) updateData.primaryColor = primaryColor;
     if (accentColor !== undefined) updateData.accentColor = accentColor;
@@ -110,7 +112,7 @@ export async function PUT(request: Request, context: RouteContext) {
       },
     });
   } catch (error: unknown) {
-    console.error('Branding update error:', error);
+    logger.error('Branding update error', { error });
     return Response.json({ error: 'Failed to update branding' }, { status: 500 });
   }
 }

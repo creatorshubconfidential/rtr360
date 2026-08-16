@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 const PIPELINE_STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
 
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ pipeline, summary, stages: PIPELINE_STAGES });
   } catch (error) {
-    console.error('Pipeline GET error:', error);
+    logger.error('Pipeline GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

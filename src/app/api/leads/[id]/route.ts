@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = [
   'new',
   'contacted',
@@ -54,7 +55,7 @@ export async function GET(
 
     return NextResponse.json({ lead });
   } catch (error) {
-    console.error('Lead GET error:', error);
+    logger.error('Lead GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -104,7 +105,7 @@ export async function PATCH(
 
     return NextResponse.json({ lead: updated });
   } catch (error) {
-    console.error('Lead PATCH error:', error);
+    logger.error('Lead PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

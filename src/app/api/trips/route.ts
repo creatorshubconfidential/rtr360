@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 const VALID_STATUSES = ['in_progress', 'completed', 'cancelled'];
 
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Trips GET error:', error);
+    logger.error('Trips GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ trip }, { status: 201 });
   } catch (error) {
-    console.error('Trips POST error:', error);
+    logger.error('Trips POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

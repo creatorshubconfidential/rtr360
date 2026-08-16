@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any -- Leaflet dynamically imported, types unavailable */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
@@ -52,7 +53,7 @@ export default function GeofencesView() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const circlesRef = useRef<any[]>([]);
+    const circlesRef = useRef<any[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Create form
@@ -158,17 +159,6 @@ export default function GeofencesView() {
     });
   }, [geofences, mapLoaded]);
 
-  // Listen for popup delete events
-  useEffect(() => {
-    const handler = ((e: CustomEvent) => {
-      const id = e.detail;
-      const gf = geofences.find((g) => g.id === id);
-      if (gf) handleDelete(gf);
-    }) as EventListener;
-    window.addEventListener('geofence-delete', handler);
-    return () => window.removeEventListener('geofence-delete', handler);
-  }, [geofences]);
-
   const panToGeofence = (gf: Geofence) => {
     if (mapRef.current) {
       mapRef.current.setView([gf.centerLat, gf.centerLng], 13, { animate: true });
@@ -239,6 +229,19 @@ export default function GeofencesView() {
       toast.error('Network error');
     }
   };
+
+  const handleDeleteRef = useRef(handleDelete);
+  useEffect(() => { handleDeleteRef.current = handleDelete; });
+
+  useEffect(() => {
+    const handler = ((e: CustomEvent) => {
+      const id = e.detail;
+      const gf = geofences.find((g) => g.id === id);
+      if (gf) handleDeleteRef.current(gf);
+    }) as EventListener;
+    window.addEventListener('geofence-delete', handler);
+    return () => window.removeEventListener('geofence-delete', handler);
+  }, [geofences]);
 
   const filtered = geofences.filter(
     (g) => g.name.toLowerCase().includes(search.toLowerCase())

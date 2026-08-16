@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Audit logs GET error:', error);
+    logger.error('Audit logs GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

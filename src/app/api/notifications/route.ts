@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    console.error('Notifications GET error:', error);
+    logger.error('Notifications GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Specify markAllRead or id' }, { status: 400 });
   } catch (error) {
-    console.error('Notifications POST error:', error);
+    logger.error('Notifications POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

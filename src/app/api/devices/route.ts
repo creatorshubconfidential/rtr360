@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 const DEVICE_TYPES = ['GPS Tracker', 'OBD Tracker', 'Wired Tracker', 'Personal Tracker', 'Asset Tracker', 'Camera', 'Temperature Sensor'];
 const PROVIDERS = ['Etisalat', 'du', 'Virgin Mobile', 'Swyp'];
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Devices GET error:', error);
+    logger.error('Devices GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -143,13 +144,14 @@ export async function POST(request: Request) {
     };
 
     const device = await db.device.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: deviceData as any,
       include: { sim: true },
     });
 
     return NextResponse.json({ device }, { status: 201 });
   } catch (error) {
-    console.error('Devices POST error:', error);
+    logger.error('Devices POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

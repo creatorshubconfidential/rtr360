@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function PATCH(
@@ -45,7 +46,7 @@ export async function PATCH(
     const technician = await db.technician.update({ where: { id }, data: updateData });
     return NextResponse.json({ technician });
   } catch (error) {
-    console.error('Technician PATCH error:', error);
+    logger.error('Technician PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -78,7 +79,7 @@ export async function DELETE(
     await db.technician.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Technician DELETE error:', error);
+    logger.error('Technician DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

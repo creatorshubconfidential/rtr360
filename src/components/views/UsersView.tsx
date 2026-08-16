@@ -156,17 +156,17 @@ export default function UsersView() {
     try {
       const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users';
       const method = editingUser ? 'PATCH' : 'POST';
-      const body: any = {
+      const payload = {
         name: form.name,
         email: form.email,
         phone: form.phone || null,
         role: form.role,
         status: form.status,
       };
-      if (form.organizationId) body.organizationId = form.organizationId;
-      if (form.password) body.password = form.password;
+      if (form.organizationId) (payload as Record<string, unknown>).organizationId = form.organizationId;
+      if (form.password) (payload as Record<string, unknown>).password = form.password;
 
-      const res = await authFetch(url, { method, body: JSON.stringify(body) });
+      const res = await authFetch(url, { method, body: JSON.stringify(payload) });
       if (res.ok) {
         toast.success(editingUser ? 'User updated successfully' : 'User created successfully');
         setDialogOpen(false);

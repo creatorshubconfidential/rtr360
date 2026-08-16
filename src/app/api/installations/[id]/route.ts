@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['in_progress', 'cancelled'],
   in_progress: ['testing', 'failed', 'cancelled'],
@@ -117,7 +118,7 @@ export async function PATCH(
 
     return NextResponse.json({ installation: { ...installation, vehicle, device } });
   } catch (error) {
-    console.error('Installation PATCH error:', error);
+    logger.error('Installation PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

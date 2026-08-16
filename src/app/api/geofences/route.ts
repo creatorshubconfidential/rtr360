@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ geofences });
   } catch (error) {
-    console.error('Geofences GET error:', error);
+    logger.error('Geofences GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ geofence }, { status: 201 });
   } catch (error) {
-    console.error('Geofences POST error:', error);
+    logger.error('Geofences POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

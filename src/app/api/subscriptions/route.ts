@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Subscriptions GET error:', error);
+    logger.error('Subscriptions GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ subscription }, { status: 201 });
   } catch (error) {
-    console.error('Subscriptions POST error:', error);
+    logger.error('Subscriptions POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

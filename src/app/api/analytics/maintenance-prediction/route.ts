@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -170,7 +171,7 @@ export async function GET(request: Request) {
       typeDistribution: allTypes.map(t => ({ type: t.type, count: t._count })),
     });
   } catch (err) {
-    console.error('Maintenance prediction error:', err);
+    logger.error('Maintenance prediction error', { err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

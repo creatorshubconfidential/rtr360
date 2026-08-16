@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -110,7 +111,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Invoice PDF error:', error);
+    logger.error('Invoice PDF error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -177,7 +178,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error: unknown) {
-    console.error('Usage analytics error:', error);
+    logger.error('Usage analytics error', { error });
     return Response.json({ error: 'Failed to fetch usage analytics' }, { status: 500 });
   }
 }

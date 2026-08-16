@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Invoices GET error:', error);
+    logger.error('Invoices GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ invoice }, { status: 201 });
   } catch (error) {
-    console.error('Invoices POST error:', error);
+    logger.error('Invoices POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

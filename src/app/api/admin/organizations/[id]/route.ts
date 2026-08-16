@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -97,7 +98,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error: unknown) {
-    console.error('Org detail error:', error);
+    logger.error('Org detail error', { error });
     return Response.json({ error: 'Failed to fetch organization' }, { status: 500 });
   }
 }
@@ -122,6 +123,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const { name, tradeName, legalName, email, phone, website, emirate, city, address, status, planName, vehicleLimit, userLimit } = body;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (tradeName !== undefined) updateData.tradeName = tradeName;
@@ -144,7 +146,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return Response.json({ success: true, data: updated });
   } catch (error: unknown) {
-    console.error('Org update error:', error);
+    logger.error('Org update error', { error });
     return Response.json({ error: 'Failed to update organization' }, { status: 500 });
   }
 }
@@ -179,7 +181,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     return Response.json({ success: true, message: `Organization "${org.name}" has been deactivated` });
   } catch (error: unknown) {
-    console.error('Org delete error:', error);
+    logger.error('Org delete error', { error });
     return Response.json({ error: 'Failed to deactivate organization' }, { status: 500 });
   }
 }

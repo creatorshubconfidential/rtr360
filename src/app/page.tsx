@@ -51,6 +51,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import type { LucideIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -591,9 +592,9 @@ function SidebarNav({
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left">{item.label}</span>
-                    {(item as any).badge && (
+                    {(item as unknown as Record<string, string | undefined>).badge && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-700 text-slate-400 border-0">
-                        {(item as any).badge}
+                        {(item as unknown as Record<string, string | undefined>).badge}
                       </Badge>
                     )}
                   </button>
@@ -832,6 +833,7 @@ function DashboardView() {
 // Predictive Insights Widget (Phase 7)
 // ────────────────────────────────────────
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- dashboard predictive insights uses dynamic API data */
 function DashboardPredictiveInsights() {
   const [fleetData, setFleetData] = useState<any>(null);
   const [maintData, setMaintData] = useState<any>(null);
@@ -850,7 +852,7 @@ function DashboardPredictiveInsights() {
 
   if (loading) return <Skeleton className="h-40 rounded-xl" />;
 
-  const insights: { icon: any; color: string; bgColor: string; label: string; value: string; sub: string }[] = [];
+  const insights: { icon: LucideIcon; color: string; bgColor: string; label: string; value: string; sub: string }[] = [];
 
   if (fleetData) {
     const grade = fleetData.fleetGrade;
@@ -1596,7 +1598,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifList, setNotifList] = useState<any[]>([]);
+  const [notifList, setNotifList] = useState<Array<{ id: string; title: string; body: string; read: boolean }>>([]);
   const [notifCount, setNotifCount] = useState(0);
 
   const fetchNotifPreview = useCallback(async () => {
@@ -1785,7 +1787,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
                         <div className="p-6 text-center text-slate-400 text-sm">No notifications</div>
                       ) : (
                         <div className="divide-y divide-slate-50">
-                          {notifList.slice(0, 8).map((n: any) => (
+                          {notifList.slice(0, 8).map((n) => (
                             <div key={n.id} className={`px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
                               <p className={`text-xs ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
                               <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -140,7 +141,7 @@ export async function GET(request: Request) {
       topIssues: issues.slice(0, 20),
     });
   } catch (err) {
-    console.error('Fleet health error:', err);
+    logger.error('Fleet health error', { err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

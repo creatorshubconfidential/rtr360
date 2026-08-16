@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, AI_USE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -601,7 +602,7 @@ export async function POST(request: Request) {
       conversationId: conversation.id,
     });
   } catch (err) {
-    console.error('AI Chat error:', err);
+    logger.error('AI Chat error', { err });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -661,7 +662,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ conversations: enriched });
   } catch (err) {
-    console.error('AI Conversations list error:', err);
+    logger.error('AI Conversations list error', { err });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

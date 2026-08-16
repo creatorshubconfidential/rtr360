@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 const VALID_TYPES = [
   'oil_change', 'tire_rotation', 'brake_service', 'engine_service',
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Maintenance GET error:', error);
+    logger.error('Maintenance GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ maintenanceRecord }, { status: 201 });
   } catch (error) {
-    console.error('Maintenance POST error:', error);
+    logger.error('Maintenance POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

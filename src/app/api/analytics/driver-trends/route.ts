@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -136,7 +137,7 @@ export async function GET(request: Request) {
       scoreDistribution: scoreBuckets,
     });
   } catch (err) {
-    console.error('Driver trends error:', err);
+    logger.error('Driver trends error', { err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

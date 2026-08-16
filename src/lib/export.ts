@@ -4,6 +4,8 @@
  * All currency values formatted in AED.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- generic CSV export works with dynamic record shapes */
+
 export function exportCSV<T extends Record<string, any>>({
   data,
   filename,
@@ -92,7 +94,7 @@ export const DEVICE_COLUMNS = [
   { key: 'manufacturer', label: 'Manufacturer' },
   { key: 'deviceType', label: 'Type' },
   { key: 'status', label: 'Status' },
-  { key: 'phoneNumber', label: 'Phone Number' },
+ { key: 'phoneNumber', label: 'Phone Number' },
   { key: 'purchaseCost', label: 'Cost (AED)', format: (v: number) => v ? `AED ${v.toLocaleString()}` : '' },
   { key: 'warehouse', label: 'Warehouse' },
 ];

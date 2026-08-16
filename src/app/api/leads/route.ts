@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 // Valid lead statuses for pipeline
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Leads GET error:', error);
+    logger.error('Leads GET error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -130,11 +131,12 @@ export async function POST(request: Request) {
       leadData.organizationId = user.organizationId;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lead = await db.lead.create({ data: leadData as any });
 
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
-    console.error('Leads POST error:', error);
+    logger.error('Leads POST error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function GET(request: Request) {
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Technicians GET error:', error);
+    logger.error('Technicians GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -107,10 +108,11 @@ export async function POST(request: Request) {
       techData.organizationId = user.organizationId;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const technician = await db.technician.create({ data: techData as any });
     return NextResponse.json({ technician }, { status: 201 });
   } catch (error) {
-    console.error('Technicians POST error:', error);
+    logger.error('Technicians POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

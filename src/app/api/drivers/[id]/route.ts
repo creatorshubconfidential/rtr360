@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, DRIVERS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
 
 export async function PATCH(
@@ -50,7 +51,7 @@ export async function PATCH(
     const driver = await db.driver.update({ where: { id }, data: updateData });
     return NextResponse.json({ driver });
   } catch (error) {
-    console.error('Driver PATCH error:', error);
+    logger.error('Driver PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -85,7 +86,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Driver DELETE error:', error);
+    logger.error('Driver DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

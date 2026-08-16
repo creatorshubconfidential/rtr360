@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 
 export async function PATCH(
@@ -75,7 +76,7 @@ export async function PATCH(
 
     return NextResponse.json({ maintenanceRecord });
   } catch (error) {
-    console.error('Maintenance PATCH error:', error);
+    logger.error('Maintenance PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -110,7 +111,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Maintenance DELETE error:', error);
+    logger.error('Maintenance DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

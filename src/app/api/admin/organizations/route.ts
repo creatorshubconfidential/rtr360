@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 // GET /api/admin/organizations — List all orgs with usage stats
 export async function GET(request: Request) {
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
     if (search) {
       where.OR = [
@@ -100,12 +102,15 @@ export async function GET(request: Request) {
       limit,
       totalPages: Math.ceil(total / limit),
       counts: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: Object.fromEntries(statusCounts.map((s: any) => [s.status, s._count])),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         plans: Object.fromEntries(planCounts.map((p: any) => [p.planName, p._count])),
       },
     });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error('Organizations list error:', error);
+    logger.error('Organizations list error', { error });
     return Response.json({ error: 'Failed to fetch organizations' }, { status: 500 });
   }
 }
@@ -223,8 +228,9 @@ export async function POST(request: Request) {
       data: org,
       message: `Organization "${org.name}" created with admin user ${adminEmail}`,
     }, { status: 201 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error('Organization create error:', error);
+    logger.error('Organization create error', { error });
     return Response.json({ error: 'Failed to create organization' }, { status: 500 });
   }
 }

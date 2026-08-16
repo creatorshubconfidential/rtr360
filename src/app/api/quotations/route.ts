@@ -3,6 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Quotations GET error:', error);
+    logger.error('Quotations GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ quotation }, { status: 201 });
   } catch (error) {
-    console.error('Quotations POST error:', error);
+    logger.error('Quotations POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

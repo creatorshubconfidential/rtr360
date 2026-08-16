@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 // ────────────────────────────────────────────────
 // GET /api/ai/conversations/:id — Load a single conversation
@@ -50,7 +51,7 @@ export async function GET(
       updatedAt: conversation.updatedAt,
     });
   } catch (err) {
-    console.error('AI Conversation get error:', err);
+    logger.error('AI Conversation get error', { err });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -98,7 +99,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('AI Conversation delete error:', err);
+    logger.error('AI Conversation delete error', { err });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

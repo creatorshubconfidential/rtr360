@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any -- Leaflet dynamically imported, types unavailable */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
@@ -65,8 +66,10 @@ export default function LiveTrackingView() {
   const [sseConnected, setSseConnected] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+    const markersRef = useRef<any[]>([]);
   const esRef = useRef<EventSource | null>(null);
+  const positionsRef = useRef(positions);
+  useEffect(() => { positionsRef.current = positions; });
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Fetch vehicles
@@ -233,7 +236,7 @@ export default function LiveTrackingView() {
     es.onerror = () => {
       setSseConnected(false);
       // Fallback to polling if SSE fails
-      if (positions.length > 0) {
+      if (positionsRef.current.length > 0) {
         const fallbackInterval = setInterval(() => {
           setPositions(prev => prev.map(p => ({
             ...p,

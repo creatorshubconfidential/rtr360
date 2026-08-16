@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -48,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ trip });
   } catch (error) {
-    console.error('Trips PATCH error:', error);
+    logger.error('Trips PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -77,7 +78,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await db.trip.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Trips DELETE error:', error);
+    logger.error('Trips DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

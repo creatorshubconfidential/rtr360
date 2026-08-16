@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
@@ -116,8 +117,9 @@ export async function GET(request: Request) {
       organizations: orgStats,
       monthlyGrowth: monthlyOrgGrowth,
     });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error('Platform stats error:', error);
+    logger.error('Platform stats error', { error });
     return Response.json({ error: 'Failed to fetch platform stats' }, { status: 500 });
   }
 }

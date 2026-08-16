@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, VEHICLES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 export async function GET(request: Request) {
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Vehicles GET error:', error);
+    logger.error('Vehicles GET error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -129,11 +130,12 @@ export async function POST(request: Request) {
       vehicleData.organizationId = user.organizationId;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vehicle = await db.vehicle.create({ data: vehicleData as any });
 
     return NextResponse.json({ vehicle }, { status: 201 });
   } catch (error) {
-    console.error('Vehicles POST error:', error);
+    logger.error('Vehicles POST error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -7,6 +7,8 @@ import {
   AlertTriangle, Gauge, MapPin, Fuel, Wrench, Car,
 } from 'lucide-react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- icon map keys are dynamic event type strings */
+
 const EVENT_ICONS: Record<string, any> = {
   speed_violation: Gauge,
   geofence_exit: MapPin,

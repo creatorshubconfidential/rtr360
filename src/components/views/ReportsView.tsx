@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import {
   BarChart,
   Bar,
@@ -226,7 +227,7 @@ export default function ReportsView() {
         setData(null);
       }
     } catch (err) {
-      console.error(err);
+      logger.error("Reports data load failed", { error: err });
       toast.error('Failed to load reports data');
     } finally {
       setLoading(false);

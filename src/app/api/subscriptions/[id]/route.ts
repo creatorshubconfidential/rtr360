@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
 export async function GET(
@@ -38,7 +39,7 @@ export async function GET(
 
     return NextResponse.json({ subscription });
   } catch (error) {
-    console.error('Subscription GET error:', error);
+    logger.error('Subscription GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -107,7 +108,7 @@ export async function PATCH(
 
     return NextResponse.json({ subscription: updated });
   } catch (error) {
-    console.error('Subscription PATCH error:', error);
+    logger.error('Subscription PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

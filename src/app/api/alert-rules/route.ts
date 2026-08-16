@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ALERT_RULES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_TYPES = ['overspeed', 'geofence_enter', 'geofence_exit', 'sos', 'idle', 'fuel_drop', 'tamper', 'power_off', 'low_battery', 'harsh_braking', 'harsh_acceleration'];
 const VALID_CHANNELS = ['in_app', 'email', 'sms', 'whatsapp'];
 
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('AlertRules GET error:', error);
+    logger.error('AlertRules GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ alertRule: parsed }, { status: 201 });
   } catch (error) {
-    console.error('AlertRules POST error:', error);
+    logger.error('AlertRules POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

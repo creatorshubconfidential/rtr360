@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_STATUSES = ['active', 'expired', 'terminated', 'draft'];
 
 export async function GET(request: Request) {
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Contracts GET error:', error);
+    logger.error('Contracts GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ contract }, { status: 201 });
   } catch (error) {
-    console.error('Contracts POST error:', error);
+    logger.error('Contracts POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

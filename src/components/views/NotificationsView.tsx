@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { authFetch } from '@/lib/api';
 type NotificationType = 'alert' | 'ticket' | 'maintenance' | 'invoice' | 'system' | 'info';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TYPE_CONFIG: Record<NotificationType, { icon: any; color: string; bg: string; label: string }> = {
   alert: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Alert' },
   ticket: { icon: Ticket, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Ticket' },
@@ -32,6 +33,7 @@ interface Notification {
   title: string;
   body: string;
   read: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
   createdAt: string;
 }

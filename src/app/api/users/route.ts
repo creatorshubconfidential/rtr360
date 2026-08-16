@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 // Role hierarchy: higher index = more powerful. A user can only assign roles <= their own level.
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('Users GET error:', error);
+    logger.error('Users GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -171,7 +172,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ user: newUser }, { status: 201 });
   } catch (error) {
-    console.error('Users POST error:', error);
+    logger.error('Users POST error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       let interval: ReturnType<typeof setInterval>;
       let tick = 0;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sendEvent = (data: any) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };

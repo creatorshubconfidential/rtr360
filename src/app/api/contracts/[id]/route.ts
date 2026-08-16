@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -40,7 +41,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ contract });
   } catch (error) {
-    console.error('Contracts PATCH error:', error);
+    logger.error('Contracts PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -66,7 +67,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await db.contract.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Contracts DELETE error:', error);
+    logger.error('Contracts DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

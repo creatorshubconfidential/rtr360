@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -35,7 +36,7 @@ export async function GET(
 
     return NextResponse.json({ quotation });
   } catch (error) {
-    console.error('Quotation GET error:', error);
+    logger.error('Quotation GET error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -125,7 +126,7 @@ export async function PATCH(
 
     return NextResponse.json({ quotation: updated });
   } catch (error) {
-    console.error('Quotation PATCH error:', error);
+    logger.error('Quotation PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

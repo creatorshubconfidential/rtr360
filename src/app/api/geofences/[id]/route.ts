@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -41,7 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ geofence });
   } catch (error) {
-    console.error('Geofences PATCH error:', error);
+    logger.error('Geofences PATCH error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -67,7 +68,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await db.geofence.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Geofences DELETE error:', error);
+    logger.error('Geofences DELETE error', { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
