@@ -101,7 +101,6 @@ export async function POST(request: Request) {
         logger.warn('Schema sync failed', { error: sqlMsg });
         schemaSyncResult = `failed: ${sqlMsg.slice(0, 200)}`;
       }
-    }
 
     // Find the existing organization
     const org = await db.organization.findFirst();
