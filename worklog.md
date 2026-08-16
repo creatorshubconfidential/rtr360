@@ -413,3 +413,32 @@ Stage Summary:
 - 253 tests passing (243 + 10 audit), 0 TS errors, 0 ESLint errors, build passes
 - 8 commits pushed to GitHub (8028944 → 39aa6e1)
 - Only P0-3 (Float→Decimal) remains BLOCKED on PostgreSQL migration
+
+---
+Task ID: 15
+Agent: Main Agent
+Task: P0-3 — Fix Money Fields (Float → Decimal)
+
+Work Log:
+- Identified 12 money Float fields across 6 models (Device, MaintenanceRecord, Plan, Invoice, Quotation, QuotationItem)
+- Changed all 12 Float → Decimal in prisma/schema.prisma
+- Added Decimal.prototype.toJSON patch in src/lib/db.ts (serializes Decimal as number for JSON responses)
+- Fixed 5 API routes for server-side Decimal arithmetic:
+  - reports/route.ts: Number() wrapping for invoice.total reduce, maintenance cost
+  - revenue-forecast/route.ts: Number() for inv.total, plan.priceMonthly, _sum aggregates
+  - maintenance-prediction/route.ts: Number() for r.cost in reduce
+  - invoices/[id]/pdf/route.ts: Number() for amount/tax/total in HTML template
+  - quotations/[id]/route.ts: Number() for quotation.taxRate
+- Verified 15 non-money Float fields unchanged (mileage, coordinates, speed, rating, etc.)
+- Updated quotation-items-p1.test.ts (unitPrice Float → Decimal)
+- Created tests/money-decimal-p0.test.ts with 38 tests
+- prisma db push --accept-data-loss: all 12 columns migrated, data preserved
+- Prisma client regenerated
+
+Stage Summary:
+- P0-3 COMPLETE ✅: All financial values now use Decimal (exact precision)
+- SQLite stores as TEXT, PostgreSQL will use @db.Decimal(15,2)
+- Frontend transparent (toJSON patch returns number)
+- 281 total tests passing, 0 TS errors, 0 ESLint errors, build passes
+- Pushed to GitHub: commit f8d3a29
+- 🎉 ALL REMEDIATION ITEMS COMPLETE (P0-1 through P2-12)
