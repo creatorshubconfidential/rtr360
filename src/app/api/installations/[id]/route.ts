@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['in_progress', 'cancelled'],
   in_progress: ['testing', 'failed', 'cancelled'],
@@ -17,6 +18,10 @@ export async function PATCH(
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: INSTALLATIONS_MANAGE
+    const permErr = requirePermission(user, INSTALLATIONS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const body = await request.json();

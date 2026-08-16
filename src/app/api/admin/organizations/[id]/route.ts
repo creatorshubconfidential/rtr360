@@ -1,26 +1,21 @@
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 // GET /api/admin/organizations/[id] — Full org detail
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await context.params;
 
@@ -107,20 +102,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 // PATCH /api/admin/organizations/[id] — Update org info
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await context.params;
     const body = await request.json();
@@ -158,20 +147,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 // DELETE /api/admin/organizations/[id] — Soft delete (set status inactive)
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await context.params;
     const org = await db.organization.findUnique({ where: { id } });

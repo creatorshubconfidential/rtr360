@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, AI_USE } from '@/lib/permissions';
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -518,6 +519,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: AI_USE
+    const permErr = requirePermission(user, AI_USE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { message, conversationId } = body as {

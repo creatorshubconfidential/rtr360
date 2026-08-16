@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['active', 'expired', 'terminated', 'draft'];
 
 export async function GET(request: Request) {
@@ -47,6 +48,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: CONTRACTS_MANAGE
+    const permErr = requirePermission(user, CONTRACTS_MANAGE);
+    if (permErr) return permErr;
 
     if (!user.organizationId && user.role !== 'super_admin') {
       return NextResponse.json({ error: 'Organization required' }, { status: 403 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -68,6 +69,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: TICKETS_MANAGE
+    const permErr = requirePermission(user, TICKETS_MANAGE);
+    if (permErr) return permErr;
 
     if (!user.organizationId && user.role !== 'super_admin') {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 const VALID_TYPES = [
   'oil_change', 'tire_rotation', 'brake_service', 'engine_service',
@@ -73,6 +74,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: MAINTENANCE_MANAGE
+    const permErr = requirePermission(user, MAINTENANCE_MANAGE);
+    if (permErr) return permErr;
 
     if (!user.organizationId && user.role !== 'super_admin') {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
+import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 // Role hierarchy: higher index = more powerful. A user can only assign roles <= their own level.
@@ -75,9 +76,9 @@ export async function POST(request: Request) {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
 
-    if (user.role !== 'super_admin' && user.role !== 'platform_admin' && user.role !== 'org_owner') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
+    // RBAC: USERS_MANAGE
+    const permErr = requirePermission(user, USERS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { name, email, password, phone, role, organizationId, status } = body;

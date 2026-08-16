@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
 export async function GET(
@@ -49,6 +50,10 @@ export async function PATCH(
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: INVOICES_MANAGE
+    const permErr = requirePermission(user, INVOICES_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const body = await request.json();

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, ACTIVITIES_MANAGE } from '@/lib/permissions';
 import { getTenantFilter } from '@/lib/tenant';
 
 const VALID_TYPES = ['call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'visit'];
@@ -49,6 +50,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: ACTIVITIES_MANAGE
+    const permErr = requirePermission(user, ACTIVITIES_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { type, title, description, leadId, opportunityId, dueDate, completed } = body;

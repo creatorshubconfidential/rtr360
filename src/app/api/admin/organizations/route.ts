@@ -1,23 +1,17 @@
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession, hashPassword, createSession, validatePasswordStrength } from '@/lib/auth';
-import { randomBytes } from 'crypto';
+import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
+import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 
 // GET /api/admin/organizations — List all orgs with usage stats
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden. Super admin access required.' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
@@ -116,20 +110,14 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/admin/organizations — Create new org + admin user (onboarding)
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden. Super admin access required.' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const {

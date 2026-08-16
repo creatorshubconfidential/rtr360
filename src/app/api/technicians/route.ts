@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function GET(request: Request) {
@@ -69,6 +70,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: TECHNICIANS_MANAGE
+    const permErr = requirePermission(user, TECHNICIANS_MANAGE);
+    if (permErr) return permErr;
 
     if (!user.organizationId && user.role !== 'super_admin') {
       return NextResponse.json({ error: 'You must belong to an organization' }, { status: 403 });

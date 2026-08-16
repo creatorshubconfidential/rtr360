@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, VEHICLES_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 export async function GET(request: Request) {
@@ -77,6 +78,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: VEHICLES_MANAGE
+    const permErr = requirePermission(user, VEHICLES_MANAGE);
+    if (permErr) return permErr;
 
     // Only org users and super_admin can create vehicles
     if (!user.organizationId && user.role !== 'super_admin') {

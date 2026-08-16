@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 
 export async function PATCH(
@@ -11,6 +12,10 @@ export async function PATCH(
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: DEVICES_MANAGE
+    const permErr = requirePermission(user, DEVICES_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const body = await request.json();
@@ -55,6 +60,10 @@ export async function DELETE(
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: DEVICES_MANAGE
+    const permErr = requirePermission(user, DEVICES_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const existing = await db.device.findUnique({ where: { id } });

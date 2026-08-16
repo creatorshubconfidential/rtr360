@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = [
   'new',
   'contacted',
@@ -64,6 +65,10 @@ export async function PATCH(
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: LEADS_MANAGE
+    const permErr = requirePermission(user, LEADS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
 

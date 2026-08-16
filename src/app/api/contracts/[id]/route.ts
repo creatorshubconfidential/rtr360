@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: CONTRACTS_MANAGE
+    const permErr = requirePermission(user, CONTRACTS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const existing = await db.contract.findUnique({ where: { id } });
@@ -41,6 +46,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: CONTRACTS_MANAGE
+    const permErr = requirePermission(user, CONTRACTS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const existing = await db.contract.findUnique({ where: { id } });

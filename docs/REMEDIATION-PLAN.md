@@ -52,14 +52,16 @@
 
 ## P1 — HIGH (Fix before production)
 
-### P1-1: Implement RBAC Permission System
+### P1-1: Implement RBAC Permission System ✅ DONE
+- **Files:** `src/lib/permissions.ts` (already existed), 33 route files modified
 - **Action:**
-  1. Create `Role` and `Permission` models in Prisma
-  2. Create `src/lib/permissions.ts` with `requirePermission(user, 'vehicle.create')`
-  3. Apply to all 40+ write routes
-  4. Add role hierarchy (super_admin > org_owner > fleet_manager > ... > viewer)
-- **Tests:** 10 mandatory security tests from spec (cross-tenant, role escalation, etc.)
-- **Acceptance:** Viewer cannot create vehicles. Fleet manager cannot modify billing.
+  1. ✅ Permission system already existed: 22 constants, 8-role map, `requirePermission()`
+  2. ✅ Applied `requirePermission()` to all 42 unprotected write methods across 28 standard route files
+  3. ✅ Normalized 5 admin routes from manual `verifySession()` to `getAuthUser()` + `ADMIN_MANAGE`
+  4. ✅ Total: 49 `requirePermission()` calls across 39 route files
+  5. ✅ Cleaned up unused imports, replaced `NextRequest` → `Request` in admin routes
+- **Tests:** 101 tests in `tests/security-p1-rbac.test.ts` — all 8 roles tested, cross-resource isolation, hierarchy, coverage. ALL PASS.
+- **Acceptance:** Viewer cannot create vehicles (403). Fleet manager cannot modify billing (403). 183/183 tests pass. ✅
 
 ### P1-2: Fix All Tenant Isolation Gaps
 - **Files:** Revenue forecast, maintenance POST, installations POST, AI conversations, settings GET

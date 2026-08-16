@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, DRIVERS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
 const LICENSE_TYPES = ['Light Vehicle', 'Heavy Vehicle', 'Motorcycle', 'Heavy Bus', 'Light Bus', 'Trailer', 'Forklift'];
 
@@ -70,6 +71,10 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: DRIVERS_MANAGE
+    const permErr = requirePermission(user, DRIVERS_MANAGE);
+    if (permErr) return permErr;
 
     if (!user.organizationId && user.role !== 'super_admin') {
       return NextResponse.json({ error: 'You must belong to an organization' }, { status: 403 });

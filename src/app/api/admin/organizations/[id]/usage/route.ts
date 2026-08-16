@@ -1,26 +1,21 @@
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
+import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 // GET /api/admin/organizations/[id]/usage — Per-org usage analytics
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    if (authHeader) token = authHeader.replace('Bearer ', '');
-    if (!token && cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)rtr_session=([^;]*)/);
-      if (match) token = decodeURIComponent(match[1]);
-    }
-    const session = await verifySession(token || '');
-    if (!session || session.role !== 'super_admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { user, error } = await getAuthUser(request);
+    if (error) return error;
+
+    // RBAC: ADMIN_MANAGE
+    const permErr = requirePermission(user, ADMIN_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await context.params;
     const org = await db.organization.findUnique({

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
+import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -21,6 +22,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: USERS_MANAGE
+    const permErr = requirePermission(user, USERS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const existing = await db.user.findUnique({ where: { id } });
@@ -102,6 +107,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
+
+    // RBAC: USERS_MANAGE
+    const permErr = requirePermission(user, USERS_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     if (id === user.id) {

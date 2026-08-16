@@ -162,3 +162,40 @@ Stage Summary:
 - STEP 2 (P0 Database): 73 indexes added, schema valid, DB synced ✅ (P0-3 blocked on PG migration)
 - STEP 3 (P0 Git): Caddyfile + package-lock.json untracked, .env.example created ✅
 - Next: P1-1 RBAC, P1-2 tenant isolation gaps, P1-5 auth migration
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: STEP 4 (P1-1) — Implement RBAC Permission System across all 57 API routes
+
+Work Log:
+- Audited all 57 API route files for current auth patterns
+- Found `src/lib/permissions.ts` already existed with 22 permission constants + `requirePermission()` + role-permission map for 8 roles
+- Only 7/57 routes used `requirePermission()` (trips POST, leads POST, contacts POST, quotations POST, invoices POST, subscriptions POST)
+- Created `scripts/apply-rbac.py` to programmatically inject `requirePermission()` into 28 standard route files
+- Added RBAC to 42 write method-level gaps across 28 files (vehicles, drivers, devices, trips, geofences, maintenance, installations, technicians, leads, contracts, activities, invoices, subscriptions, tickets, alert-rules, users, settings, AI)
+- Normalized 5 admin routes (organizations CRUD, branding, usage, platform-stats) from manual `verifySession()` + hardcoded `super_admin` checks to `getAuthUser()` + `requirePermission(user, ADMIN_MANAGE)`
+- Replaced `NextRequest` with `Request` in all admin routes
+- Cleaned up unused imports (`verifySession`, `createSession`, `randomBytes`)
+- Total: 49 `requirePermission()` calls across 39 route files
+- Remaining unprotected routes: auth (login/logout/me), read-only routes (GET), health check, tenant-isolated reads — all acceptable
+- Created `tests/security-p1-rbac.test.ts` with 101 RBAC tests covering:
+  - Viewer zero write permissions (21 tests)
+  - Dispatcher minimal permissions (6 tests)
+  - Fleet manager fleet-only scope (6 tests)
+  - Sales manager CRM-only scope (6 tests)
+  - Operations manager fleet+operations scope (4 tests)
+  - Org owner full org scope (4 tests)
+  - Platform admin full platform access (2 tests)
+  - Super admin wildcard access (21 tests)
+  - Unknown roles (2 tests)
+  - Cross-resource permission isolation (6 tests)
+  - Role hierarchy monotonicity (2 tests)
+  - Permission constant coverage (21 tests)
+- All 183 tests pass (35 P0 + 47 duplicate P0 + 101 P1 RBAC)
+
+Stage Summary:
+- P1-1 RBAC COMPLETE ✅: 49 requirePermission() calls across 39 files, 101 tests
+- Admin routes normalized: eliminated hand-rolled auth in favor of getAuthUser + RBAC
+- Viewer role now truly read-only (was effectively admin before)
+- Next: P1-2/3/4/6 Tenant isolation fixes, P1-5 Auth migration

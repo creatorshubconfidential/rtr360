@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
 
-    if (user.role !== 'super_admin' && user.role !== 'platform_admin') {
-      return NextResponse.json(
-        { error: 'Only super_admin or platform_admin can access settings' },
-        { status: 403 }
-      );
-    }
+    // RBAC: SETTINGS_MANAGE
+    const permErr = requirePermission(user, SETTINGS_MANAGE);
+    if (permErr) return permErr;
 
     const settings = await db.setting.findMany({
       orderBy: { key: 'asc' },
@@ -35,12 +33,9 @@ export async function PUT(request: Request) {
     const { user, error } = await getAuthUser(request);
     if (error) return error;
 
-    if (user.role !== 'super_admin' && user.role !== 'platform_admin') {
-      return NextResponse.json(
-        { error: 'Only super_admin or platform_admin can update settings' },
-        { status: 403 }
-      );
-    }
+    // RBAC: SETTINGS_MANAGE
+    const permErr = requirePermission(user, SETTINGS_MANAGE);
+    if (permErr) return permErr;
 
     const body = await request.json();
     const { key, value, type } = body;
