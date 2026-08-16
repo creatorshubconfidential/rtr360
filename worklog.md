@@ -442,3 +442,33 @@ Stage Summary:
 - 281 total tests passing, 0 TS errors, 0 ESLint errors, build passes
 - Pushed to GitHub: commit f8d3a29
 - 🎉 ALL REMEDIATION ITEMS COMPLETE (P0-1 through P2-12)
+
+---
+Task ID: 16
+Agent: Main Agent
+Task: Fix Vercel login 'Internal server error' — SQLite to PostgreSQL migration
+
+Work Log:
+- Diagnosed root cause: Prisma schema had provider=sqlite, but Vercel uses Supabase PostgreSQL
+  - On Vercel, db.ts fell back to /tmp/rtr360.db (ephemeral) since no DATABASE_URL was set
+  - SQLite on /tmp is wiped per-invocation, npx prisma db push fails in serverless
+  - Result: tables don't exist → db.user.findUnique() throws → caught as 500
+- Changed prisma/schema.prisma: provider = "postgresql"
+- Rewrote src/lib/db.ts:
+  - Removed SQLite-specific code (ensureSchema, execSync, file paths, fs, path imports)
+  - Added resolveDatabaseUrl() with priority: DATABASE_URL → POSTGRES_PRISMA_URL → POSTGRES_URL_NON_POOLING → POSTGRES_URL
+  - POSTGRES_PRISMA_URL is auto-set by Supabase Vercel integration
+- Added postinstall script (prisma generate) for Vercel builds
+- Updated build script to auto-run prisma db push before next build (resolves POSTGRES_PRISMA_URL)
+- Created /api/setup/seed endpoint (GET/POST) for first-time database initialization
+  - Creates default org, free plan, and admin user (admin@rtr.ae / admin123)
+  - Idempotent: skips if users already exist
+- Updated .env.example with PostgreSQL connection string format
+- Verified: 0 TS errors, 0 ESLint errors, prisma generate succeeds
+
+Stage Summary:
+- Root cause FIXED: App now uses PostgreSQL (Supabase) instead of SQLite on Vercel
+- Auto schema push during Vercel build (tables created automatically)
+- Seed endpoint at /api/setup/seed for initial admin user
+- 2 commits pushed: 9fd89f8 (schema+db.ts), 899a263 (build+seed)
+- User needs to: wait for Vercel deploy → visit /api/setup/seed → login with admin@rtr.ae/admin123
