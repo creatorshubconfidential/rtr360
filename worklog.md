@@ -199,3 +199,36 @@ Stage Summary:
 - Admin routes normalized: eliminated hand-rolled auth in favor of getAuthUser + RBAC
 - Viewer role now truly read-only (was effectively admin before)
 - Next: P1-2/3/4/6 Tenant isolation fixes, P1-5 Auth migration
+
+---
+Task ID: 8
+Agent: Main Agent
+Task: STEP 6 (P1-5) — Migrate all auth from localStorage+Bearer to HttpOnly cookie-only
+
+Work Log:
+- Audited 24 frontend files using localStorage for auth tokens
+- Updated `src/lib/api.ts` authFetch() to remove localStorage + Authorization header (cookies sent automatically)
+- Updated `src/lib/auth.ts` extractToken() to check cookie FIRST, Authorization header second (fallback for non-browser API consumers)
+- Removed token from login API response body (`src/app/api/auth/login/route.ts`) — token ONLY in HttpOnly cookie
+- Simplified logout API (`src/app/api/auth/logout/route.ts`) to use extractToken(), removed body parsing
+- Removed all localStorage set/get/removeItem calls from `src/app/page.tsx` (login, session check, logout)
+- Migrated 20 view components: removed local authFetch definition, imported from `@/lib/api`
+- Fixed AIChatPanel.tsx and RealtimeEventToasts.tsx: removed localStorage auth
+- Fixed LiveTrackingView.tsx: EventSource no longer passes token in URL query param
+- Created `scripts/migrate-auth-cookies.py` for bulk migration
+- Created `tests/auth-cookie-only.test.ts` with 15 tests:
+  - extractToken cookie-first priority (8 tests)
+  - Zero localStorage auth calls in source (3 tests)
+  - Login API does not leak token in body (1 test)
+  - Logout API uses cookie-based extraction (1 test)
+  - LiveTrackingView EventSource uses cookies (1 test)
+  - authFetch does not send Authorization header (1 test)
+
+Stage Summary:
+- P1-5 Auth Migration COMPLETE ✅: 24 files migrated, 0 localStorage auth calls remain
+- Login response no longer exposes session token (XSS-safe by design)
+- extractToken() cookie-first priority ensures browser clients always use HttpOnly cookies
+- Authorization header fallback preserved for non-browser API consumers
+- All 198 tests pass (35 P0 + 148 RBAC + 15 cookie-only auth)
+- Build passes ✅
+- Pushed to GitHub: commit 93d99af
