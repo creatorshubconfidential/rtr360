@@ -591,9 +591,9 @@ function SidebarNav({
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left">{item.label}</span>
-                    {item.badge && (
+                    {(item as any).badge && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-700 text-slate-400 border-0">
-                        {item.badge}
+                        {(item as any).badge}
                       </Badge>
                     )}
                   </button>
@@ -712,9 +712,6 @@ function DashboardView() {
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
-                      {kpi.change}
-                    </span>
                   </div>
                   <div className="mt-3">
                     <div className="text-2xl font-bold text-slate-900">{kpi.value}</div>
@@ -1860,7 +1857,7 @@ function AdminDashboard({ user, onLogout }: { user: UserSession; onLogout: () =>
       <AIChatPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
       {/* Phase 8: PWA & Real-Time */}
-      <MobileBottomNav currentView={currentView} onNavigate={setCurrentView} notifCount={notifCount} />
+      <MobileBottomNav currentView={currentView} onNavigate={(v) => setCurrentView(v as ViewType)} notifCount={notifCount} />
       <PWAInstallPrompt />
       <ConnectionStatus />
       <RealtimeEventToasts enabled={currentView === 'live-tracking' || currentView === 'dashboard'} />

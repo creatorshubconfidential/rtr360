@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
@@ -8,7 +8,7 @@ const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: TICKETS_MANAGE
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     const ticketNumber = `TKT-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
 
     // Determine resolvedAt based on status
-    let resolvedAt = null;
+    let resolvedAt: Date | null = null;
     if (status === 'resolved' || status === 'closed') {
       resolvedAt = new Date();
     }

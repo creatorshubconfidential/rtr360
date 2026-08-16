@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, VEHICLES_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: VEHICLES_MANAGE

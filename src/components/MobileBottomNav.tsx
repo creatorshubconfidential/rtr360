@@ -10,8 +10,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 type ViewType = string;
 
 interface Props {
-  currentView: ViewType;
-  onNavigate: (view: ViewType) => void;
+  currentView: string;
+  onNavigate: (view: string) => void;
   notifCount?: number;
 }
 

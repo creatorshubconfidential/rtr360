@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
@@ -10,7 +10,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: MAINTENANCE_MANAGE
@@ -82,7 +82,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: MAINTENANCE_MANAGE

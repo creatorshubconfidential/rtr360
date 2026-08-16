@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
@@ -15,7 +15,7 @@ function generateQuotationNumber(): string {
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: Only sales roles and above can create quotations

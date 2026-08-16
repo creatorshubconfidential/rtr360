@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
@@ -12,7 +12,7 @@ const VALID_TRIGGER_TYPES = ['mileage', 'date', 'manual', 'alert'];
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: MAINTENANCE_MANAGE

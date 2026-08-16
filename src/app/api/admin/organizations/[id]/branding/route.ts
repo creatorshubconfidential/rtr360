@@ -1,6 +1,6 @@
-import { Request } from 'next/server';
+
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 interface RouteContext {
@@ -10,7 +10,7 @@ interface RouteContext {
 // GET /api/admin/organizations/[id]/branding — Get white-label branding
 export async function GET(request: Request, context: RouteContext) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: ADMIN_MANAGE
@@ -49,7 +49,7 @@ export async function GET(request: Request, context: RouteContext) {
 // PUT /api/admin/organizations/[id]/branding — Update white-label branding
 export async function PUT(request: Request, context: RouteContext) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: ADMIN_MANAGE

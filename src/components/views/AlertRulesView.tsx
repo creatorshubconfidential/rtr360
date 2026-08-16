@@ -75,7 +75,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 
 // ─── Animation Variants ──────────────────────────────────────────────
 
-const cardVariants = {
+const cardVariants: import('framer-motion').Variants = {
   hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1, y: 0,

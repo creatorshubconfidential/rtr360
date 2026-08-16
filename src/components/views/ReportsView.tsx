@@ -219,7 +219,12 @@ export default function ReportsView() {
     setLoading(true);
     try {
       const result = await authFetch(`/api/reports?period=${period}`);
-      setData(result);
+      if (result.ok) {
+        const json = await result.json();
+        setData(json);
+      } else {
+        setData(null);
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to load reports data');

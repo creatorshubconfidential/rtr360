@@ -1,12 +1,12 @@
-import { Request } from 'next/server';
+
 import { db } from '@/lib/db';
-import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
+import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 
 // GET /api/admin/organizations — List all orgs with usage stats
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: ADMIN_MANAGE
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
 // POST /api/admin/organizations — Create new org + admin user (onboarding)
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: ADMIN_MANAGE

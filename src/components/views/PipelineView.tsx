@@ -235,7 +235,7 @@ export default function PipelineView() {
 
   const updateQuotationItem = (idx: number, field: keyof QuotationItem, value: string | number) => {
     const updated = [...quotationItems];
-    (updated[idx] as Record<string, unknown>)[field] = value;
+    (updated[idx] as unknown as Record<string, unknown>)[field] = value;
     setQuotationItems(updated);
   };
 

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId };
+    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
 
     // 1. Vehicle status breakdown
     const vehicles = await db.vehicle.findMany({
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         score,
         grade,
         riskLevel,
-        driver: v.driver ? { name: v.driver.name, score: v.driver.score } : null,
+        driver: v.driver ? { name: v.driver.name, score: v.driver.score, licenseExpiry: v.driver.licenseExpiry } : null,
         device: v.device ? { status: v.device.status, lastPing: v.device.lastPingAt } : null,
         upcomingMaintenance: upcomingMaint.length,
         totalTrips: v._count.trips,

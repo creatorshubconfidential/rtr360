@@ -36,6 +36,7 @@ import {
   Crown,
   Database,
   UserCog,
+  UserPlus,
   X,
   ExternalLink,
 } from 'lucide-react';
@@ -98,6 +99,8 @@ interface OrgSummary {
   primaryColor: string | null;
   customDomain: string | null;
   domainVerified: boolean;
+  accentColor: string | null;
+  brandedFooter: string | null;
   createdAt: string;
   _count: {
     users: number;
@@ -726,7 +729,7 @@ function OrganizationsTable() {
                 <MiniStat icon={Truck} label="Vehicles" value={detailOrg._count.vehicles} />
                 <MiniStat icon={Users} label="Drivers" value={detailOrg._count.drivers} />
                 <MiniStat icon={Cpu} label="Devices" value={detailOrg._count.devices} />
-                <MiniStat icon={Wrench} label="Maint." value={detailOrg._count.maintenanceRecords} />
+                <MiniStat icon={Wrench} label="Maint." value={0} />
                 <MiniStat icon={UserPlus} label="Leads" value={detailOrg._count.leads} />
                 <MiniStat icon={FileText} label="Invoices" value={detailOrg._count.invoices} />
                 <MiniStat icon={AlertTriangle} label="Tickets" value={detailOrg._count.tickets} />

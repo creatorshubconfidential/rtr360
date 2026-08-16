@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,10 +17,10 @@ const UAE_LOCATIONS = [
 ];
 
 export async function GET(request: Request) {
-  const { user, error } = await getAuthUser(request);
+  const { user, error } = await requireAuth(request);
   if (error) return error;
 
-  const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId };
+  const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

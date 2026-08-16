@@ -345,8 +345,8 @@ export default function MaintenanceView() {
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => exportCSV({ data: maintenanceRecords, filename: 'maintenance', columns: MAINTENANCE_COLUMNS })}
-            disabled={maintenanceRecords.length === 0}
+            onClick={() => exportCSV({ data: records, filename: 'maintenance', columns: MAINTENANCE_COLUMNS })}
+            disabled={records.length === 0}
           >
             <Download className="w-4 h-4" /> Export CSV
           </Button>

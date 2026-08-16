@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser, hashPassword, validatePasswordStrength } from '@/lib/auth';
+import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth';
 
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
@@ -22,7 +22,7 @@ const NON_PLATFORM_ROLES = ['viewer', 'dispatcher', 'fleet_manager', 'sales_mana
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: USERS_MANAGE

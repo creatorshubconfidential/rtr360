@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       default: startDate = new Date(2024, 0, 1);
     }
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId };
+    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
     const orgFilterStrict = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
 
     // 1. Revenue metrics
@@ -122,13 +122,13 @@ export async function GET(request: Request) {
       summary: {
         totalRevenue, pendingRevenue, overdueRevenue,
         totalVehicles, activeVehicles,
-        totalMaintenance, totalMaintenanceCost: maintenanceCost._sum.cost || 0,
+        totalMaintenance, totalMaintenanceCost: maintenanceCost._sum?.cost ?? 0,
         totalLeads, conversionRate,
-        totalTrips, totalDistance: tripAgg._sum.distance || 0,
+        totalTrips, totalDistance: tripAgg._sum?.distance ?? 0,
       },
       monthlyRevenue,
       monthlyMaintenance,
-      vehiclesByType: vehiclesByType.map(v => ({ type: v.vehicleType || 'Unknown', count: v._count.vehicleType })),
+      vehiclesByType: vehiclesByType.map(v => ({ type: v.vehicleType || 'Unknown', count: v._count?.vehicleType ?? 0 })),
       maintenanceByStatus: maintenanceByStatus.map(m => ({ status: m.status, count: m._count.status })),
       maintenanceByType: maintenanceByType.map(m => ({ type: m.type, count: m._count.type })),
       leadFunnel: leadFunnel.map(l => ({ status: l.status, count: l._count.status })),

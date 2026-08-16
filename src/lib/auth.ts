@@ -153,3 +153,21 @@ export async function getAuthUser(
 
   return { user, error: null };
 }
+
+/**
+ * Type-safe auth helper. Returns an authenticated UserSession (never null).
+ * If auth fails, returns an error Response that the caller must return immediately.
+ *
+ * Usage:
+ *   const auth = requireAuth(request);
+ *   if (auth.error) return auth.error;
+ *   // auth.user is now UserSession (not null)
+ *   console.log(auth.user.role);
+ */
+export async function requireAuth(
+  request: Request
+): Promise<{ user: UserSession; error: Response | null }> {
+  const result = await getAuthUser(request);
+  if (result.error) return { user: result.user as UserSession, error: result.error };
+  return { user: result.user!, error: null };
+}

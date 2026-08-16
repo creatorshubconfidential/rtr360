@@ -1,6 +1,6 @@
-import { Request } from 'next/server';
+
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, ADMIN_MANAGE } from '@/lib/permissions';
 interface RouteContext {
@@ -10,7 +10,7 @@ interface RouteContext {
 // GET /api/admin/organizations/[id]/usage — Per-org usage analytics
 export async function GET(request: Request, context: RouteContext) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: ADMIN_MANAGE

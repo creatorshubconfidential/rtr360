@@ -31,9 +31,7 @@ export default function RealtimeEventToasts({ enabled }: { enabled: boolean }) {
 
   const connect = useCallback(() => {
     if (!enabled || typeof window === 'undefined') return;
-if (!token) return;
-
-    const es = new EventSource(`/api/realtime/events?token=${token}`);
+    const es = new EventSource('/api/realtime/events');
     esRef.current = es;
 
     es.onmessage = (event) => {
@@ -53,7 +51,7 @@ if (!token) return;
     };
 
     es.onerror = () => {
- es.close();
+      es.close();
       // Reconnect after 10s
       setTimeout(() => {
         if (esRef.current === es) connect();

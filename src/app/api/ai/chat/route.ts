@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 import { requirePermission, AI_USE } from '@/lib/permissions';
 interface ChatMessage {
@@ -12,7 +12,7 @@ interface ChatMessage {
 // Fleet data context builder
 // ────────────────────────────────────────────────
 async function buildFleetContext(organizationId: string | null) {
-  const orgFilter: Record<string, unknown> = organizationId
+  const orgFilter: { organizationId?: string } = organizationId
     ? { organizationId }
     : {};
 
@@ -83,8 +83,8 @@ async function buildFleetContext(organizationId: string | null) {
     }),
   ]);
 
-  const totalDistanceToday = todayTripsWithDistance._sum.distance ?? 0;
-  const totalDurationToday = todayTripsWithDistance._sum.duration ?? 0;
+  const totalDistanceToday = todayTripsWithDistance._sum?.distance ?? 0;
+  const totalDurationToday = todayTripsWithDistance._sum?.duration ?? 0;
 
   // Total mileage across all vehicles
   const totalMileageResult = await db.vehicle.aggregate({
@@ -517,7 +517,7 @@ ${ctx.openAlertsCount > 5 ? '- **Priority**: You have a high number of open aler
 // ────────────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     // RBAC: AI_USE
@@ -611,7 +611,7 @@ export async function POST(request: Request) {
 // ────────────────────────────────────────────────
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
     const conversations = await db.aIConversation.findMany({

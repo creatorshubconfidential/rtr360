@@ -210,7 +210,7 @@ export default function LiveTrackingView() {
         } else if (data.type === 'update') {
           // Incremental position updates from server
           setPositions(prev => {
-            const updateMap = new Map(data.vehicles.map((v: any) => [v.id, v]));
+            const updateMap = new Map<string, any>(data.vehicles.map((v: any) => [v.id, v]));
             return prev.map(p => {
               const u = updateMap.get(p.id);
               if (!u) return p;

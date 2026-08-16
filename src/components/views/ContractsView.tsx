@@ -385,6 +385,11 @@ export default function ContractsView() {
         ) : (
           contracts.map((contract, idx) => {
             const days = getDaysRemaining(contract.endDate, contract.status);
+            const daysColor = days !== null && days <= 7 && days >= 0
+              ? 'text-red-600'
+              : days !== null && days <= 30
+                ? 'text-amber-600'
+                : 'text-slate-600';
             return (
               <motion.div
                 key={contract.id}

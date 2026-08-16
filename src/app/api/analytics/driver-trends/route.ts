@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId };
+    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
 
     // 1. Driver full data with trip aggregation
     const drivers = await db.driver.findMany({
@@ -22,10 +22,10 @@ export async function GET(request: Request) {
     // 2. Trip-level driver analytics
     const driverTrips = await db.trip.groupBy({
       by: ['driverName'],
-      where: { vehicle: orgFilter },
+      where: user.role === 'super_admin' ? {} : { organizationId: user.organizationId! },
       _count: true,
       _avg: { distance: true, duration: true, maxSpeed: true, avgSpeed: true, idleTime: true, harshBrakes: true, harshAccel: true, overspeedCount: true },
-      _sum: { distance: true, duration: true, harshBrakes: true, harshAccel: true, overspeedCount: true },
+      _sum: { distance: true, duration: true, idleTime: true, harshBrakes: true, harshAccel: true, overspeedCount: true },
     });
 
     const tripMap = new Map(driverTrips.map(d => [d.driverName || 'Unknown', d]));
@@ -33,14 +33,14 @@ export async function GET(request: Request) {
     // 3. Build driver profiles
     const driverProfiles = drivers.map(d => {
       const trips = tripMap.get(d.name);
-      const totalTrips = trips?._count || 0;
-      const totalDistance = trips?._sum.distance || 0;
-      const avgSpeed = trips?._avg.avgSpeed || 0;
-      const avgHarshBrakes = trips?._avg.harshBrakes || 0;
-      const avgHarshAccel = trips?._avg.harshAccel || 0;
-      const avgOverspeed = trips?._avg.overspeedCount || 0;
-      const totalIdleMinutes = trips?._sum.idleTime || 0;
-      const avgDistance = trips?._avg.distance || 0;
+      const totalTrips = trips?._count ?? 0;
+      const totalDistance = trips?._sum?.distance ?? 0;
+      const avgSpeed = trips?._avg?.avgSpeed ?? 0;
+      const avgHarshBrakes = trips?._avg?.harshBrakes ?? 0;
+      const avgHarshAccel = trips?._avg?.harshAccel ?? 0;
+      const avgOverspeed = trips?._avg?.overspeedCount ?? 0;
+      const totalIdleMinutes = trips?._sum?.idleTime ?? 0;
+      const avgDistance = trips?._avg?.distance ?? 0;
 
       // Risk categories
       let riskLevel = 'low';
@@ -70,10 +70,10 @@ export async function GET(request: Request) {
         avgHarshBrakes: Math.round(avgHarshBrakes * 100) / 100,
         avgHarshAccel: Math.round(avgHarshAccel * 100) / 100,
         avgOverspeed: Math.round(avgOverspeed * 100) / 100,
-        totalHarshBrakes: trips?._sum.harshBrakes || 0,
-        totalHarshAccel: trips?._sum.harshAccel || 0,
-        totalOverspeed: trips?._sum.overspeedCount || 0,
-        idleRatio: totalTrips > 0 ? Math.round((totalIdleMinutes / (trips?._sum.duration || 1)) * 100) : 0,
+        totalHarshBrakes: trips?._sum?.harshBrakes ?? 0,
+        totalHarshAccel: trips?._sum?.harshAccel ?? 0,
+        totalOverspeed: trips?._sum?.overspeedCount ?? 0,
+        idleRatio: totalTrips > 0 ? Math.round((totalIdleMinutes / (trips?._sum?.duration ?? 1)) * 100) : 0,
         riskLevel,
         trend,
         vehicleCount: d._count.vehicles,

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUser } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const { user, error } = await getAuthUser(request);
+    const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId };
+    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
 
     // 1. All vehicles with maintenance history
     const vehicles = await db.vehicle.findMany({
@@ -48,9 +48,9 @@ export async function GET(request: Request) {
           .map(r => new Date(r.completedDate!).getTime())
           .sort((a, b) => b - a);
         if (dates.length >= 2) {
-          const gaps = [];
+          const gaps: number[] = [];
           for (let i = 0; i < dates.length - 1; i++) gaps.push((dates[i] - dates[i + 1]) / 86400000);
-          avgFrequencyDays = gaps.reduce((s, g) => s + g, 0) / gaps.length;
+          avgFrequencyDays = gaps.reduce((s: number, g: number) => s + g, 0) / gaps.length;
         }
       }
 
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
     const allTypes = await db.maintenanceRecord.groupBy({
       by: ['type'],
       where: orgFilter,
-      _count: { type: true },
+      _count: true,
     });
 
     return NextResponse.json({
@@ -167,7 +167,7 @@ export async function GET(request: Request) {
       },
       predictions,
       costTrend,
-      typeDistribution: allTypes.map(t => ({ type: t.type, count: t._count.type })),
+      typeDistribution: allTypes.map(t => ({ type: t.type, count: t._count })),
     });
   } catch (err) {
     console.error('Maintenance prediction error:', err);
