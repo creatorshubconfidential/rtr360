@@ -105,8 +105,8 @@ export async function GET(request: Request) {
 
     // 6. Trip metrics
     const [totalTrips, tripAgg] = await Promise.all([
-      db.trip.count({ where: { vehicle: orgFilter, startTime: { gte: startDate } } }),
-      db.trip.aggregate({ where: { vehicle: orgFilter, startTime: { gte: startDate } }, _sum: { distance: true, duration: true } }),
+      db.trip.count({ where: { ...orgFilter, startTime: { gte: startDate } } }),
+      db.trip.aggregate({ where: { ...orgFilter, startTime: { gte: startDate } }, _sum: { distance: true, duration: true } }),
     ]);
 
     // 7. Support metrics

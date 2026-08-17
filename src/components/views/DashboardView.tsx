@@ -19,8 +19,8 @@ function DashboardPredictiveInsights() {
 
   useEffect(() => {
     Promise.all([
-      authFetch('/api/analytics/fleet-health').catch(() => null),
-      authFetch('/api/analytics/maintenance-prediction').catch(() => null),
+      authFetch('/api/analytics/fleet-health').then(r => r?.ok ? r.json() : null).catch(() => null),
+      authFetch('/api/analytics/maintenance-prediction').then(r => r?.ok ? r.json() : null).catch(() => null),
     ]).then(([fh, mp]) => {
       if (fh) setFleetData(fh);
       if (mp) setMaintData(mp);
