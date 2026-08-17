@@ -129,7 +129,7 @@ export async function POST(request: Request) {
     }
 
     logger.info('Seeding demo data for organization', { orgId: org.id, orgName: org.name });
-    const results: Record<string, number> = {};
+    const results: Record<string, unknown> = {};
 
     // ========== 1. ADDITIONAL USERS ==========
     const users = await db.user.findMany({ where: { organizationId: org.id } });
@@ -842,6 +842,56 @@ export async function POST(request: Request) {
       });
     }
     results.settings = settingsData.length;
+
+    // ========== 22. SECOND ORGANIZATION (Multi-Tenant Demo) ==========
+    const existingOrgs = await db.organization.count();
+    if (existingOrgs <= 1) {
+      const org2 = await db.organization.create({
+        data: {
+          name: 'Gulf Express Cargo LLC',
+          email: 'info@gulfexpress.ae',
+          phone: '+971509990234',
+          emirate: 'Sharjah',
+          city: 'Sharjah',
+          country: 'AE',
+          address: 'Industrial Area 12, Sharjah, UAE',
+        },
+      });
+      results.org2 = org2.name;
+
+      const plan2 = await db.plan.findFirst({ where: { name: 'Enterprise' } }) || await db.plan.create({
+        data: { name: 'Enterprise', vehicleLimit: 50, priceMonthly: 150, features: 'All Pro features, API Access, Custom Integrations, Dedicated Support' },
+      });
+
+      const org2Password = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+      const org2Admin = await db.user.create({
+        data: { email: 'admin@gulfexpress.ae', passwordHash: await hashPassword(org2Password), name: 'Omar Al Suwaidi', role: 'org_owner', organizationId: org2.id, status: 'active', emailVerified: true },
+      });
+      results.org2Admin = { email: org2Admin.email, generatedPassword: org2Password };
+
+      await db.subscription.create({
+        data: { organizationId: org2.id, planId: plan2.id, status: 'active', startsAt: new Date(), endsAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), vehicleCount: 15 },
+      });
+
+      // Vehicles for org2
+      const org2Plates = ['SHJ-A-11111', 'SHJ-A-22222', 'SHJ-B-33333'];
+      const org2VehicleIds: string[] = [];
+      for (const plate of org2Plates) {
+        const v = await db.vehicle.create({ data: { plateNumber: plate, make: 'Isuzu', model: 'NPR', year: 2024, vehicleType: 'Truck', status: 'active', mileage: Math.floor(Math.random() * 50000) + 10000, organizationId: org2.id, installDate: new Date(2025, 2, 15) } });
+        org2VehicleIds.push(v.id);
+      }
+      results.org2Vehicles = org2VehicleIds.length;
+
+      // Drivers for org2
+      const org2Drivers = [
+        { name: 'Ahmed Al Naqbi', phone: '+971503334444', license: 'SHJ-DL-20001' },
+        { name: 'Saeed Al Khateeb', phone: '+971504445555', license: 'SHJ-DL-20002' },
+      ];
+      for (const d of org2Drivers) {
+        await db.driver.create({ data: { ...d, status: 'active', organizationId: org2.id, score: Math.floor(Math.random() * 30) + 60 } });
+      }
+      results.org2Drivers = org2Drivers.length;
+    }
 
     logger.info('Demo data seeded successfully', results);
 
