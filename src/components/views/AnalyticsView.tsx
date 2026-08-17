@@ -99,7 +99,12 @@ function FleetHealthTab() {
     try {
       setLoading(true);
       const res = await authFetch('/api/analytics/fleet-health');
-      setData(res);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      } else {
+        setData(null);
+      }
     } catch { toast.error('Failed to load fleet health'); } finally { setLoading(false); }
   };
 
@@ -114,10 +119,10 @@ function FleetHealthTab() {
           <Card><CardContent className="p-4 text-center"><ScoreGauge score={data.fleetScore} label="Fleet Score" /></CardContent></Card>
         </motion.div>
         {[
-          { label: 'Total Vehicles', value: data.summary.totalVehicles, icon: Truck, color: 'text-slate-700' },
-          { label: 'Critical Risk', value: data.summary.criticalCount, icon: AlertTriangle, color: 'text-red-600' },
-          { label: 'High Risk', value: data.summary.highRiskCount, icon: AlertTriangle, color: 'text-amber-600' },
-          { label: 'Healthy', value: data.summary.lowRiskCount, icon: Shield, color: 'text-emerald-600' },
+          { label: 'Total Vehicles', value: data.summary?.totalVehicles ?? 0, icon: Truck, color: 'text-slate-700' },
+          { label: 'Critical Risk', value: data.summary?.criticalCount ?? 0, icon: AlertTriangle, color: 'text-red-600' },
+          { label: 'High Risk', value: data.summary?.highRiskCount ?? 0, icon: AlertTriangle, color: 'text-amber-600' },
+          { label: 'Healthy', value: data.summary?.lowRiskCount ?? 0, icon: Shield, color: 'text-emerald-600' },
         ].map(k => (
           <motion.div key={k.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card><CardContent className="p-4 flex flex-col items-center justify-center h-full">
@@ -245,7 +250,12 @@ function DriverTrendsTab() {
     try {
       setLoading(true);
       const res = await authFetch('/api/analytics/driver-trends');
-      setData(res);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      } else {
+        setData(null);
+      }
     } catch { toast.error('Failed to load driver trends'); } finally { setLoading(false); }
   };
 
@@ -392,7 +402,12 @@ function MaintenancePredictionTab() {
     try {
       setLoading(true);
       const res = await authFetch('/api/analytics/maintenance-prediction');
-      setData(res);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      } else {
+        setData(null);
+      }
     } catch { toast.error('Failed to load predictions'); } finally { setLoading(false); }
   };
 
@@ -404,11 +419,11 @@ function MaintenancePredictionTab() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Vehicles', value: data.summary.totalVehicles, icon: Truck, color: 'text-slate-700', sub: '' },
-          { label: 'Overdue', value: data.summary.overdueCount, icon: AlertTriangle, color: 'text-red-600', sub: 'Immediate action needed' },
-          { label: 'High Urgency', value: data.summary.highUrgencyCount, icon: Clock, color: 'text-amber-600', sub: 'Within 7 days' },
-          { label: 'Avg Days to Service', value: data.summary.avgDaysUntilService, icon: Calendar, color: 'text-blue-600', sub: 'Predicted' },
-          { label: 'Predicted Cost', value: fmt(data.summary.totalPredictedCost), icon: DollarSign, color: 'text-emerald-600', sub: 'Next cycle' },
+          { label: 'Total Vehicles', value: data.summary?.totalVehicles ?? 0, icon: Truck, color: 'text-slate-700', sub: '' },
+          { label: 'Overdue', value: data.summary?.overdueCount ?? 0, icon: AlertTriangle, color: 'text-red-600', sub: 'Immediate action needed' },
+          { label: 'High Urgency', value: data.summary?.highUrgencyCount ?? 0, icon: Clock, color: 'text-amber-600', sub: 'Within 7 days' },
+          { label: 'Avg Days to Service', value: data.summary?.avgDaysUntilService ?? '—', icon: Calendar, color: 'text-blue-600', sub: 'Predicted' },
+          { label: 'Predicted Cost', value: fmt(data.summary?.totalPredictedCost ?? 0), icon: DollarSign, color: 'text-emerald-600', sub: 'Next cycle' },
         ].map(k => (
           <motion.div key={k.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card><CardContent className="p-4">
@@ -512,17 +527,27 @@ function RevenueForecastTab() {
     try {
       setLoading(true);
       const res = await authFetch('/api/analytics/revenue-forecast');
-      setData(res);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      } else {
+        setData(null);
+      }
     } catch { toast.error('Failed to load revenue data'); } finally { setLoading(false); }
   };
 
   if (loading) return <AnalyticsSkeleton />;
   if (!data) return <p className="text-slate-500">No data available.</p>;
 
+  // Safe defaults for summary values
+  const s = data.summary ?? {};
+  const momGrowth = s.momGrowth ?? 0;
+  const qoqGrowth = s.qoqGrowth ?? 0;
+
   // Combine historical + forecast for chart
   const combinedChart = [
-    ...data.historicalRevenue.map((m: any) => ({ month: m.month, actual: m.revenue, forecast: null, upper: null, lower: null })),
-    ...data.forecast.map((f: any, i: number) => ({ month: f.month, actual: null, forecast: f.predicted, upper: f.upper, lower: f.lower })),
+    ...(data.historicalRevenue ?? []).map((m: any) => ({ month: m.month, actual: m.revenue, forecast: null, upper: null, lower: null })),
+    ...(data.forecast ?? []).map((f: any, i: number) => ({ month: f.month, actual: null, forecast: f.predicted, upper: f.upper, lower: f.lower })),
   ];
 
   return (
@@ -530,11 +555,11 @@ function RevenueForecastTab() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Monthly Recurring', value: fmt(data.summary.monthlyRecurring), icon: Activity, color: 'text-emerald-600', sub: `${data.summary.activeSubscriptions} subscriptions` },
-          { label: 'Annual Recurring', value: fmt(data.summary.annualRecurring), icon: DollarSign, color: 'text-blue-600', sub: `${data.summary.totalSubscribedVehicles} vehicles` },
-          { label: 'MoM Growth', value: `${data.summary.momGrowth > 0 ? '+' : ''}${data.summary.momGrowth}%`, icon: data.summary.momGrowth >= 0 ? TrendingUp : TrendingDown, color: data.summary.momGrowth >= 0 ? 'text-emerald-600' : 'text-red-600', sub: 'Month over Month' },
-          { label: 'QoQ Growth', value: `${data.summary.qoqGrowth > 0 ? '+' : ''}${data.summary.qoqGrowth}%`, icon: BarChart3, color: data.summary.qoqGrowth >= 0 ? 'text-emerald-600' : 'text-red-600', sub: 'Quarter over Quarter' },
-          { label: 'Pipeline Potential', value: fmt(data.summary.pipelineMonthlyPotential), icon: Target, color: 'text-purple-600', sub: `${data.summary.totalPipelineVehicles} vehicles` },
+          { label: 'Monthly Recurring', value: fmt(s.monthlyRecurring ?? 0), icon: Activity, color: 'text-emerald-600', sub: `${s.activeSubscriptions ?? 0} subscriptions` },
+          { label: 'Annual Recurring', value: fmt(s.annualRecurring ?? 0), icon: DollarSign, color: 'text-blue-600', sub: `${s.totalSubscribedVehicles ?? 0} vehicles` },
+          { label: 'MoM Growth', value: `${momGrowth > 0 ? '+' : ''}${momGrowth}%`, icon: momGrowth >= 0 ? TrendingUp : TrendingDown, color: momGrowth >= 0 ? 'text-emerald-600' : 'text-red-600', sub: 'Month over Month' },
+          { label: 'QoQ Growth', value: `${qoqGrowth > 0 ? '+' : ''}${qoqGrowth}%`, icon: BarChart3, color: qoqGrowth >= 0 ? 'text-emerald-600' : 'text-red-600', sub: 'Quarter over Quarter' },
+          { label: 'Pipeline Potential', value: fmt(s.pipelineMonthlyPotential ?? 0), icon: Target, color: 'text-purple-600', sub: `${s.totalPipelineVehicles ?? 0} vehicles` },
         ].map(k => (
           <motion.div key={k.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card><CardContent className="p-4">
