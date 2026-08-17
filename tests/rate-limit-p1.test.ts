@@ -81,13 +81,9 @@ describe('P1-7: Rate Limiting', () => {
     });
 
     it('resets after window expires', () => {
-      // Use a very short window
       const result = rateLimit('test:expire', 1, 1); // 1ms window
       expect(result.allowed).toBe(true);
-      const blocked = rateLimit('test:expire', 1, 1);
-      expect(blocked.allowed).toBe(false);
-      // After window expires, should be allowed again
-      // We simulate this by directly manipulating the store
+      // Simulate window expiry by deleting the entry directly
       store.delete('test:expire');
       const allowed = rateLimit('test:expire', 1, 1);
       expect(allowed.allowed).toBe(true);

@@ -7,16 +7,34 @@ import { Prisma } from '@prisma/client';
 /**
  * POST /api/setup/seed-demo
  *
- * 1) Syncs Prisma schema to database (fixes missing columns)
- * 2) Populates the database with comprehensive demo data
- * Idempotent — checks if demo data already exists before creating.
- * Call this AFTER the initial /api/setup/seed has been run.
+ * Populates the database with comprehensive multi-tenant demo data.
+ * DATA ONLY — no schema modifications. Schema must be applied via Prisma migrations.
+ *
+ * Security (defense-in-depth):
+ *   1. Middleware blocks this path in production (returns 404).
+ *   2. This handler also checks NODE_ENV and rejects production requests.
+ *   3. Require auth + admin role check.
+ *
+ * Idempotent — skips if demo data already exists (settings >= 10).
  */
+
+function generateSecurePassword(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export async function POST(request: Request) {
   try {
-    // Auth check — only admins and super_admins can seed demo data
+    // ── Defense-in-depth: reject in production even if middleware is misconfigured ──
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('seed-demo blocked: production environment');
+      return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+    }
+
+    // ── Auth check — only admins can seed demo data ──
     const { user, error: authError } = await requireAuth(request);
-    if (authError) return authError;
+    if (authError) return authError as NextResponse;
     if (!['super_admin', 'org_owner', 'platform_admin'].includes(user.role)) {
       return NextResponse.json(
         { error: 'Only administrators can seed demo data' },
@@ -24,107 +42,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // ========== 0. SCHEMA SYNC (fixes P2022 missing column errors) ==========
-    let schemaSyncResult = 'skipped';
-
-    // Add missing columns directly via SQL (safe for serverless/edge)
-    try {
-      const columnsToAdd: string[] = [];
-
-        // Check each column and add if missing
-        const checks: { col: string; tbl: string; def: string }[] = [
-          // Trip table
-          { tbl: 'Trip', col: 'driverName', def: 'TEXT' },
-          { tbl: 'Trip', col: 'organization_id', def: 'TEXT' },
-          { tbl: 'Trip', col: 'start_time', def: 'TIMESTAMPTZ' },
-          { tbl: 'Trip', col: 'end_time', def: 'TIMESTAMPTZ' },
-          { tbl: 'Trip', col: 'distance', def: 'DOUBLE PRECISION' },
-          { tbl: 'Trip', col: 'duration', def: 'INTEGER' },
-          { tbl: 'Trip', col: 'max_speed', def: 'DOUBLE PRECISION' },
-          { tbl: 'Trip', col: 'avg_speed', def: 'DOUBLE PRECISION' },
-          { tbl: 'Trip', col: 'idle_time', def: 'INTEGER' },
-          { tbl: 'Trip', col: 'overspeed_count', def: 'INTEGER' },
-          { tbl: 'Trip', col: 'harsh_brakes', def: 'INTEGER' },
-          { tbl: 'Trip', col: 'harsh_accel', def: 'INTEGER' },
-          { tbl: 'Trip', col: 'status', def: 'TEXT DEFAULT \'in_progress\'' },
-          // Device table
-          { tbl: 'Device', col: 'phoneNumber', def: 'TEXT' },
-          { tbl: 'Device', col: 'serial_number', def: 'TEXT' },
-          { tbl: 'Device', col: 'device_type', def: 'TEXT' },
-          { tbl: 'Device', col: 'protocol', def: 'TEXT' },
-          { tbl: 'Device', col: 'firmware', def: 'TEXT' },
-          { tbl: 'Device', col: 'sim_id', def: 'TEXT' },
-          { tbl: 'Device', col: 'warehouse', def: 'TEXT' },
-          { tbl: 'Device', col: 'purchase_date', def: 'TIMESTAMPTZ' },
-          { tbl: 'Device', col: 'purchase_cost', def: 'DECIMAL(10,2)' },
-          { tbl: 'Device', col: 'install_date', def: 'TIMESTAMPTZ' },
-          { tbl: 'Device', col: 'warranty_expiry', def: 'TIMESTAMPTZ' },
-          { tbl: 'Device', col: 'last_ping_at', def: 'TIMESTAMPTZ' },
-          { tbl: 'Device', col: 'battery_level', def: 'INTEGER' },
-          // Vehicle table
-          { tbl: 'Vehicle', col: 'internal_id', def: 'TEXT' },
-          { tbl: 'Vehicle', col: 'vin', def: 'TEXT' },
-          { tbl: 'Vehicle', col: 'color', def: 'TEXT' },
-          { tbl: 'Vehicle', col: 'engine_hours', def: 'DOUBLE PRECISION' },
-          { tbl: 'Vehicle', col: 'install_date', def: 'TIMESTAMPTZ' },
-          { tbl: 'Vehicle', col: 'warranty_expiry', def: 'TIMESTAMPTZ' },
-          // Notification table
-          { tbl: 'Notification', col: 'user_id', def: 'TEXT' },
-          { tbl: 'Notification', col: 'organization_id', def: 'TEXT' },
-          { tbl: 'Notification', col: 'body', def: 'TEXT' },
-          { tbl: 'Notification', col: 'read', def: 'BOOLEAN DEFAULT false' },
-          { tbl: 'Notification', col: 'metadata', def: 'TEXT' },
-          // MaintenanceRecord table
-          { tbl: 'MaintenanceRecord', col: 'trigger_type', def: 'TEXT' },
-          { tbl: 'MaintenanceRecord', col: 'trigger_value', def: 'DOUBLE PRECISION' },
-          { tbl: 'MaintenanceRecord', col: 'completed_date', def: 'TIMESTAMPTZ' },
-          // Installation table
-          { tbl: 'Installation', col: 'installation_number', def: 'TEXT' },
-          { tbl: 'Installation', col: 'scheduled_time', def: 'TEXT' },
-          { tbl: 'Installation', col: 'latitude', def: 'DOUBLE PRECISION' },
-          { tbl: 'Installation', col: 'longitude', def: 'DOUBLE PRECISION' },
-          { tbl: 'Installation', col: 'photos', def: 'TEXT' },
-          { tbl: 'Installation', col: 'test_result', def: 'TEXT' },
-          { tbl: 'Installation', col: 'gps_signal', def: 'BOOLEAN' },
-          { tbl: 'Installation', col: 'power_wiring', def: 'BOOLEAN' },
-          { tbl: 'Installation', col: 'antenna_mounted', def: 'BOOLEAN' },
-          { tbl: 'Installation', col: 'signature', def: 'TEXT' },
-        ];
-
-        for (const c of checks) {
-          try {
-            const exists = await db.$queryRawUnsafe(
-              `SELECT column_name FROM information_schema.columns WHERE table_name = '${c.tbl.toLowerCase()}' AND column_name = '${c.col}'`
-            );
-            if (!Array.isArray(exists) || (exists as unknown[]).length === 0) {
-              await db.$executeRawUnsafe(`ALTER TABLE "${c.tbl}" ADD COLUMN IF NOT EXISTS "${c.col}" ${c.def}`);
-              columnsToAdd.push(`${c.tbl}.${c.col}`);
-            }
-          } catch {
-            // Table might not exist — skip
-          }
-        }
-        schemaSyncResult = `sql: added ${columnsToAdd.length} columns (${columnsToAdd.join(', ')})`;
-        logger.info('Schema sync completed via SQL', { columnsAdded: columnsToAdd });
-      } catch (sqlError: unknown) {
-        const sqlMsg = sqlError instanceof Error ? sqlError.message : String(sqlError);
-        logger.warn('Schema sync failed', { error: sqlMsg });
-        schemaSyncResult = `failed: ${sqlMsg.slice(0, 200)}`;
-      }
-
     // Find the existing organization
     const org = await db.organization.findFirst();
     if (!org) {
       return NextResponse.json({ error: 'No organization found. Run /api/setup/seed first.' }, { status: 400 });
     }
 
-    // Schema sync already ran above. Check if fully seeded (settings are created last).
+    // Check if fully seeded (settings are created last).
     const settingCount = await db.setting.count();
     if (settingCount >= 10) {
       return NextResponse.json({
-        message: 'Demo data already fully seeded. Schema sync was run. Use ?force=true to re-seed.',
+        message: 'Demo data already fully seeded. Use ?force=true to re-seed.',
         seeded: false,
-        schemaSync: schemaSyncResult,
       });
     }
 
@@ -140,7 +69,7 @@ export async function POST(request: Request) {
       fleetManager = await db.user.create({
         data: {
           email: 'manager@rtr.ae',
-          passwordHash: await hashPassword('manager123'),
+          passwordHash: await hashPassword(generateSecurePassword()),
           name: 'Ahmed Al Maktoum',
           phone: '+971502234567',
           role: 'manager',
@@ -157,7 +86,7 @@ export async function POST(request: Request) {
       opsUser = await db.user.create({
         data: {
           email: 'ops@rtr.ae',
-          passwordHash: await hashPassword('ops123'),
+          passwordHash: await hashPassword(generateSecurePassword()),
           name: 'Fatima Hassan',
           phone: '+971503345678',
           role: 'operator',
@@ -881,7 +810,7 @@ export async function POST(request: Request) {
 
       // Manager for org2
       const org2Mgr = await db.user.create({
-        data: { email: 'manager@gulfexpress.ae', passwordHash: await hashPassword('manager456'), name: 'Bilal Ahmed', phone: '+971508887766', role: 'manager', organizationId: org2.id, status: 'active', emailVerified: true },
+        data: { email: 'manager@gulfexpress.ae', passwordHash: await hashPassword(generateSecurePassword()), name: 'Bilal Ahmed', phone: '+971508887766', role: 'manager', organizationId: org2.id, status: 'active', emailVerified: true },
       });
 
       // Branch
@@ -1238,7 +1167,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Demo data seeded successfully',
       seeded: true,
-      schemaSync: schemaSyncResult,
       results,
     });
   } catch (error) {
