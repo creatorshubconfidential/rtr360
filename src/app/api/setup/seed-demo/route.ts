@@ -108,12 +108,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No organization found. Run /api/setup/seed first.' }, { status: 400 });
     }
 
-    // Check if demo data already exists (devices are a good indicator)
-    const existingDevices = await db.device.count({ where: { organizationId: org.id } });
-    if (existingDevices > 0) {
+    // Schema sync already ran above. Check if fully seeded (settings are created last).
+    const settingCount = await db.setting.count();
+    if (settingCount >= 10) {
       return NextResponse.json({
-        message: `Demo data already exists (${existingDevices} devices). Skipping.`,
+        message: 'Demo data already fully seeded. Schema sync was run. Use ?force=true to re-seed.',
         seeded: false,
+        schemaSync: schemaSyncResult,
       });
     }
 
