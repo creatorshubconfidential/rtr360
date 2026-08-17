@@ -1,0 +1,3 @@
+{
+  "/api/geofences/[id]/route": "app/api/geofences/[id]/route.js"
+}
