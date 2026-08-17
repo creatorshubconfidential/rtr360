@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
   // Block sensitive endpoints in production
   if (isProduction) {
-    const blockedPaths = ['/api/setup/seed', '/api/migrate', '/api/debug'];
+    const blockedPaths = ['/api/setup/seed', '/api/setup/seed-demo', '/api/migrate', '/api/debug'];
     for (const blocked of blockedPaths) {
       if (pathname === blocked || pathname.startsWith(blocked + '/')) {
         return new NextResponse(null, { status: 404 });
