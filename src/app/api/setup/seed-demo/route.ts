@@ -330,12 +330,13 @@ export async function POST(request: Request) {
     results.technicians = createdTechs.length;
 
     // ========== 7. INSTALLATIONS ==========
-    const installData = vehicles.map((v, i) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const installData: any[] = vehicles.map((v, i) => ({
       installationNumber: `INS-2025-${String(i + 1).padStart(4, '0')}`,
       vehicleId: v.id,
       deviceId: createdDevices[i],
       technicianId: createdTechs[i % createdTechs.length],
-      status: 'completed' as const,
+      status: 'completed',
       scheduledDate: new Date(2025, 0, 10 + i),
       scheduledTime: `${9 + (i % 4)}:00`,
       completedAt: new Date(2025, 0, 10 + i, 10 + (i % 3)),
@@ -356,7 +357,7 @@ export async function POST(request: Request) {
       vehicleId: vehicles[0].id, // Will be reassigned
       deviceId: createdDevices[7],
       technicianId: createdTechs[0],
-      status: 'scheduled' as const,
+      status: 'scheduled',
       scheduledDate: new Date(Date.now() + 3 * 86400000),
       scheduledTime: '10:00',
       emirate: 'Dubai',

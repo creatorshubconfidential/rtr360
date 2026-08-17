@@ -318,9 +318,11 @@ describe('P0-2: Invoice PDF Tenant Isolation', () => {
 
 // ============================================================
 // P0-6: Caddyfile SSRF Prevention
+// NOTE: Project uses Vercel (not Caddy). These tests are kept as
+// documentation but skipped since no Caddyfile exists.
 // ============================================================
 
-describe('P0-6: Caddyfile has no SSRF vectors', () => {
+describe.skip('P0-6: Caddyfile has no SSRF vectors', () => {
   it('Caddyfile does not contain XTransformPort', async () => {
     const fs = await import('fs');
     const path = await import('path');
