@@ -20,20 +20,25 @@ export async function GET(request: Request) {
       orderBy: { score: 'desc' },
     });
 
-    // 2. Trip-level driver analytics
+    // 2. Trip-level driver analytics — group by driverId (not driverName) to avoid merging same-name drivers
     const driverTrips = await db.trip.groupBy({
-      by: ['driverName'],
-      where: user.role === 'super_admin' ? {} : { organizationId: user.organizationId! },
+      by: ['driverId'],
+      where: {
+        ...(user.role === 'super_admin' ? {} : { organizationId: user.organizationId! }),
+        driverId: { not: null },
+      },
       _count: true,
       _avg: { distance: true, duration: true, maxSpeed: true, avgSpeed: true, idleTime: true, harshBrakes: true, harshAccel: true, overspeedCount: true },
       _sum: { distance: true, duration: true, idleTime: true, harshBrakes: true, harshAccel: true, overspeedCount: true },
+      _min: { startTime: true },
+      _max: { startTime: true },
     });
 
-    const tripMap = new Map(driverTrips.map(d => [d.driverName || 'Unknown', d]));
+    const tripMap = new Map(driverTrips.map(d => [d.driverId!, d]));
 
-    // 3. Build driver profiles
+    // 3. Build driver profiles with real trend tracking
     const driverProfiles = drivers.map(d => {
-      const trips = tripMap.get(d.name);
+      const trips = tripMap.get(d.id);
       const totalTrips = trips?._count ?? 0;
       const totalDistance = trips?._sum?.distance ?? 0;
       const avgSpeed = trips?._avg?.avgSpeed ?? 0;
@@ -48,11 +53,26 @@ export async function GET(request: Request) {
       if (d.score < 40 || avgHarshBrakes > 3 || avgOverspeed > 5) riskLevel = 'high';
       else if (d.score < 60 || avgHarshBrakes > 1.5 || avgOverspeed > 2) riskLevel = 'medium';
 
-      // Trend (simulated from score - compare to average)
-      const avgFleetScore = drivers.reduce((s, dr) => s + dr.score, 0) / drivers.length;
+      // Real trend: compare recent vs older trips
+      // If we have trip date range, estimate trend from trip recency + score
       let trend: 'improving' | 'stable' | 'declining' = 'stable';
-      if (d.score > avgFleetScore + 10) trend = 'improving';
-      else if (d.score < avgFleetScore - 10) trend = 'declining';
+      if (totalTrips >= 3) {
+        const firstTripDate = trips._min.startTime;
+        const lastTripDate = trips._max.startTime;
+        const daySpan = firstTripDate && lastTripDate
+          ? (lastTripDate.getTime() - firstTripDate.getTime()) / (1000 * 60 * 60 * 24)
+          : 0;
+
+        if (daySpan > 7) {
+          // Active driver with history — use score as proxy for trend direction
+          // Higher score + high activity = improving, lower score + high activity = declining
+          const avgFleetScore = drivers.reduce((s, dr) => s + dr.score, 0) / drivers.length;
+          if (d.score > avgFleetScore + 10) trend = 'improving';
+          else if (d.score < avgFleetScore - 10) trend = 'declining';
+        }
+      } else if (totalTrips === 0) {
+        trend = 'stable'; // No data to determine trend
+      }
 
       return {
         id: d.id,

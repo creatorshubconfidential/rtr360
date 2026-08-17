@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Block sensitive endpoints in production
-  // Note: /api/setup/seed-demo is allowed for demo data seeding
   if (isProduction) {
     const blockedPaths = ['/api/setup/seed', '/api/migrate', '/api/debug'];
     for (const blocked of blockedPaths) {
@@ -20,7 +19,6 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   // Content Security Policy
-  // TODO: Move to nonce-based CSP in next.config.ts to fully remove 'unsafe-inline' from script-src.
   // 'unsafe-inline' in style-src is required for Tailwind CSS runtime classes.
   // 'wasm-unsafe-eval' is required by Next.js server component runtime.
   response.headers.set(

@@ -13,31 +13,31 @@ export async function GET(request: Request) {
 
     const now = new Date();
 
-    // 1. Historical revenue (last 12 months)
-    const historicalRevenue: { month: string; revenue: number; invoices: number; newClients: number }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
-
-      const [invoices, orgs] = await Promise.all([
-        db.invoice.findMany({
-          where: { ...orgFilterStrict, status: 'paid', createdAt: { gte: mStart, lt: mEnd } },
-          select: { total: true },
-        }),
-        // SECURITY: For non-super_admin, newClients is always 0 or 1 (their own org)
-        user.role === 'super_admin'
-          ? db.organization.count({ where: { createdAt: { gte: mStart, lt: mEnd } } })
-          : Promise.resolve(0),
-      ]);
-
-      historicalRevenue.push({
-        month: monthName,
-        revenue: invoices.reduce((s, inv) => s + Number(inv.total), 0),
-        invoices: invoices.length,
-        newClients: orgs,
-      });
-    }
+    // 1. Historical revenue (last 12 months) — single batch of parallel aggregate queries (was N+1 sequential loop)
+    const historicalRevenue = await Promise.all(
+      Array.from({ length: 12 }, (_, idx) => {
+        const i = 11 - idx;
+        const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
+        return Promise.all([
+          db.invoice.aggregate({
+            where: { ...orgFilterStrict, status: 'paid', createdAt: { gte: mStart, lt: mEnd } },
+            _sum: { total: true },
+            _count: true,
+          }),
+          // SECURITY: For non-super_admin, newClients is always 0 or 1 (their own org)
+          user.role === 'super_admin'
+            ? db.organization.count({ where: { createdAt: { gte: mStart, lt: mEnd } } })
+            : Promise.resolve(0 as number),
+        ]).then(([invAgg, orgs]) => ({
+          month: monthName,
+          revenue: Number(invAgg._sum?.total ?? 0),
+          invoices: invAgg._count,
+          newClients: orgs as number,
+        }));
+      }),
+    );
 
     // 2. Subscription-based recurring revenue
     const subscriptions = await db.subscription.findMany({

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { Prisma } from '@prisma/client';
 
@@ -14,6 +14,16 @@ import { Prisma } from '@prisma/client';
  */
 export async function POST(request: Request) {
   try {
+    // Auth check — only admins and super_admins can seed demo data
+    const { user, error: authError } = await requireAuth(request);
+    if (authError) return authError;
+    if (!['super_admin', 'org_owner', 'platform_admin'].includes(user.role)) {
+      return NextResponse.json(
+        { error: 'Only administrators can seed demo data' },
+        { status: 403 }
+      );
+    }
+
     // ========== 0. SCHEMA SYNC (fixes P2022 missing column errors) ==========
     let schemaSyncResult = 'skipped';
 
@@ -849,7 +859,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Also allow GET for easy browser-based setup
-export async function GET() {
-  return POST(new Request('http://localhost', { method: 'POST' }));
+// Also allow GET for easy browser-based setup (requires auth)
+export async function GET(request: Request) {
+  return POST(request);
 }

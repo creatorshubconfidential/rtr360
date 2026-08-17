@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      let interval: ReturnType<typeof setInterval>;
+      let timer: ReturnType<typeof setTimeout>;
       let eventId = 0;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         try {
           const vehicles = await db.vehicle.findMany({
             where: orgFilter,
-            select: { id: true, plateNumber: true },
+            select: { id: true, plateNumber: true, organizationId: true },
             take: 20,
           });
 
@@ -49,14 +49,33 @@ export async function GET(request: Request) {
 
           const evt = eventTypes[Math.floor(Math.random() * eventTypes.length)];
 
-          sendEvent({
+          const alertData = {
             type: evt.type,
             severity: evt.severity,
             vehicleId: vehicle.id,
             vehiclePlate: vehicle.plateNumber,
             message: evt.template(vehicle.plateNumber),
             timestamp: new Date().toISOString(),
-          });
+          };
+
+          sendEvent(alertData);
+
+          // Persist alert to database (silently swallow errors to keep SSE alive)
+          try {
+            await db.alert.create({
+              data: {
+                type: alertData.type,
+                severity: alertData.severity,
+                vehicleId: vehicle.id,
+                vehiclePlate: vehicle.plateNumber,
+                message: alertData.message,
+                organizationId: vehicle.organizationId,
+                metadata: JSON.stringify({ source: 'realtime_sse' }),
+              },
+            });
+          } catch {
+            // DB write failed — don't break the SSE stream
+          }
         } catch {
           // Keep connection alive
         }
@@ -65,7 +84,7 @@ export async function GET(request: Request) {
       // Send first event after 5s, then random intervals
       const scheduleNext = () => {
         const delay = 8000 + Math.random() * 7000; // 8-15 seconds
-        interval = setTimeout(async () => {
+        timer = setTimeout(async () => {
           await generateEvent();
           scheduleNext();
         }, delay);
@@ -78,7 +97,7 @@ export async function GET(request: Request) {
       }, 30000);
 
       request.signal.addEventListener('abort', () => {
-        clearTimeout(interval);
+        clearTimeout(timer);
         clearInterval(heartbeat);
         controller.close();
       });

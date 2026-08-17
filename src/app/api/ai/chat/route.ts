@@ -119,9 +119,85 @@ async function buildFleetContext(organizationId: string | null) {
 }
 
 // ────────────────────────────────────────────────
-// Smart mock AI response generator
+// Real LLM response generator (OpenAI) with mock fallback
 // ────────────────────────────────────────────────
-function generateAIResponse(
+async function generateAIResponse(
+  userMessage: string,
+  ctx: Awaited<ReturnType<typeof buildFleetContext>>,
+  messages: ChatMessage[],
+): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  // Build system prompt with fleet context
+  const systemPrompt = `You are RTR360 AI Assistant, an intelligent fleet management advisor for a UAE-based logistics company. You have real-time access to the fleet data below. Respond in a helpful, professional, and concise manner. Use markdown formatting. When referencing numbers, be precise.
+
+## Current Fleet Data (Live)
+- **Total Vehicles**: ${ctx.vehicleCount} (${ctx.activeVehicles} active, ${ctx.inactiveVehicles} inactive, ${ctx.maintenanceVehicles} in maintenance)
+- **Total Drivers**: ${ctx.driverCount}
+- **Today's Trips**: ${ctx.todayTrips} (Total distance: ${ctx.totalDistanceToday.toLocaleString()} km, Duration: ${ctx.totalDurationToday} min)
+- **Open Alerts**: ${ctx.openAlertsCount}
+- **Pending Maintenance**: ${ctx.openMaintenanceCount}
+- **Total Fleet Mileage**: ${ctx.totalMileage.toLocaleString()} km
+
+### Vehicle Type Breakdown
+${ctx.vehicleTypeBreakdown.map(v => `- ${v.type}: ${v.count}`).join('\n')}
+
+### Top 5 Drivers (by score)
+${ctx.topDrivers.map((d, i) => `${i + 1}. ${d.name} — Score: ${d.score}, Trips: ${d.totalTrips}, Distance: ${(d.totalDistance || 0).toLocaleString()} km, Violations: ${d.totalViolations || 0}`).join('\n')}
+
+### Recent Alerts (last 10)
+${ctx.recentAlerts.length > 0 ? ctx.recentAlerts.map(a => `- [${a.severity}] ${a.type}: ${a.message} (${a.vehiclePlate || 'N/A'}, ${a.driverName || 'N/A'})`).join('\n') : 'No open alerts'}
+
+### Upcoming Maintenance (next 10)
+${ctx.upcomingMaintenance.length > 0 ? ctx.upcomingMaintenance.map(m => `- ${m.vehicle.plateNumber} (${m.vehicle.make} ${m.vehicle.model}): ${m.type} — ${m.scheduledDate ? new Date(m.scheduledDate).toLocaleDateString() : 'No date'} — ${m.cost ? 'AED ' + m.cost : 'Cost TBD'} `).join('\n') : 'No upcoming maintenance'}
+
+## Instructions
+- Answer fleet management questions using the data above
+- If the user asks about something not in the data, say you don't have that specific data but offer relevant insights from what you do have
+- Keep responses focused and actionable
+- Use AED for currency, km for distance
+- Reference specific vehicle plates, driver names, and numbers when relevant`;
+
+  // Try OpenAI first
+  if (apiKey) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            // Include last 10 messages for context
+            ...messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+          ],
+          max_tokens: 1024,
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
+      }
+      logger.error('OpenAI API error', { status: response.status, body: await response.text().catch(() => 'unreadable') });
+    } catch (err) {
+      logger.error('OpenAI fetch error', { err });
+    }
+    // Fall through to mock
+  }
+
+  // Fallback: smart mock responses
+  return generateMockResponse(userMessage, ctx);
+}
+
+// ────────────────────────────────────────────────
+// Mock fallback response generator
+// ────────────────────────────────────────────────
+function generateMockResponse(
   userMessage: string,
   ctx: Awaited<ReturnType<typeof buildFleetContext>>,
 ): string {
@@ -589,8 +665,8 @@ export async function POST(request: Request) {
     // Append user message
     messages.push({ role: 'user', content: message.trim() });
 
-    // Generate AI response
-    const aiContent = generateAIResponse(message, fleetContext);
+    // Generate AI response (async — calls OpenAI or falls back to mock)
+    const aiContent = await generateAIResponse(message, fleetContext, messages);
     messages.push({ role: 'assistant', content: aiContent });
 
     // Save updated conversation

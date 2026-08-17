@@ -12,6 +12,9 @@ import {
   Phone,
   Mail,
   Building2,
+  Pencil,
+  Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,6 +38,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { authFetch, formatDate } from '@/lib/api';
 import type { Contact } from '@/lib/types';
 
@@ -48,6 +58,11 @@ export default function ContactsView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', position: '' });
+
+  // Edit state
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', position: '' });
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
@@ -84,6 +99,49 @@ export default function ContactsView() {
       } else { toast.error(data.error || 'Failed to create'); }
     } catch { toast.error('Failed to create contact'); }
     finally { setSubmitting(false); }
+  };
+
+  const openEdit = (contact: Contact) => {
+    setEditContact(contact);
+    setEditForm({
+      name: contact.name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      position: contact.position || '',
+    });
+  };
+
+  const handleEdit = async () => {
+    if (!editForm.name.trim()) { toast.error('Name is required'); return; }
+    if (!editContact) return;
+    setEditSubmitting(true);
+    try {
+      const res = await authFetch(`/api/contacts/${editContact.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Contact updated!');
+        setEditContact(null);
+        fetchContacts();
+      } else { toast.error(data.error || 'Failed to update'); }
+    } catch { toast.error('Failed to update contact'); }
+    finally { setEditSubmitting(false); }
+  };
+
+  const deleteContact = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    try {
+      const res = await authFetch(`/api/contacts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Contact deleted');
+        fetchContacts();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to delete');
+      }
+    } catch { toast.error('Failed to delete contact'); }
   };
 
   return (
@@ -171,6 +229,16 @@ export default function ContactsView() {
                         <p className="text-sm font-semibold text-slate-800 truncate">{c.name}</p>
                         {c.position && <p className="text-xs text-slate-500">{c.position}</p>}
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="w-8 h-8"><MoreVertical className="w-4 h-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-600" onClick={() => deleteContact(c.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <div className="mt-3 space-y-1.5">
                       {c.phone && (
@@ -201,6 +269,7 @@ export default function ContactsView() {
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Phone</TableHead>
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Email</TableHead>
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Added</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,6 +287,18 @@ export default function ContactsView() {
                     <TableCell className="text-sm text-slate-600">{c.phone || '—'}</TableCell>
                     <TableCell className="text-sm text-slate-600">{c.email || '—'}</TableCell>
                     <TableCell className="text-xs text-slate-500">{formatDate(c.createdAt)}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="w-8 h-8"><MoreVertical className="w-4 h-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-600" onClick={() => deleteContact(c.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -238,6 +319,37 @@ export default function ContactsView() {
           </div>
         </>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editContact} onOpenChange={(open) => { if (!open) setEditContact(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Contact</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Contact name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Position</Label>
+              <Input value={editForm.position} onChange={(e) => setEditForm({ ...editForm, position: e.target.value })} placeholder="e.g. Fleet Manager" />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="+971 5x xxx xxxx" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="email@company.ae" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditContact(null)}>Cancel</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEdit} disabled={editSubmitting}>
+              {editSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

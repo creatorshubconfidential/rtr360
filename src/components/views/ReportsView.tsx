@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authFetch } from '@/lib/api';
+import { exportCSV } from '@/lib/export';
 import {
   TrendingUp,
   DollarSign,
@@ -42,6 +43,7 @@ import {
   Activity,
   BarChart3,
   PieChart as PieChartIcon,
+  Download,
 } from 'lucide-react';
 
 // ────────────────────────────────────────
@@ -280,11 +282,41 @@ export default function ReportsView() {
     ? ((summary.activeVehicles / summary.totalVehicles) * 100).toFixed(1)
     : '0.0';
 
+  const handleExportCSV = () => {
+    if (!data) return;
+    // Export revenue data
+    if (data.monthlyRevenue.length > 0) {
+      exportCSV({
+        data: data.monthlyRevenue,
+        filename: 'rtr360_revenue_report',
+        columns: [
+          { key: 'month', label: 'Month' },
+          { key: 'revenue', label: 'Revenue (AED)', format: (v: number) => formatAED(v) },
+          { key: 'invoices', label: 'Invoices' },
+        ],
+      });
+    }
+    // Export driver performance
+    if (data.drivers.length > 0) {
+      exportCSV({
+        data: data.drivers,
+        filename: 'rtr360_driver_performance',
+        columns: [
+          { key: 'name', label: 'Driver' },
+          { key: 'score', label: 'Score' },
+          { key: 'totalTrips', label: 'Trips' },
+          { key: 'totalDistance', label: 'Distance (km)', format: (v: number) => (v || 0).toLocaleString() },
+          { key: 'totalViolations', label: 'Violations' },
+        ],
+      });
+    }
+  };
+
   // ──── Render ────
 
   return (
     <div className="space-y-6">
-      {/* ──── Header + Period Selector ──── */}
+      {/* ──── Header + Period Selector + Export ──── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-100 rounded-lg">
@@ -295,17 +327,26 @@ export default function ReportsView() {
             <p className="text-sm text-slate-500">Fleet performance overview</p>
           </div>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select Period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1month">Last 1 Month</SelectItem>
-            <SelectItem value="3months">Last 3 Months</SelectItem>
-            <SelectItem value="6months">Last 6 Months</SelectItem>
-            <SelectItem value="12months">Last 12 Months</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1month">Last 1 Month</SelectItem>
+              <SelectItem value="3months">Last 3 Months</SelectItem>
+              <SelectItem value="6months">Last 6 Months</SelectItem>
+              <SelectItem value="12months">Last 12 Months</SelectItem>
+            </SelectContent>
+          </Select>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* ──── KPI Summary Cards ──── */}

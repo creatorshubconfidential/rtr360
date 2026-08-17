@@ -34,21 +34,22 @@ export async function GET(request: Request) {
     const pendingRevenue = pendingInvoices.reduce((s, i) => s + Number(i.total), 0);
     const overdueRevenue = overdueInvoices.reduce((s, i) => s + Number(i.total), 0);
 
-    // Monthly revenue
-    const monthlyRevenue: { month: string; revenue: number; invoices: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
-      const mInvoices = await db.invoice.findMany({
-        where: { ...orgFilterStrict, status: 'paid', createdAt: { gte: mStart, lt: mEnd } },
-      });
-      monthlyRevenue.push({
-        month: monthName,
-        revenue: mInvoices.reduce((s, inv) => s + Number(inv.total), 0),
-        invoices: mInvoices.length,
-      });
-    }
+    // Monthly revenue — single batch of parallel aggregate queries (was N+1 sequential loop)
+    const monthlyRevenue = await Promise.all(
+      Array.from({ length: 6 }, (_, idx) => {
+        const i = 5 - idx;
+        const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
+        return db.invoice
+          .aggregate({
+            where: { ...orgFilterStrict, status: 'paid', createdAt: { gte: mStart, lt: mEnd } },
+            _sum: { total: true },
+            _count: true,
+          })
+          .then((r) => ({ month: monthName, revenue: Number(r._sum?.total ?? 0), invoices: r._count }));
+      }),
+    );
 
     // 2. Fleet metrics
     const [totalVehicles, activeVehicles, vehiclesByType] = await Promise.all([
@@ -65,20 +66,22 @@ export async function GET(request: Request) {
       db.maintenanceRecord.groupBy({ by: ['type'], where: { ...orgFilterStrict, createdAt: { gte: startDate } }, _count: { type: true } }),
     ]);
 
-    const monthlyMaintenance: { month: string; cost: number; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
-      const mRecords = await db.maintenanceRecord.findMany({
-        where: { ...orgFilterStrict, status: 'completed', completedDate: { gte: mStart, lt: mEnd } },
-      });
-      monthlyMaintenance.push({
-        month: monthName,
-        cost: mRecords.reduce((s, r) => s + Number(r.cost || 0), 0),
-        count: mRecords.length,
-      });
-    }
+    // Monthly maintenance — single batch of parallel aggregate queries (was N+1 sequential loop)
+    const monthlyMaintenance = await Promise.all(
+      Array.from({ length: 6 }, (_, idx) => {
+        const i = 5 - idx;
+        const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const monthName = mStart.toLocaleString('en', { month: 'short', year: '2-digit' });
+        return db.maintenanceRecord
+          .aggregate({
+            where: { ...orgFilterStrict, status: 'completed', completedDate: { gte: mStart, lt: mEnd } },
+            _sum: { cost: true },
+            _count: true,
+          })
+          .then((r) => ({ month: monthName, cost: Number(r._sum?.cost ?? 0), count: r._count }));
+      }),
+    );
 
     // 4. Lead funnel
     const leadFunnel = await db.lead.groupBy({

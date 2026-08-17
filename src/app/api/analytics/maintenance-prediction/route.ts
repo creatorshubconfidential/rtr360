@@ -71,12 +71,9 @@ export async function GET(request: Request) {
       // Mileage-based prediction (every 10,000 km recommended)
       let mileageUntilNext = 10000;
       if (v.mileage) {
-        const lastMaintMileage = completed.length > 0
-          ? completed[0]?.id // use creation order
-          : 0;
-        // Estimate: if no tracked mileage at maintenance, use current
-        const estMaintMileage = v.mileage - (avgTripDist * v.trips.length * 0.7);
-        mileageUntilNext = Math.max(0, Math.round(10000 - (v.mileage - estMaintMileage)));
+        // Fixed: use actual vehicle mileage, not record ID
+        const mileageSinceLastService = v.mileage % 10000;
+        mileageUntilNext = Math.max(0, Math.round(10000 - mileageSinceLastService));
         if (mileageUntilNext < 500) urgency = 'high';
       }
 

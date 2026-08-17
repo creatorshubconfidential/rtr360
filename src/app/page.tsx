@@ -44,6 +44,8 @@ import {
   Bot,
   ExternalLink,
   Crown,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -1296,6 +1298,10 @@ function VehiclesView() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [deletingVehicle, setDeletingVehicle] = useState<Vehicle | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
@@ -1306,6 +1312,17 @@ function VehiclesView() {
     vehicleType: '',
     vin: '',
     color: '',
+  });
+
+  const [editForm, setEditForm] = useState({
+    plateNumber: '',
+    make: '',
+    model: '',
+    year: '',
+    vehicleType: '',
+    vin: '',
+    color: '',
+    status: 'active',
   });
 
   const fetchVehicles = useCallback(async () => {
@@ -1358,6 +1375,79 @@ function VehiclesView() {
       fetchVehicles();
     } catch {
       toast.error('Failed to add vehicle');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (v: Vehicle) => {
+    setEditingVehicle(v);
+    setEditForm({
+      plateNumber: v.plateNumber || '',
+      make: v.make || '',
+      model: v.model || '',
+      year: v.year ? String(v.year) : '',
+      vehicleType: v.vehicleType || '',
+      vin: v.vin || '',
+      color: v.color || '',
+      status: v.status || 'active',
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingVehicle || !editForm.plateNumber.trim()) {
+      toast.error('Plate number is required');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await authFetch(`/api/vehicles/${editingVehicle.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...editForm,
+          year: editForm.year ? parseInt(editForm.year) : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to update vehicle');
+        return;
+      }
+      toast.success('Vehicle updated successfully');
+      setEditOpen(false);
+      setEditingVehicle(null);
+      fetchVehicles();
+    } catch {
+      toast.error('Failed to update vehicle');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = (v: Vehicle) => {
+    setDeletingVehicle(v);
+    setDeleteOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingVehicle) return;
+    setSubmitting(true);
+    try {
+      const res = await authFetch(`/api/vehicles/${deletingVehicle.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to delete vehicle');
+        return;
+      }
+      toast.success('Vehicle deleted successfully');
+      setDeleteOpen(false);
+      setDeletingVehicle(null);
+      fetchVehicles();
+    } catch {
+      toast.error('Failed to delete vehicle');
     } finally {
       setSubmitting(false);
     }
@@ -1509,6 +1599,14 @@ function VehiclesView() {
                         </div>
                       )}
                     </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => handleEdit(v)}>
+                        <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(v)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1526,6 +1624,7 @@ function VehiclesView() {
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Driver</TableHead>
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Device IMEI</TableHead>
                   <TableHead className="text-xs uppercase tracking-wide text-slate-500">Mileage</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-slate-500 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1545,6 +1644,16 @@ function VehiclesView() {
                     <TableCell className="text-sm text-slate-600">
                       {v.mileage != null ? `${v.mileage.toLocaleString()} km` : '—'}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600" onClick={() => handleEdit(v)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-red-600" onClick={() => handleDelete(v)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1563,6 +1672,86 @@ function VehiclesView() {
               </Button>
             </div>
           </div>
+          {/* Edit Dialog */}
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Edit Vehicle</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Plate Number *</Label>
+                  <Input value={editForm.plateNumber} onChange={(e) => setEditForm({ ...editForm, plateNumber: e.target.value })} placeholder="e.g. DXB A 12345" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Make</Label>
+                    <Input value={editForm.make} onChange={(e) => setEditForm({ ...editForm, make: e.target.value })} placeholder="e.g. Toyota" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Model</Label>
+                    <Input value={editForm.model} onChange={(e) => setEditForm({ ...editForm, model: e.target.value })} placeholder="e.g. Hilux" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Year</Label>
+                    <Input type="number" value={editForm.year} onChange={(e) => setEditForm({ ...editForm, year: e.target.value })} placeholder="2024" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={editForm.vehicleType} onValueChange={(v) => setEditForm({ ...editForm, vehicleType: v })}>
+                      <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                      <SelectContent>{VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                      <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectContent>
+                        {VEHICLE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Color</Label>
+                    <Input value={editForm.color} onChange={(e) => setEditForm({ ...editForm, color: e.target.value })} placeholder="White" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>VIN</Label>
+                    <Input value={editForm.vin} onChange={(e) => setEditForm({ ...editForm, vin: e.target.value })} placeholder="Vehicle Identification Number" />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSubmit} disabled={submitting}>
+                  {submitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation */}
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Delete Vehicle</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-slate-600">
+                Are you sure you want to delete <span className="font-semibold">{deletingVehicle?.plateNumber}</span>? This action cannot be undone. All linked trips and maintenance records will remain.
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm} disabled={submitting}>
+                  {submitting ? 'Deleting...' : 'Delete'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

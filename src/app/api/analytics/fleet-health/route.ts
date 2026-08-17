@@ -37,9 +37,10 @@ export async function GET(request: Request) {
         else if (hoursSincePing > 24) score -= 10;
       }
 
-      // Driver score factor
+      // Driver score factor — blended score (higher of device score and driver-blended score)
       if (v.driver) {
-        score = Math.min(score, Math.round(score * 0.3 + v.driver.score * 0.7));
+        const driverBlended = Math.round(score * 0.3 + v.driver.score * 0.7);
+        score = Math.max(score, driverBlended);
         // License expiring within 30 days
         if (v.driver.licenseExpiry) {
           const daysToExpiry = (new Date(v.driver.licenseExpiry).getTime() - Date.now()) / 86400000;
