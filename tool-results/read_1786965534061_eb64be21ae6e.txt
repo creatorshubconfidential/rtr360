@@ -1,0 +1,828 @@
+     1→generator client {
+     2→  provider = "prisma-client-js"
+     3→}
+     4→
+     5→datasource db {
+     6→  provider = "postgresql"
+     7→  url      = env("DATABASE_URL")
+     8→}
+     9→
+    10→// ============================================================
+    11→// RTR 360 — Fleet Technology & Management Platform
+    12→// Powered by Mianx.ai | Multi-tenant SaaS Architecture
+    13→// ============================================================
+    14→
+    15→// ----------------------
+    16→// TENANT & ORGANIZATION
+    17→// ----------------------
+    18→
+    19→model Organization {
+    20→  id            String   @id @default(cuid())
+    21→  name          String
+    22→  tradeName     String?  @map("trade_name")
+    23→  legalName     String?  @map("legal_name")
+    24→  industry      String?
+    25→  email         String?
+    26→  phone         String?
+    27→  website       String?
+    28→  emirate       String?
+    29→  address       String?
+    30→  city          String?
+    31→  country       String   @default("AE")
+    32→  logo          String?
+    33→  status        String   @default("active")
+    34→  currency      String   @default("AED")
+    35→  timezone      String   @default("Asia/Dubai")
+    36→  locale        String   @default("en")
+    37→  // White-label branding
+    38→  primaryColor  String?  @map("primary_color")
+    39→  accentColor   String?  @map("accent_color")
+    40→  customLogo    String?  @map("custom_logo")
+    41→  favicon       String?
+    42→  loginBgImage  String?  @map("login_bg_image")
+    43→  customDomain  String?  @map("custom_domain")
+    44→  domainVerified Boolean  @default(false) @map("domain_verified")
+    45→  whiteLabelEnabled Boolean @default(false) @map("white_label_enabled")
+    46→  brandedAppName   String? @map("branded_app_name")
+    47→  brandedFooter   String? @map("branded_footer")
+    48→  hideMianxBranding Boolean @default(false) @map("hide_mianx_branding")
+    49→  // Plan limits
+    50→  planName      String?  @map("plan_name")
+    51→  vehicleLimit  Int      @default(0) @map("vehicle_limit")
+    52→  userLimit     Int      @default(0) @map("user_limit")
+    53→  featureFlags  String?  @map("feature_flags")
+    54→  createdAt     DateTime @default(now()) @map("created_at")
+    55→  updatedAt     DateTime @updatedAt @map("updated_at")
+    56→
+    57→  branches       Branch[]
+    58→  users          User[]
+    59→  vehicles       Vehicle[]
+    60→  drivers        Driver[]
+    61→  devices        Device[]
+    62→  leads          Lead[]
+    63→  contacts       Contact[]
+    64→  opportunities  Opportunity[]
+    65→  geofences      Geofence[]
+    66→  alertRules     AlertRule[]
+    67→  alerts         Alert[]
+    68→  tickets        Ticket[]
+    69→  contracts      Contract[]
+    70→  invoices       Invoice[]
+    71→  documents      Document[]
+    72→  notifications  Notification[]
+    73→  quotations    Quotation[]
+    74→  technicians   Technician[]
+    75→  installations  Installation[]
+    76→  maintenanceRecords MaintenanceRecord[]
+    77→  subscriptions  Subscription[]
+    78→  apiKeys        ApiKey[]
+    79→  auditLogs      AuditLog[] @relation("AuditLogOrganization")
+    80→  sims           SIM[]
+    81→  aiConversations AIConversation[]
+    82→  trips          Trip[]
+    83→  activities     Activity[]
+    84→
+    85→  @@index([status])
+    86→  @@index([emirate])
+    87→}
+    88→
+    89→model Branch {
+    90→  id             String   @id @default(cuid())
+    91→  name           String
+    92→  address        String?
+    93→  emirate        String?
+    94→  phone          String?
+    95→  organizationId String   @map("organization_id")
+    96→  createdAt      DateTime @default(now()) @map("created_at")
+    97→  updatedAt      DateTime @updatedAt @map("updated_at")
+    98→
+    99→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   100→  vehicles       Vehicle[]
+   101→  @@index([organizationId])
+   102→}
+   103→
+   104→// ----------------------
+   105→// AUTH, USERS & ROLES
+   106→// ----------------------
+   107→
+   108→model User {
+   109→  id             String   @id @default(cuid())
+   110→  email          String   @unique
+   111→  passwordHash   String?  @map("password_hash")
+   112→  name           String
+   113→  phone          String?
+   114→  avatar         String?
+   115→  role           String   @default("viewer")
+   116→  organizationId String?  @map("organization_id")
+   117→  status         String   @default("active")
+   118→  lastLoginAt    DateTime? @map("last_login_at")
+   119→  emailVerified  Boolean  @default(false) @map("email_verified")
+   120→  createdAt      DateTime @default(now()) @map("created_at")
+   121→  updatedAt      DateTime @updatedAt @map("updated_at")
+   122→
+   123→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   124→  auditLogs      AuditLog[]
+   125→  activities     Activity[]
+   126→  assignedLeads  Lead[] @relation("LeadAssigned")
+   127→  assignedOpportunities Opportunity[] @relation("OpportunityAssigned")
+   128→  assignedTickets  Ticket[] @relation("TicketAssigned")
+   129→  documents      Document[] @relation("DocumentUploader")
+   130→  notifications  Notification[] @relation("NotificationUser")
+   131→  aiConversations AIConversation[] @relation("AIConversationUser")
+   132→  sessions       Session[]
+   133→  apiKeys        ApiKey[]
+   134→  @@index([organizationId])
+   135→  @@index([role])
+   136→  @@index([status])
+   137→}
+   138→
+   139→model AuditLog {
+   140→  id            String   @id @default(cuid())
+   141→  userId        String?  @map("user_id")
+   142→  action        String
+   143→  entity        String
+   144→  entityId      String?  @map("entity_id")
+   145→  metadata      String?
+   146→  ipAddress     String?  @map("ip_address")
+   147→  organizationId String?  @map("organization_id")
+   148→  createdAt     DateTime @default(now()) @map("created_at")
+   149→
+   150→  user          User?    @relation(fields: [userId], references: [id])
+   151→  organization   Organization? @relation("AuditLogOrganization", fields: [organizationId], references: [id])
+   152→  @@index([userId])
+   153→  @@index([organizationId])
+   154→  @@index([action])
+   155→  @@index([createdAt])
+   156→}
+   157→
+   158→// ----------------------
+   159→// CRM — LEADS & CONTACTS
+   160→// ----------------------
+   161→
+   162→model Lead {
+   163→  id             String   @id @default(cuid())
+   164→  name           String
+   165→  email          String?
+   166→  phone          String?
+   167→  company        String?
+   168→  emirate        String?
+   169→  vehicleCount   Int?     @map("vehicle_count")
+   170→  vehicleType    String?  @map("vehicle_type")
+   171→  requirement    String?
+   172→  source         String?
+   173→  campaign       String?
+   174→  landingPage    String?  @map("landing_page")
+   175→  utmSource      String?  @map("utm_source")
+   176→  utmMedium      String?  @map("utm_medium")
+   177→  utmCampaign    String?  @map("utm_campaign")
+   178→  status         String   @default("new")
+   179→  priority       String   @default("medium")
+   180→  assignedToId   String?  @map("assigned_to_id")
+   181→  organizationId String?  @map("organization_id")
+   182→  notes          String?
+   183→  createdAt      DateTime @default(now()) @map("created_at")
+   184→  updatedAt      DateTime @updatedAt @map("updated_at")
+   185→
+   186→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   187→  assignedTo     User?         @relation("LeadAssigned", fields: [assignedToId], references: [id])
+   188→  activities     Activity[]
+   189→  opportunities  Opportunity[] @relation("OpportunityLead")
+   190→  quotations     Quotation[]
+   191→  @@index([organizationId])
+   192→  @@index([assignedToId])
+   193→  @@index([status])
+   194→  @@index([priority])
+   195→}
+   196→
+   197→model Contact {
+   198→  id             String   @id @default(cuid())
+   199→  name           String
+   200→  email          String?
+   201→  phone          String?
+   202→  position       String?
+   203→  organizationId String   @map("organization_id")
+   204→  createdAt      DateTime @default(now()) @map("created_at")
+   205→  updatedAt      DateTime @updatedAt @map("updated_at")
+   206→
+   207→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   208→  quotations     Quotation[]
+   209→  @@index([organizationId])
+   210→}
+   211→
+   212→model Opportunity {
+   213→  id             String   @id @default(cuid())
+   214→  name           String
+   215→  value          Float?
+   216→  stage          String   @default("new")
+   217→  leadId         String?  @map("lead_id")
+   218→  organizationId String   @map("organization_id")
+   219→  assignedToId   String?  @map("assigned_to_id")
+   220→  expectedClose  DateTime? @map("expected_close")
+   221→  notes          String?
+   222→  createdAt      DateTime @default(now()) @map("created_at")
+   223→  updatedAt      DateTime @updatedAt @map("updated_at")
+   224→
+   225→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   226→  assignedTo     User?         @relation("OpportunityAssigned", fields: [assignedToId], references: [id])
+   227→  lead           Lead?         @relation("OpportunityLead", fields: [leadId], references: [id])
+   228→  activities     Activity[]
+   229→  @@index([organizationId])
+   230→  @@index([leadId])
+   231→  @@index([stage])
+   232→}
+   233→
+   234→model Activity {
+   235→  id             String   @id @default(cuid())
+   236→  type           String
+   237→  title          String
+   238→  description    String?
+   239→  dueDate        DateTime? @map("due_date")
+   240→  completed      Boolean  @default(false)
+   241→  userId         String?  @map("user_id")
+   242→  leadId         String?  @map("lead_id")
+   243→  opportunityId  String?  @map("opportunity_id")
+   244→  organizationId String?  @map("organization_id")
+   245→  createdAt      DateTime @default(now()) @map("created_at")
+   246→
+   247→  user           User?       @relation(fields: [userId], references: [id])
+   248→  lead           Lead?       @relation(fields: [leadId], references: [id])
+   249→  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+   250→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   251→  @@index([userId])
+   252→  @@index([leadId])
+   253→  @@index([opportunityId])
+   254→  @@index([organizationId])
+   255→}
+   256→
+   257→// ----------------------
+   258→// FLEET — VEHICLES
+   259→// ----------------------
+   260→
+   261→model Vehicle {
+   262→  id             String   @id @default(cuid())
+   263→  internalId     String?  @map("internal_id")
+   264→  plateNumber    String   @map("plate_number")
+   265→  make           String?
+   266→  model          String?
+   267→  year           Int?
+   268→  vehicleType    String?  @map("vehicle_type")
+   269→  vin            String?
+   270→  color          String?
+   271→  organizationId String   @map("organization_id")
+   272→  branchId       String?  @map("branch_id")
+   273→  driverId       String?  @map("driver_id")
+   274→  deviceId       String?  @map("device_id")
+   275→  status         String   @default("active")
+   276→  mileage        Float?
+   277→  engineHours    Float?  @map("engine_hours")
+   278→  installDate    DateTime? @map("install_date")
+   279→  warrantyExpiry DateTime? @map("warranty_expiry")
+   280→  notes          String?
+   281→  createdAt      DateTime @default(now()) @map("created_at")
+   282→  updatedAt      DateTime @updatedAt @map("updated_at")
+   283→
+   284→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   285→  branch         Branch?    @relation(fields: [branchId], references: [id])
+   286→  driver         Driver?    @relation(fields: [driverId], references: [id])
+   287→  device         Device?    @relation(fields: [deviceId], references: [id])
+   288→  trips          Trip[]
+   289→  installations  Installation[]
+   290→  alerts         Alert[] @relation("AlertVehicle")
+   291→  maintenanceRecords MaintenanceRecord[]
+   292→  @@index([organizationId])
+   293→  @@index([plateNumber])
+   294→  @@index([driverId])
+   295→  @@index([deviceId])
+   296→  @@index([status])
+   297→}
+   298→
+   299→// ----------------------
+   300→// FLEET — DRIVERS
+   301→// ----------------------
+   302→
+   303→model Driver {
+   304→  id             String   @id @default(cuid())
+   305→  name           String
+   306→  employeeId     String?  @map("employee_id")
+   307→  phone          String?
+   308→  email          String?
+   309→  licenseNumber  String?  @map("license_number")
+   310→  licenseType    String?  @map("license_type")
+   311→  licenseExpiry  DateTime? @map("license_expiry")
+   312→  emirate        String?
+   313→  nationality    String?
+   314→  passportNumber String?  @map("passport_number")
+   315→  dateOfBirth    DateTime? @map("date_of_birth")
+   316→  emergencyContact String? @map("emergency_contact")
+   317→  emergencyPhone   String? @map("emergency_phone")
+   318→  organizationId String   @map("organization_id")
+   319→  status         String   @default("active")
+   320→  score          Float    @default(100)
+   321→  totalTrips     Int      @default(0) @map("total_trips")
+   322→  totalDistance   Float?   @map("total_distance")
+   323→  totalViolations Int     @default(0) @map("total_violations")
+   324→  notes          String?
+   325→  createdAt      DateTime @default(now()) @map("created_at")
+   326→  updatedAt      DateTime @updatedAt @map("updated_at")
+   327→
+   328→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   329→  vehicles       Vehicle[]
+   330→  @@index([organizationId])
+   331→  @@index([status])
+   332→  @@index([licenseNumber])
+   333→}
+   334→
+   335→// ----------------------
+   336→// FLEET — DEVICES & SIMS
+   337→// ----------------------
+   338→
+   339→model Device {
+   340→  id             String   @id @default(cuid())
+   341→  imei           String   @unique
+   342→  serialNumber   String?  @map("serial_number")
+   343→  model          String?
+   344→  manufacturer   String?
+   345→  deviceType     String?  @map("device_type")
+   346→  protocol       String?
+   347→  phoneNumber    String?
+   348→  firmware       String?
+   349→  simId          String?  @map("sim_id")
+   350→  organizationId String?  @map("organization_id")
+   351→  warehouse      String?
+   352→  status         String   @default("warehouse")
+   353→  purchaseDate   DateTime? @map("purchase_date")
+   354→  purchaseCost   Decimal? @map("purchase_cost")
+   355→  installDate    DateTime? @map("install_date")
+   356→  warrantyExpiry DateTime? @map("warranty_expiry")
+   357→  lastPingAt     DateTime? @map("last_ping_at")
+   358→  batteryLevel   Int?     @map("battery_level")
+   359→  notes          String?
+   360→  createdAt      DateTime @default(now()) @map("created_at")
+   361→  updatedAt      DateTime @updatedAt @map("updated_at")
+   362→
+   363→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   364→  vehicles       Vehicle[]
+   365→  installations  Installation[]
+   366→  sim            SIM?      @relation(fields: [simId], references: [id])
+   367→  @@index([organizationId])
+   368→  @@index([status])
+   369→}
+   370→
+   371→model SIM {
+   372→  id             String   @id @default(cuid())
+   373→  number         String   @unique
+   374→  provider       String?
+   375→  dataPlan       String?  @map("data_plan")
+   376→  status         String   @default("available")
+   377→  activatedAt    DateTime? @map("activated_at")
+   378→  organizationId String?  @map("organization_id")
+   379→  createdAt      DateTime @default(now()) @map("created_at")
+   380→  updatedAt      DateTime @updatedAt @map("updated_at")
+   381→
+   382→  devices        Device[]
+   383→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   384→  @@index([organizationId])
+   385→  @@index([status])
+   386→}
+   387→
+   388→// ----------------------
+   389→// OPERATIONS — TECHNICIANS
+   390→// ----------------------
+   391→
+   392→model Technician {
+   393→  id             String   @id @default(cuid())
+   394→  name           String
+   395→  phone          String
+   396→  email          String?
+   397→  emirate        String?
+   398→  specialty      String?
+   399→  organizationId String   @map("organization_id")
+   400→  status         String   @default("active")
+   401→  totalInstalled Int      @default(0) @map("total_installed")
+   402→  rating         Float    @default(0)
+   403→  notes          String?
+   404→  createdAt      DateTime @default(now()) @map("created_at")
+   405→  updatedAt      DateTime @updatedAt @map("updated_at")
+   406→
+   407→  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   408→  installations  Installation[]
+   409→  @@index([organizationId])
+   410→  @@index([status])
+   411→}
+   412→
+   413→// ----------------------
+   414→// OPERATIONS — INSTALLATIONS
+   415→// ----------------------
+   416→
+   417→model Installation {
+   418→  id             String   @id @default(cuid())
+   419→  installationNumber String @unique @map("installation_number")
+   420→  organizationId String   @map("organization_id")
+   421→  vehicleId      String   @map("vehicle_id")
+   422→  deviceId       String   @map("device_id")
+   423→  technicianId   String?  @map("technician_id")
+   424→  status         String   @default("scheduled")
+   425→  scheduledDate  DateTime? @map("scheduled_date")
+   426→  scheduledTime  String?  @map("scheduled_time")
+   427→  completedAt    DateTime? @map("completed_at")
+   428→  emirate        String?
+   429→  location       String?
+   430→  latitude       Float?
+   431→  longitude      Float?
+   432→  photos         String?
+   433→  testResult     String?  @map("test_result")
+   434→  gpsSignal      Boolean? @default(false) @map("gps_signal")
+   435→  powerWiring    Boolean? @default(false) @map("power_wiring")
+   436→  antennaMounted Boolean? @default(false) @map("antenna_mounted")
+   437→  signature      String?
+   438→  notes          String?
+   439→  createdAt      DateTime @default(now()) @map("created_at")
+   440→  updatedAt      DateTime @updatedAt @map("updated_at")
+   441→
+   442→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   443→  technician    Technician?  @relation(fields: [technicianId], references: [id])
+   444→  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+   445→  device        Device     @relation(fields: [deviceId], references: [id])
+   446→  @@index([organizationId])
+   447→  @@index([status])
+   448→  @@index([technicianId])
+   449→  @@index([vehicleId])
+   450→  @@index([deviceId])
+   451→}
+   452→
+   453→// ----------------------
+   454→// FLEETOS — TRIPS
+   455→// ----------------------
+   456→
+   457→model Trip {
+   458→  id             String   @id @default(cuid())
+   459→  vehicleId      String   @map("vehicle_id")
+   460→  organizationId String?  @map("organization_id")
+   461→  driverName     String?
+   462→  startTime      DateTime @map("start_time")
+   463→  endTime        DateTime? @map("end_time")
+   464→  distance       Float?
+   465→  duration       Int?
+   466→  maxSpeed       Float?   @map("max_speed")
+   467→  avgSpeed       Float?   @map("avg_speed")
+   468→  idleTime       Int?     @map("idle_time")
+   469→  overspeedCount Int?     @map("overspeed_count")
+   470→  harshBrakes    Int?     @map("harsh_brakes")
+   471→  harshAccel     Int?     @map("harsh_accel")
+   472→  status         String   @default("in_progress")
+   473→  createdAt      DateTime @default(now()) @map("created_at")
+   474→  updatedAt      DateTime @updatedAt @map("updated_at")
+   475→
+   476→  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id])
+   477→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   478→  @@index([vehicleId])
+   479→  @@index([organizationId])
+   480→  @@index([startTime])
+   481→  @@index([status])
+   482→}
+   483→
+   484→// ----------------------
+   485→// FLEETOS — GEOFENCES
+   486→// ----------------------
+   487→
+   488→model Geofence {
+   489→  id             String   @id @default(cuid())
+   490→  name           String
+   491→  type           String   @default("circle")
+   492→  centerLat      Float?   @map("center_lat")
+   493→  centerLng      Float?   @map("center_lng")
+   494→  radius         Float?
+   495→  polygonPoints  String?  @map("polygon_points")
+   496→  organizationId String   @map("organization_id")
+   497→  createdAt      DateTime @default(now()) @map("created_at")
+   498→  updatedAt      DateTime @updatedAt @map("updated_at")
+   499→
+   500→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   501→  @@index([organizationId])
+   502→}
+   503→
+   504→// ----------------------
+   505→// FLEETOS — ALERTS
+   506→// ----------------------
+   507→
+   508→model AlertRule {
+   509→  id             String   @id @default(cuid())
+   510→  name           String
+   511→  type           String
+   512→  conditions     String?
+   513→  channels       String?  @default("in_app")
+   514→  organizationId String   @map("organization_id")
+   515→  active         Boolean  @default(true)
+   516→  createdAt      DateTime @default(now()) @map("created_at")
+   517→  updatedAt      DateTime @updatedAt @map("updated_at")
+   518→
+   519→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   520→  @@index([organizationId])
+   521→  @@index([type])
+   522→}
+   523→
+   524→model Alert {
+   525→  id             String   @id @default(cuid())
+   526→  type           String
+   527→  severity       String   @default("medium")
+   528→  vehicleId      String?  @map("vehicle_id")
+   529→  driverName     String?
+   530→  vehiclePlate   String?
+   531→  message        String
+   532→  metadata       String?
+   533→  status         String   @default("open")
+   534→  organizationId String   @map("organization_id")
+   535→  createdAt      DateTime @default(now()) @map("created_at")
+   536→  updatedAt      DateTime @updatedAt @map("updated_at")
+   537→  resolvedAt     DateTime? @map("resolved_at")
+   538→
+   539→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   540→  vehicle        Vehicle?    @relation("AlertVehicle", fields: [vehicleId], references: [id])
+   541→  @@index([organizationId])
+   542→  @@index([status])
+   543→  @@index([vehicleId])
+   544→  @@index([createdAt])
+   545→}
+   546→
+   547→// ----------------------
+   548→// MAINTENANCE
+   549→// ----------------------
+   550→
+   551→model MaintenanceRecord {
+   552→  id             String   @id @default(cuid())
+   553→  vehicleId      String   @map("vehicle_id")
+   554→  type           String
+   555→  description    String?
+   556→  triggerType    String?  @map("trigger_type")
+   557→  triggerValue   Float?
+   558→  scheduledDate  DateTime? @map("scheduled_date")
+   559→  completedDate  DateTime? @map("completed_date")
+   560→  cost           Decimal?
+   561→  status         String   @default("upcoming")
+   562→  organizationId String   @map("organization_id")
+   563→  createdAt      DateTime @default(now()) @map("created_at")
+   564→  updatedAt      DateTime @updatedAt @map("updated_at")
+   565→
+   566→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   567→  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
+   568→  @@index([vehicleId])
+   569→  @@index([organizationId])
+   570→  @@index([status])
+   571→}
+   572→
+   573→// ----------------------
+   574→// BILLING & SUBSCRIPTIONS
+   575→// ----------------------
+   576→
+   577→model Plan {
+   578→  id             String   @id @default(cuid())
+   579→  name           String
+   580→  description    String?
+   581→  priceMonthly   Decimal  @map("price_monthly")
+   582→  priceAnnual    Decimal? @map("price_annual")
+   583→  vehicleLimit   Int      @default(0) @map("vehicle_limit")
+   584→  features       String?
+   585→  active         Boolean  @default(true)
+   586→  createdAt      DateTime @default(now()) @map("created_at")
+   587→  updatedAt      DateTime @updatedAt @map("updated_at")
+   588→
+   589→  subscriptions  Subscription[]
+   590→}
+   591→
+   592→model Subscription {
+   593→  id             String   @id @default(cuid())
+   594→  organizationId String   @unique @map("organization_id")
+   595→  planId         String   @map("plan_id")
+   596→  status         String   @default("active")
+   597→  vehicleCount   Int      @default(0) @map("vehicle_count")
+   598→  startsAt       DateTime @map("starts_at")
+   599→  endsAt         DateTime? @map("ends_at")
+   600→  createdAt      DateTime @default(now()) @map("created_at")
+   601→  updatedAt      DateTime @updatedAt @map("updated_at")
+   602→
+   603→  organization   Organization @relation(fields: [organizationId], references: [id])
+   604→  plan           Plan       @relation(fields: [planId], references: [id])
+   605→  invoices       Invoice[]
+   606→}
+   607→
+   608→model Invoice {
+   609→  id             String   @id @default(cuid())
+   610→  invoiceNumber  String   @unique @map("invoice_number")
+   611→  organizationId String   @map("organization_id")
+   612→  subscriptionId String?  @map("subscription_id")
+   613→  amount         Decimal
+   614→  tax            Decimal  @default(0)
+   615→  total          Decimal
+   616→  status         String   @default("pending")
+   617→  dueDate        DateTime @map("due_date")
+   618→  paidAt         DateTime? @map("paid_at")
+   619→  notes          String?
+   620→  createdAt      DateTime @default(now()) @map("created_at")
+   621→
+   622→  organization   Organization  @relation(fields: [organizationId], references: [id])
+   623→  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+   624→  @@index([organizationId])
+   625→  @@index([status])
+   626→  @@index([subscriptionId])
+   627→}
+   628→
+   629→// ----------------------
+   630→// CRM — QUOTATIONS
+   631→// ----------------------
+   632→
+   633→model Quotation {
+   634→  id              String          @id @default(cuid())
+   635→  quotationNumber String          @unique @map("quotation_number")
+   636→  leadId          String?         @map("lead_id")
+   637→  contactId       String?         @map("contact_id")
+   638→  organizationId  String          @map("organization_id")
+   639→  subtotal        Decimal
+   640→  taxRate         Decimal         @default(5) @map("tax_rate")
+   641→  tax             Decimal         @default(0)
+   642→  total           Decimal
+   643→  status          String          @default("draft")
+   644→  validUntil      DateTime?       @map("valid_until")
+   645→  notes           String?
+   646→  terms           String?
+   647→  createdAt       DateTime        @default(now()) @map("created_at")
+   648→  updatedAt       DateTime        @updatedAt @map("updated_at")
+   649→
+   650→  items          QuotationItem[]
+   651→  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   652→  contact        Contact?         @relation(fields: [contactId], references: [id])
+   653→  lead           Lead?            @relation(fields: [leadId], references: [id])
+   654→
+   655→  @@index([organizationId])
+   656→  @@index([leadId])
+   657→  @@index([status])
+   658→}
+   659→
+   660→model QuotationItem {
+   661→  id          String    @id @default(cuid())
+   662→  quotationId String    @map("quotation_id")
+   663→  sortOrder   Int       @default(0) @map("sort_order")
+   664→  description String
+   665→  quantity    Int
+   666→  unitPrice   Decimal  @map("unit_price")
+   667→
+   668→  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+   669→
+   670→  @@index([quotationId])
+   671→}
+   672→
+   673→// ----------------------
+   674→// SUPPORT / TICKETING
+   675→// ----------------------
+   676→
+   677→model Ticket {
+   678→  id             String   @id @default(cuid())
+   679→  ticketNumber   String   @unique @map("ticket_number")
+   680→  organizationId String   @map("organization_id")
+   681→  subject        String
+   682→  description    String?
+   683→  priority       String   @default("medium")
+   684→  status         String   @default("open")
+   685→  vehiclePlate   String?
+   686→  assignedToId   String?  @map("assigned_to_id")
+   687→  resolvedAt     DateTime? @map("resolved_at")
+   688→  createdAt      DateTime @default(now()) @map("created_at")
+   689→  updatedAt      DateTime @updatedAt @map("updated_at")
+   690→
+   691→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   692→  assignedTo     User? @relation("TicketAssigned", fields: [assignedToId], references: [id])
+   693→  @@index([organizationId])
+   694→  @@index([status])
+   695→  @@index([assignedToId])
+   696→}
+   697→
+   698→// ----------------------
+   699→// CONTRACTS
+   700→// ----------------------
+   701→
+   702→model Contract {
+   703→  id             String   @id @default(cuid())
+   704→  organizationId String   @map("organization_id")
+   705→  title          String
+   706→  startDate      DateTime @map("start_date")
+   707→  endDate        DateTime? @map("end_date")
+   708→  status         String   @default("active")
+   709→  terms          String?
+   710→  createdAt      DateTime @default(now()) @map("created_at")
+   711→  updatedAt      DateTime @updatedAt @map("updated_at")
+   712→
+   713→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   714→  @@index([organizationId])
+   715→  @@index([status])
+   716→}
+   717→
+   718→// ----------------------
+   719→// DOCUMENTS
+   720→// ----------------------
+   721→
+   722→model Document {
+   723→  id             String   @id @default(cuid())
+   724→  name           String
+   725→  type           String
+   726→  fileUrl        String   @map("file_url")
+   727→  mimeType       String?  @map("mime_type")
+   728→  size           Int?
+   729→  organizationId String   @map("organization_id")
+   730→  uploadedBy     String?
+   731→  createdAt      DateTime @default(now()) @map("created_at")
+   732→  updatedAt      DateTime @updatedAt @map("updated_at")
+   733→
+   734→  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   735→  uploadedByUser User?      @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+   736→  @@index([organizationId])
+   737→  @@index([type])
+   738→}
+   739→
+   740→// ----------------------
+   741→// NOTIFICATIONS
+   742→// ----------------------
+   743→
+   744→model Notification {
+   745→  id             String   @id @default(cuid())
+   746→  userId         String?  @map("user_id")
+   747→  organizationId String?  @map("organization_id")
+   748→  type           String
+   749→  title          String
+   750→  body           String?
+   751→  read           Boolean  @default(false)
+   752→  metadata       String?
+   753→  createdAt      DateTime @default(now()) @map("created_at")
+   754→  updatedAt      DateTime @updatedAt @map("updated_at")
+   755→
+   756→  user           User? @relation("NotificationUser", fields: [userId], references: [id])
+   757→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   758→  @@index([userId])
+   759→  @@index([organizationId])
+   760→}
+   761→
+   762→// ----------------------
+   763→// PLATFORM SETTINGS
+   764→// ----------------------
+   765→
+   766→model Session {
+   767→  id             String   @id @default(cuid())
+   768→  token          String   @unique
+   769→  userId         String   @map("user_id")
+   770→  expiresAt      DateTime @map("expires_at")
+   771→  createdAt      DateTime @default(now()) @map("created_at")
+   772→  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   773→  @@index([userId])
+   774→}
+   775→
+   776→model Setting {
+   777→  id        String   @id @default(cuid())
+   778→  key       String   @unique
+   779→  value     String
+   780→  type      String   @default("string")
+   781→  createdAt DateTime @default(now()) @map("created_at")
+   782→  updatedAt DateTime @updatedAt @map("updated_at")
+   783→}
+   784→
+   785→// ----------------------
+   786→// API KEYS (Phase 9)
+   787→// ----------------------
+   788→
+   789→model ApiKey {
+   790→  id             String   @id @default(cuid())
+   791→  name           String
+   792→  key            String   @unique
+   793→  keyPrefix      String   @map("key_prefix")
+   794→  organizationId String?  @map("organization_id")
+   795→  userId         String?  @map("user_id")
+   796→  permissions    String   @default("read")
+   797→  expiresAt      DateTime? @map("expires_at")
+   798→  lastUsedAt     DateTime? @map("last_used_at")
+   799→  active         Boolean  @default(true)
+   800→  createdAt      DateTime @default(now()) @map("created_at")
+   801→  updatedAt      DateTime @updatedAt @map("updated_at")
+   802→
+   803→  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+   804→  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+   805→  @@index([organizationId])
+   806→  @@index([userId])
+   807→}
+   808→
+   809→// ----------------------
+   810→// AI CONVERSATIONS
+   811→// ----------------------
+   812→
+   813→model AIConversation {
+   814→  id             String   @id @default(cuid())
+   815→  userId         String?  @map("user_id")
+   816→  organizationId String?  @map("organization_id")
+   817→  type           String   @default("fleet_assistant")
+   818→  messages       String
+   819→  createdAt      DateTime @default(now()) @map("created_at")
+   820→  updatedAt      DateTime @updatedAt @map("updated_at")
+   821→
+   822→  user           User? @relation("AIConversationUser", fields: [userId], references: [id])
+   823→  organization   Organization? @relation(fields: [organizationId], references: [id])
+   824→
+   825→  @@index([userId])
+   826→  @@index([organizationId])
+   827→}
+   828→
