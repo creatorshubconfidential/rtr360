@@ -6,7 +6,7 @@ import { logAudit, getClientIp } from '@/lib/audit';
 import { verifySession } from '@/lib/auth';
 
 export async function POST(request: Request) {
-    const rl = checkRateLimit(request, 'api');
+    const rl = await checkRateLimit(request, 'api');
     if (rl) return rl;
   try {
     // Read token from HttpOnly cookie (sent automatically by browser)

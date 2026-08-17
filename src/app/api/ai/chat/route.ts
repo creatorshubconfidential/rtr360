@@ -595,7 +595,7 @@ ${ctx.openAlertsCount > 5 ? '- **Priority**: You have a high number of open aler
 // POST /api/ai/chat — Send a message
 // ────────────────────────────────────────────────
 export async function POST(request: Request) {
-    const rl = checkRateLimit(request, 'analytics');
+    const rl = await checkRateLimit(request, 'analytics');
     if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);

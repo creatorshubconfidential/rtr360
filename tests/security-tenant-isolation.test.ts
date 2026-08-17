@@ -410,7 +410,7 @@ describe('Infrastructure: Security libraries', () => {
 
   it('rate-limit.ts exports checkRateLimit middleware helper', () => {
     const code = src('lib/rate-limit.ts');
-    expect(code).toContain('export function checkRateLimit');
+    expect(code).toContain('export async function checkRateLimit');
   });
 
   it('audit.ts exports logAudit', () => {

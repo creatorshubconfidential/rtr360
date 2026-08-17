@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     // Rate limiting: 5 login attempts per minute per IP
     const ip = getClientIp(request);
-    const { allowed, remaining, resetAt } = rateLimiter.strict(ip);
+    const { allowed, remaining, resetAt } = await rateLimiter.strict(ip);
 
     if (!allowed) {
       return NextResponse.json(

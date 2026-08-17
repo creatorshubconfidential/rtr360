@@ -64,7 +64,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const rl = checkRateLimit(request, 'api');
+  const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
 
   try {
@@ -146,7 +146,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const rl = checkRateLimit(request, 'api');
+  const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
 
   try {

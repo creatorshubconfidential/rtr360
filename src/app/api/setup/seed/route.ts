@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
 /**
@@ -9,14 +9,31 @@ import { logger } from '@/lib/logger';
  * Creates the default organization and admin user if the database is empty.
  * Call this ONCE after first deployment to initialize the database.
  *
- * Security: In production, this endpoint should be blocked after initial setup.
- * The proxy.ts / middleware blocks /api/setup/* on production.
+ * Security (defense-in-depth):
+ *   1. Middleware blocks this path in production (returns 404).
+ *   2. This handler also checks NODE_ENV and rejects production requests.
+ *   3. Require auth + admin role check (for environments where middleware may be bypassed).
  */
 export async function POST(request: Request) {
   try {
+    // ── Defense-in-depth: reject in production even if middleware is misconfigured ──
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('seed blocked: production environment');
+      return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+    }
+
+    // ── Auth check — only admins can seed the database ──
+    const { user, error: authError } = await requireAuth(request);
+    if (authError) return authError as NextResponse;
+    if (!['super_admin', 'org_owner', 'platform_admin', 'admin'].includes(user.role)) {
+      return NextResponse.json(
+        { error: 'Only administrators can seed the database' },
+        { status: 403 }
+      );
+    }
+
     // Check if any users already exist
     const userCount = await db.user.count();
-
     if (userCount > 0) {
       return NextResponse.json({
         message: `Database already has ${userCount} user(s). Seed skipped.`,
@@ -121,7 +138,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Also allow GET for easy browser-based setup
+// GET is not supported — use POST with auth credentials
 export async function GET() {
-  return POST(new Request('http://localhost', { method: 'POST' }));
+  return NextResponse.json({ error: 'Use POST with authentication' }, { status: 405 });
 }

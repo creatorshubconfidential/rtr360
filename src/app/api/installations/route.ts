@@ -112,7 +112,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const rl = checkRateLimit(request, 'api');
+    const rl = await checkRateLimit(request, 'api');
     if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);

@@ -67,7 +67,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-    const rl = checkRateLimit(request, 'analytics');
+    const rl = await checkRateLimit(request, 'analytics');
     if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);

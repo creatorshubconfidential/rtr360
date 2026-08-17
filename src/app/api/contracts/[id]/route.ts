@@ -7,7 +7,7 @@ import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rl = checkRateLimit(request, 'api');
+  const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
@@ -49,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rl = checkRateLimit(request, 'api');
+  const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);

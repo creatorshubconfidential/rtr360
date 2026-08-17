@@ -51,7 +51,7 @@ export async function GET(request: Request, context: RouteContext) {
 
 // PUT /api/admin/organizations/[id]/branding — Update white-label branding
 export async function PUT(request: Request, context: RouteContext) {
-  const rl = checkRateLimit(request, 'api');
+  const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
   try {
     const { user, error } = await requireAuth(request);
