@@ -26,17 +26,24 @@ export async function POST(request: Request) {
 
     // Parse optional body for custom admin credentials
     let adminEmail = 'admin@rtr.ae';
-    let adminPassword = 'admin123';
     let adminName = 'Admin';
+    let adminPassword = '';
+    let hasCustomPassword = false;
 
     try {
       const body = await request.json();
       if (body.email) adminEmail = body.email;
-      if (body.password) adminPassword = body.password;
+      if (body.password) { adminPassword = body.password; hasCustomPassword = true; }
       if (body.name) adminName = body.name;
     } catch {
       // No body — use defaults
     }
+
+    // Use env var, body-provided password, or generate a random one
+    if (!adminPassword) {
+      adminPassword = process.env.SEED_PASSWORD || Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    const isGenerated = !hasCustomPassword && !process.env.SEED_PASSWORD;
 
     logger.info('Seeding database with default organization and admin user...');
 
@@ -92,13 +99,19 @@ export async function POST(request: Request) {
 
     logger.info('Database seeded successfully', { orgId: org.id, adminId: admin.id });
 
-    return NextResponse.json({
+    const response: Record<string, unknown> = {
       message: 'Database seeded successfully',
       seeded: true,
       organization: { id: org.id, name: org.name },
       admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
       plan: { id: plan.id, name: plan.name },
-    });
+    };
+    if (isGenerated) {
+      response.generatedPassword = adminPassword;
+      logger.warn('Generated random admin password — save it now!', { password: adminPassword });
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     logger.error('Seed error', { error });
     return NextResponse.json(
