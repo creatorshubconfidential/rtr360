@@ -20,6 +20,9 @@ export interface DashboardStats {
   openTickets: number;
   todayTrips: number;
   totalDistance: number;
+  totalDevices: number;
+  pendingInstallations: number;
+  activeTechnicians: number;
 }
 
 export interface Lead {
@@ -155,12 +158,23 @@ export type ViewType =
   | 'devices'
   | 'installations'
   | 'maintenance'
+  | 'technicians'
   | 'pipeline'
   | 'leads'
   | 'contacts'
   | 'quotations'
+  | 'contracts'
   | 'subscriptions'
   | 'invoices'
   | 'tickets'
+  | 'reports'
+  | 'alert-rules'
+  | 'geofences'
+  | 'trips'
+  | 'users'
+  | 'contracts'
+  | 'notifications'
   | 'settings'
-  | 'audit-logs';
+  | 'audit-logs'
+  | 'ai-assistant'
+  | 'super-admin';

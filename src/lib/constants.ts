@@ -3,6 +3,15 @@
 // Powered by Mianx.ai
 // ────────────────────────────────────────
 
+import type { ViewType } from './types';
+import type { LucideIcon } from 'lucide-react';
+import {
+  LayoutDashboard, BrainCircuit, MapPin, Truck, Users, UserPlus,
+  AlertTriangle, Ticket, Route, Gauge, Wrench, Cpu, CreditCard,
+  FileText, Settings, Bell, Kanban, HardHat, BarChart3, BellRing,
+  MapPinned, UserCog, FileSignature, Bot, Crown,
+} from 'lucide-react';
+
 export const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-100 text-blue-700',
   contacted: 'bg-yellow-100 text-yellow-700',
@@ -101,3 +110,95 @@ export const DEFAULT_QUOTATION_ITEMS = [
 ];
 
 export const QUOTATION_TERMS = 'This quotation is valid for 30 days from the date of issue. Payment terms: 50% advance, 50% upon installation completion. All prices are in AED and inclusive of applicable taxes as per UAE regulations. Warranty: 12 months on hardware from the date of installation.';
+
+// ────────────────────────────────────────
+// Navigation
+// ────────────────────────────────────────
+
+export interface NavItem {
+  id: ViewType;
+  icon: LucideIcon;
+  label: string;
+}
+
+export interface NavSection {
+  label: string;
+  superAdminOnly?: boolean;
+  items: NavItem[];
+}
+
+export const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'MAIN',
+    items: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { id: 'analytics', icon: BrainCircuit, label: 'Analytics AI' },
+      { id: 'reports', icon: BarChart3, label: 'Reports' },
+      { id: 'live-tracking', icon: MapPin, label: 'Live Tracking' },
+      { id: 'ai-assistant', icon: Bot, label: 'AI Assistant' },
+    ],
+  },
+  {
+    label: 'FLEET',
+    items: [
+      { id: 'vehicles', icon: Truck, label: 'Vehicles' },
+      { id: 'drivers', icon: Users, label: 'Drivers' },
+      { id: 'devices', icon: Cpu, label: 'Devices' },
+      { id: 'trips', icon: Route, label: 'Trips' },
+    ],
+  },
+  {
+    label: 'OPERATIONS',
+    items: [
+      { id: 'installations', icon: Wrench, label: 'Installations' },
+      { id: 'technicians', icon: HardHat, label: 'Technicians' },
+      { id: 'maintenance', icon: Settings, label: 'Maintenance' },
+    ],
+  },
+  {
+    label: 'CRM',
+    items: [
+      { id: 'pipeline', icon: Kanban, label: 'Pipeline' },
+      { id: 'leads', icon: UserPlus, label: 'Leads' },
+      { id: 'contacts', icon: Users, label: 'Contacts' },
+      { id: 'quotations', icon: FileText, label: 'Quotations' },
+      { id: 'contracts', icon: FileSignature, label: 'Contracts' },
+    ],
+  },
+  {
+    label: 'FINANCE',
+    items: [
+      { id: 'subscriptions', icon: CreditCard, label: 'Subscriptions' },
+      { id: 'invoices', icon: FileText, label: 'Invoices' },
+    ],
+  },
+  {
+    label: 'INTELLIGENCE',
+    items: [
+      { id: 'geofences', icon: MapPinned, label: 'Geofences' },
+      { id: 'alert-rules', icon: BellRing, label: 'Alert Rules' },
+    ],
+  },
+  {
+    label: 'SUPPORT',
+    items: [
+      { id: 'tickets', icon: Ticket, label: 'Tickets' },
+      { id: 'notifications', icon: Bell, label: 'Notifications' },
+    ],
+  },
+  {
+    label: 'ADMIN',
+    items: [
+      { id: 'users', icon: UserCog, label: 'Users' },
+      { id: 'settings', icon: Settings, label: 'Settings' },
+      { id: 'audit-logs', icon: AlertTriangle, label: 'Audit Logs' },
+    ],
+  },
+  {
+    label: 'PLATFORM',
+    superAdminOnly: true,
+    items: [
+      { id: 'super-admin', icon: Crown, label: 'Super Admin' },
+    ],
+  },
+];
