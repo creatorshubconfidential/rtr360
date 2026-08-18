@@ -3,9 +3,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MapPin, Plus, Trash2, Search, Circle, X, ChevronDown,
+  MapPin, Plus, Trash2, Circle, X,
   MapPinned, Ruler,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { authFetch } from '@/lib/api';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -25,6 +23,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 
 
 const UAE_CENTER: [number, number] = [24.45, 54.38];
@@ -250,6 +249,97 @@ export default function GeofencesView() {
   const formatDate = (v: string) =>
     new Date(v).toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' });
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (value) => <span className="font-semibold text-sm">{value as string}</span>,
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (value) => {
+        const type = value as string;
+        return (
+          <Badge
+            variant="outline"
+            className={`text-[10px] px-1.5 py-0 ${
+              type === 'circle'
+                ? 'border-emerald-300 text-emerald-700'
+                : 'border-blue-300 text-blue-700'
+            }`}
+          >
+            <Circle className="w-2.5 h-2.5 mr-0.5" />
+            {type}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'radius',
+      label: 'Radius',
+      render: (value, row) => {
+        const radius = value as number | null | undefined;
+        const type = row.type as string;
+        if (type !== 'circle' || !radius) return <span className="text-slate-400">—</span>;
+        return (
+          <span className="text-xs text-slate-500 flex items-center gap-0.5">
+            <Ruler className="w-3 h-3" />
+            {(radius / 1000).toFixed(radius >= 1000 ? 1 : 2)} km
+          </span>
+        );
+      },
+    },
+    {
+      key: 'centerLat',
+      label: 'Coordinates',
+      render: (value, row) => (
+        <span className="text-xs text-slate-400">
+          {(value as number).toFixed(4)}, {(row.centerLng as number).toFixed(4)}
+        </span>
+      ),
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      sortable: true,
+      render: (value) => (
+        <span className="text-xs text-slate-400">{formatDate(value as string)}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right',
+      render: (_value, row) => {
+        const gf = row as unknown as Geofence;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-7 h-7 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+              onClick={() => panToGeofence(gf)}
+              title="Show on map"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-7 h-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
+              onClick={() => setDeleteTarget(gf)}
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -274,151 +364,58 @@ export default function GeofencesView() {
         </Button>
       </div>
 
-      {/* Map + List Layout */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Left Panel - List */}
-        <AnimatePresence mode="wait">
-          {showMobileList && (
-            <motion.div
-              className="w-full lg:w-80 shrink-0"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="rounded-xl border-slate-200">
-                <CardContent className="p-3 space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      placeholder="Search geofences..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 h-9 text-sm"
-                    />
-                  </div>
+      {/* Map */}
+      <div className="relative">
+        <div
+          ref={mapContainerRef}
+          className="rounded-xl overflow-hidden border border-slate-200/60 shadow-sm bg-slate-100"
+          style={{ height: '500px' }}
+        />
 
-                  <ScrollArea className="max-h-[calc(100vh-24rem)]">
-                    {loading ? (
-                      <div className="space-y-2">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-20 rounded-lg bg-slate-100 animate-pulse" />
-                        ))}
-                      </div>
-                    ) : filtered.length === 0 ? (
-                      <div className="text-center py-8">
-                        <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <p className="text-sm text-slate-400">No geofences found</p>
-                        <p className="text-xs text-slate-300 mt-1">Click on the map or use the button to create one</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {filtered.map((gf) => (
-                          <motion.div
-                            key={gf.id}
-                            className="p-3 rounded-lg border border-slate-200/60 hover:border-emerald-300 hover:bg-emerald-50/50 cursor-pointer transition-all group"
-                            onClick={() => panToGeofence(gf)}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-sm text-slate-900 truncate">{gf.name}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-[10px] px-1.5 py-0 ${
-                                      gf.type === 'circle'
-                                        ? 'border-emerald-300 text-emerald-700'
-                                        : 'border-blue-300 text-blue-700'
-                                    }`}
-                                  >
-                                    <Circle className="w-2.5 h-2.5 mr-0.5" />
-                                    {gf.type}
-                                  </Badge>
-                                  {gf.type === 'circle' && gf.radius && (
-                                    <span className="text-[11px] text-slate-500 flex items-center gap-0.5">
-                                      <Ruler className="w-3 h-3" />
-                                      {(gf.radius / 1000).toFixed(gf.radius >= 1000 ? 1 : 2)} km
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-slate-400 mt-1">
-                                  {gf.centerLat.toFixed(4)}, {gf.centerLng.toFixed(4)}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-600 hover:bg-red-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteTarget(gf);
-                                }}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Right Panel - Map */}
-        <div className="flex-1 relative">
-          {/* Mobile toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="lg:hidden absolute top-2 left-2 z-[1000] bg-white shadow-sm"
-            onClick={() => setShowMobileList(!showMobileList)}
-          >
-            <MapPin className="w-3.5 h-3.5 mr-1.5" />
-            {showMobileList ? 'Show Map' : 'Show List'}
-          </Button>
-
-          <div
-            ref={mapContainerRef}
-            className="rounded-xl overflow-hidden border border-slate-200/60 shadow-sm bg-slate-100"
-            style={{ height: 'calc(100vh - 14rem)', minHeight: '400px' }}
-          />
-
-          {mapClickPos && !createOpen && (
-            <div className="absolute bottom-4 left-4 z-[1000]">
-              <Card className="bg-white/95 backdrop-blur shadow-lg border-slate-200 rounded-xl">
-                <CardContent className="p-3 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs text-slate-600">
-                    {mapClickPos.lat.toFixed(4)}, {mapClickPos.lng.toFixed(4)}
-                  </span>
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white ml-2"
-                    onClick={() => setCreateOpen(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Geofence
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setMapClickPos(null)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
+        {mapClickPos && !createOpen && (
+          <div className="absolute bottom-4 left-4 z-[1000]">
+            <Card className="bg-white/95 backdrop-blur shadow-lg border-slate-200 rounded-xl">
+              <CardContent className="p-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs text-slate-600">
+                  {mapClickPos.lat.toFixed(4)}, {mapClickPos.lng.toFixed(4)}
+                </span>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white ml-2"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Geofence
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setMapClickPos(null)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
+
+      {/* DataTable */}
+      <DataTable
+        columns={columns}
+        data={filtered as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as Geofence).id}
+        loading={loading}
+        emptyMessage="No geofences found"
+        emptyIcon={MapPin}
+        searchable
+        searchPlaceholder="Search geofences..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); }}
+        exportFilename="geofences"
+      />
 
       {/* Create Geofence Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

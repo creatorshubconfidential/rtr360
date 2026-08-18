@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
-  FileText, Plus, Search, ChevronLeft, ChevronRight, Trash2,
+  FileText, Plus, Trash2,
   Edit, AlertTriangle, Clock, CheckCircle2, XCircle, FilePen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,15 +17,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { authFetch } from '@/lib/api';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 
 
 const STATUS_COLORS: Record<string, string> = {
@@ -189,6 +186,98 @@ export default function ContractsView() {
     return `${days}d remaining`;
   };
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'title',
+      label: 'Title',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        return (
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-slate-400" />
+            <span className="font-semibold text-sm text-slate-900">{contract.title}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'organization',
+      label: 'Organization',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        return (
+          <span className="text-sm text-slate-600">{contract.organization?.name || '—'}</span>
+        );
+      },
+    },
+    {
+      key: 'startDate',
+      label: 'Start Date',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        return <span className="text-sm text-slate-600">{formatDate(contract.startDate)}</span>;
+      },
+    },
+    {
+      key: 'endDate',
+      label: 'End Date',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        return <span className="text-sm text-slate-600">{formatDate(contract.endDate)}</span>;
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        const StatusIcon = STATUS_ICONS[contract.status] || FileText;
+        return (
+          <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[contract.status] || ''}`}>
+            <StatusIcon className="w-3 h-3 mr-1" />
+            {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'daysRemaining',
+      label: 'Days Remaining',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        const days = getDaysRemaining(contract.endDate, contract.status);
+        const daysColor = days !== null && days <= 7 && days >= 0
+          ? 'text-red-600'
+          : days !== null && days <= 30
+            ? 'text-amber-600'
+            : 'text-slate-600';
+        return (
+          <span className={`text-sm font-medium ${daysColor}`}>
+            {formatDaysRemaining(days)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right',
+      render: (_value, row) => {
+        const contract = row as unknown as Contract;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEdit(contract)}>
+              <Edit className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => setDeleteTarget(contract)}>
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Summary Bar */}
@@ -241,221 +330,43 @@ export default function ContractsView() {
         </Card>
       </div>
 
-      {/* Filters + Create */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search contracts..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-9 h-9"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="All Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-              <SelectItem value="terminated">Terminated</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1.5" />Create Contract
-          </Button>
-        </div>
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden md:block">
-        <Card className="rounded-xl border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Title</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Organization</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Start Date</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">End Date</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Status</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Days Remaining</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <div className="h-4 bg-slate-100 rounded animate-pulse w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : contracts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">No contracts found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                contracts.map((contract, idx) => {
-                  const days = getDaysRemaining(contract.endDate, contract.status);
-                  const StatusIcon = STATUS_ICONS[contract.status] || FileText;
-                  const daysColor = days !== null && days <= 7 && days >= 0
-                    ? 'text-red-600'
-                    : days !== null && days <= 30
-                      ? 'text-amber-600'
-                      : 'text-slate-600';
-                  return (
-                    <motion.tr
-                      key={contract.id}
-                      className="border-b last:border-0 hover:bg-slate-50/50 transition-colors"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-slate-400" />
-                          <span className="font-semibold text-sm text-slate-900">{contract.title}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{contract.organization?.name || '—'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{formatDate(contract.startDate)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{formatDate(contract.endDate)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[contract.status] || ''}`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-sm font-medium ${daysColor}`}>
-                          {formatDaysRemaining(days)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEdit(contract)}>
-                            <Edit className="w-3.5 h-3.5 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => setDeleteTarget(contract)}>
-                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </Card>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-slate-200">
-              <CardContent className="p-4 space-y-3">
-                <div className="h-4 bg-slate-100 rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
-              </CardContent>
-            </Card>
-          ))
-        ) : contracts.length === 0 ? (
-          <Card className="rounded-xl border-slate-200">
-            <CardContent className="p-8 text-center">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No contracts found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          contracts.map((contract, idx) => {
-            const days = getDaysRemaining(contract.endDate, contract.status);
-            const daysColor = days !== null && days <= 7 && days >= 0
-              ? 'text-red-600'
-              : days !== null && days <= 30
-                ? 'text-amber-600'
-                : 'text-slate-600';
-            return (
-              <motion.div
-                key={contract.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04 }}
-              >
-                <Card className="rounded-xl border-slate-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
-                          <FileText className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm text-slate-900">{contract.title}</p>
-                          <p className="text-xs text-slate-500">{contract.organization?.name || 'No org'}</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[contract.status] || ''}`}>
-                        {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-slate-400">Start: </span>
-                        <span className="text-slate-600">{formatDate(contract.startDate)}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400">End: </span>
-                        <span className="text-slate-600">{formatDate(contract.endDate)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                      <span className={`text-xs font-medium ${daysColor}`}>
-                        {formatDaysRemaining(days)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEdit(contract)}>
-                          <Edit className="w-3 h-3 mr-1" />Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-red-600" onClick={() => setDeleteTarget(contract)}>
-                          <Trash2 className="w-3 h-3 mr-1" />Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })
+      {/* Data Table */}
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={contracts as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as Contract).id}
+        loading={loading}
+        emptyMessage="No contracts found"
+        emptyIcon={FileText}
+        searchable
+        searchPlaceholder="Search contracts..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        toolbar={(
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1.5" />Create Contract
+            </Button>
+          </div>
         )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+        pagination={{
+          page,
+          pageSize: 15,
+          totalPages,
+          onPageChange: setPage,
+        }}
+        exportFilename="contracts"
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

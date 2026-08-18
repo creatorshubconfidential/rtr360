@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
-  Wrench, Plus, Search, ChevronLeft, ChevronRight, Calendar,
+  Wrench, Plus, Calendar,
   DollarSign, AlertCircle, CheckCircle2, Clock, XCircle, Truck,
   Download,
 } from 'lucide-react';
 import { exportCSV, MAINTENANCE_COLUMNS } from '@/lib/export';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,11 +20,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 
 
 import { authFetch } from '@/lib/api';
@@ -219,6 +215,75 @@ export default function MaintenanceView() {
   const completedCount = records.filter((r) => r.status === 'completed').length;
   const totalCost = records.reduce((sum, r) => sum + (r.cost || 0), 0);
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'vehicleId',
+      label: 'Vehicle',
+      render: (_value, row) => {
+        const record = row as unknown as MaintenanceRecord;
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+              <Truck className="w-4 h-4 text-slate-500" />
+            </div>
+            <span className="font-semibold text-sm text-slate-800">{getPlateNumber(record)}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (value) => TYPE_LABELS[(value as string)] || (value as string),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_value, row) => {
+        const record = row as unknown as MaintenanceRecord;
+        return (
+          <Badge className={`text-[11px] gap-1 ${STATUS_COLORS[record.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+            {statusIcon(record.status)} {STATUS_LABELS[record.status] || record.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'scheduledDate',
+      label: 'Scheduled Date',
+      render: (value) => <span className="text-sm text-slate-600">{formatDate(value as string)}</span>,
+    },
+    {
+      key: 'cost',
+      label: 'Cost',
+      render: (value) => (
+        <span className="text-sm font-semibold text-slate-700">{formatAED((value as number) || 0)}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_value, row) => {
+        const record = row as unknown as MaintenanceRecord;
+        return (
+          <Select
+            value={record.status}
+            onValueChange={(v) => updateStatus(record.id, v)}
+          >
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Summary Cards */}
@@ -342,6 +407,45 @@ export default function MaintenanceView() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
+    </div>
+
+    {/* DataTable */}
+    <DataTable
+      columns={columns}
+      data={records as unknown as Record<string, unknown>[]}
+      keyExtractor={(row) => (row as unknown as MaintenanceRecord).id}
+      loading={loading}
+      emptyMessage="No maintenance records found"
+      emptyIcon={Wrench}
+      searchable
+      searchPlaceholder="Search by vehicle plate..."
+      searchValue={search}
+      onSearch={(q) => { setSearch(q); setPage(1); }}
+      toolbar={
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {STATUS_OPTIONS.map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {MAINTENANCE_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             className="gap-2"
@@ -351,198 +455,14 @@ export default function MaintenanceView() {
             <Download className="w-4 h-4" /> Export CSV
           </Button>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search by vehicle plate..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {MAINTENANCE_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
-          ))}
-        </div>
-      ) : records.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Wrench className="w-10 h-10 mb-3" />
-            <p className="text-sm font-medium">No maintenance records found</p>
-            <p className="text-xs mt-1">Create your first maintenance record</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
-            {records.map((record) => (
-              <motion.div
-                key={record.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Card className="rounded-xl border-slate-200/60 shadow-sm hover:border-emerald-200 transition-colors">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <Truck className="w-4.5 h-4.5 text-slate-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{getPlateNumber(record)}</p>
-                          <p className="text-xs text-slate-500">{TYPE_LABELS[record.type] || record.type}</p>
-                        </div>
-                      </div>
-                      <Badge
-                        className={`text-[11px] gap-1 ${STATUS_COLORS[record.status] || 'bg-slate-100 text-slate-600'} border-0`}
-                      >
-                        {statusIcon(record.status)} {STATUS_LABELS[record.status] || record.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> {formatDate(record.scheduledDate)}
-                      </span>
-                      <span className="flex items-center gap-1 font-semibold text-slate-700">
-                        <DollarSign className="w-3.5 h-3.5" /> {formatAED(record.cost || 0)}
-                      </span>
-                    </div>
-                    <Select
-                      value={record.status}
-                      onValueChange={(v) => updateStatus(record.id, v)}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Desktop Table */}
-          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80">
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Vehicle</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Type</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Scheduled Date</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Cost</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {records.map((record) => (
-                  <TableRow key={record.id} className="hover:bg-slate-50/50">
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <Truck className="w-4 h-4 text-slate-500" />
-                        </div>
-                        <span className="font-semibold text-sm text-slate-800">{getPlateNumber(record)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {TYPE_LABELS[record.type] || record.type}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={`text-[11px] gap-1 ${STATUS_COLORS[record.status] || 'bg-slate-100 text-slate-600'} border-0`}
-                      >
-                        {statusIcon(record.status)} {STATUS_LABELS[record.status] || record.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {formatDate(record.scheduledDate)}
-                    </TableCell>
-                    <TableCell className="text-sm font-semibold text-slate-700">
-                      {formatAED(record.cost || 0)}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={record.status}
-                        onValueChange={(v) => updateStatus(record.id, v)}
-                      >
-                        <SelectTrigger className="h-8 w-[140px] text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map((s) => (
-                            <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      }
+      pagination={{
+        page,
+        pageSize: 15,
+        totalPages,
+        onPageChange: setPage,
+      }}
+    />
     </div>
   );
 }
