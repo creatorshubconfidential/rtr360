@@ -2,12 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
   Plus,
-  Search,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Send,
   FileText,
@@ -16,7 +12,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -28,7 +23,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -45,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { authFetch, formatAED, formatDate, formatDateTime } from '@/lib/api';
 import { STATUS_COLORS, QUOTATION_STATUSES, DEFAULT_QUOTATION_ITEMS, QUOTATION_TERMS } from '@/lib/constants';
 import type { Quotation, QuotationItem, QuotationItemInput } from '@/lib/types';
@@ -167,6 +162,98 @@ export default function QuotationsView() {
     }
   };
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'quotationNumber',
+      label: 'Quotation #',
+      sortable: true,
+      render: (_, row) => {
+        const q = row as unknown as Quotation;
+        return <span className="font-mono text-sm font-semibold">{q.quotationNumber}</span>;
+      },
+    },
+    {
+      key: 'lead',
+      label: 'Lead / Company',
+      render: (_, row) => {
+        const q = row as unknown as Quotation;
+        return <span className="text-sm text-slate-600">{q.lead?.company || q.lead?.name || '—'}</span>;
+      },
+    },
+    {
+      key: 'items',
+      label: 'Items',
+      render: (_, row) => {
+        const q = row as unknown as Quotation;
+        const qItems = q.items;
+        return <span className="text-sm text-slate-500">{qItems.length} item{qItems.length !== 1 ? 's' : ''}</span>;
+      },
+    },
+    {
+      key: 'subtotal',
+      label: 'Subtotal',
+      align: 'right',
+      render: (_, row) => <span className="text-sm text-slate-600">{formatAED((row as unknown as Quotation).subtotal)}</span>,
+    },
+    {
+      key: 'tax',
+      label: 'VAT',
+      align: 'right',
+      render: (_, row) => <span className="text-sm text-slate-600">{formatAED((row as unknown as Quotation).tax)}</span>,
+    },
+    {
+      key: 'total',
+      label: 'Total',
+      align: 'right',
+      sortable: true,
+      render: (_, row) => <span className="text-sm font-bold text-emerald-700">{formatAED((row as unknown as Quotation).total)}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_, row) => {
+        const q = row as unknown as Quotation;
+        return (
+          <Badge className={`text-[11px] gap-1 ${STATUS_COLORS[q.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+            {statusIcon(q.status)} {q.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'createdAt',
+      label: 'Date',
+      sortable: true,
+      render: (_, row) => <span className="text-xs text-slate-500">{formatDate((row as unknown as Quotation).createdAt)}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => {
+        const q = row as unknown as Quotation;
+        return (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => fetchQuotationDetail(q.id)}>
+              <Eye className="w-3.5 h-3.5 mr-1" /> View
+            </Button>
+            {q.status === 'draft' && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-emerald-600"
+                onClick={() => handleStatusUpdate(q.id, 'sent')}>
+                <Send className="w-3.5 h-3.5 mr-1" /> Send
+              </Button>
+            )}
+            {(q.status === 'sent' || q.status === 'draft') && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-emerald-600"
+                onClick={() => handleStatusUpdate(q.id, 'accepted')}>
+                <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
 
   return (
     <div className="space-y-5">
@@ -280,141 +367,35 @@ export default function QuotationsView() {
         </Dialog>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search quotation number..." value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {QUOTATION_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
-        </div>
-      ) : quotations.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <FileText className="w-10 h-10 mb-3" />
-            <p className="text-sm font-medium">No quotations found</p>
-            <p className="text-xs mt-1">Create your first quotation</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
-            {quotations.map((q) => {
-              const qItems = q.items;
-              return (
-                <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className="rounded-xl border-slate-200/60 shadow-sm cursor-pointer hover:border-emerald-200 transition-colors"
-                    onClick={() => fetchQuotationDetail(q.id)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-mono font-bold text-slate-800">{q.quotationNumber}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{q.lead?.company || q.lead?.name || '—'}</p>
-                        </div>
-                        <Badge className={`text-[11px] gap-1 ${STATUS_COLORS[q.status] || 'bg-slate-100 text-slate-600'} border-0`}>
-                          {statusIcon(q.status)} {q.status}
-                        </Badge>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-slate-500">{formatDate(q.createdAt)}</span>
-                        <span className="text-lg font-bold text-emerald-700">{formatAED(q.total)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Desktop Table */}
-          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80">
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Quotation #</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Lead / Company</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Items</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Subtotal</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">VAT</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Total</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Date</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotations.map((q) => {
-                  const qItems = q.items;
-                  return (
-                    <TableRow key={q.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-mono text-sm font-semibold">{q.quotationNumber}</TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        {q.lead?.company || q.lead?.name || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-500">{qItems.length} item{qItems.length !== 1 ? 's' : ''}</TableCell>
-                      <TableCell className="text-sm text-slate-600">{formatAED(q.subtotal)}</TableCell>
-                      <TableCell className="text-sm text-slate-600">{formatAED(q.tax)}</TableCell>
-                      <TableCell className="text-sm font-bold text-emerald-700">{formatAED(q.total)}</TableCell>
-                      <TableCell>
-                        <Badge className={`text-[11px] gap-1 ${STATUS_COLORS[q.status] || 'bg-slate-100 text-slate-600'} border-0`}>
-                          {statusIcon(q.status)} {q.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">{formatDate(q.createdAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => fetchQuotationDetail(q.id)}>
-                            <Eye className="w-3.5 h-3.5 mr-1" /> View
-                          </Button>
-                          {q.status === 'draft' && (
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-emerald-600"
-                              onClick={() => handleStatusUpdate(q.id, 'sent')}>
-                              <Send className="w-3.5 h-3.5 mr-1" /> Send
-                            </Button>
-                          )}
-                          {(q.status === 'sent' || q.status === 'draft') && (
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-emerald-600"
-                              onClick={() => handleStatusUpdate(q.id, 'accepted')}>
-                              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* DataTable */}
+      <DataTable
+        columns={columns}
+        data={quotations as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as Quotation).id}
+        loading={loading}
+        emptyMessage="No quotations found"
+        emptyIcon={FileText}
+        searchable
+        searchPlaceholder="Search quotation number..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        toolbar={
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {QUOTATION_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        }
+        exportFilename="quotations"
+        pagination={{
+          page,
+          pageSize: 15,
+          totalPages,
+          onPageChange: setPage,
+        }}
+      />
 
       {/* ─── Quotation Detail Dialog ─── */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
-  Ticket, Plus, Search, ChevronLeft, ChevronRight,
-  MessageSquare, Clock, CheckCircle2, AlertCircle, Download,
+  Ticket, Plus, MessageSquare, Clock, CheckCircle2, AlertCircle, Download,
 } from 'lucide-react';
 import { exportCSV, TICKET_COLUMNS } from '@/lib/export';
 import { Button } from '@/components/ui/button';
@@ -19,11 +18,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 
 
 import { authFetch } from '@/lib/api';
@@ -136,6 +132,62 @@ export default function TicketsView() {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'ticketNumber',
+      label: 'Ticket #',
+      render: (val) => <span className="font-mono text-xs text-slate-600">{val as string}</span>,
+    },
+    {
+      key: 'subject',
+      label: 'Subject',
+      render: (val) => <span className="font-medium text-sm max-w-[200px] truncate">{val as string}</span>,
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      render: (val) => (
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${PRIORITY_DOT[(val as string)] || 'bg-slate-300'}`} />
+          <span className="text-xs text-slate-600 capitalize">{val as string}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (val) => (
+        <Badge className={`text-[11px] ${STATUS_COLORS[(val as string)] || 'bg-slate-100 text-slate-600'} border-0`}>
+          {(val as string).replace('_', ' ')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'vehiclePlate',
+      label: 'Vehicle',
+      render: (val) => <span className="text-sm text-slate-600">{(val as string) || '—'}</span>,
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      render: (val) => <span className="text-xs text-slate-500">{timeAgo(val as string)}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_val, row) => (
+        <Select onValueChange={(v) => handleStatusUpdate((row as unknown as TicketItem).id, v)}>
+          <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Update..." /></SelectTrigger>
+          <SelectContent>
+            {['open', 'in_progress', 'pending', 'resolved', 'closed'].map(s => (
+              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -147,15 +199,6 @@ export default function TicketsView() {
           </div>
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">{total}</Badge>
         </div>
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => exportCSV({ data: tickets, filename: 'tickets', columns: TICKET_COLUMNS })}
-          disabled={tickets.length === 0}
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"><Plus className="w-4 h-4" /> New Ticket</Button>
@@ -202,122 +245,57 @@ export default function TicketsView() {
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search tickets..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {['open', 'in_progress', 'pending', 'resolved', 'closed'].map(s => (
-              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Priority" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            {['low', 'medium', 'high', 'urgent'].map(p => (
-              <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <Card className="rounded-xl border-slate-200/60 shadow-sm"><div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div></Card>
-      ) : tickets.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Ticket className="w-10 h-10 mb-3" /><p className="text-sm font-medium">No tickets found</p><p className="text-xs mt-1">Create a new ticket or adjust your filters</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
-            {tickets.map((t) => (
-              <motion.div key={t.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <Card className="rounded-xl border-slate-200/60 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="text-xs font-mono text-slate-500">{t.ticketNumber}</div>
-                      <Badge className={`text-[11px] shrink-0 ${STATUS_COLORS[t.status] || 'bg-slate-100 text-slate-600'} border-0`}>{t.status.replace('_', ' ')}</Badge>
-                    </div>
-                    <div className="mt-2 font-medium text-sm text-slate-900 line-clamp-2">{t.subject}</div>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                      <div className="flex items-center gap-1.5"><div className={`w-2 h-2 rounded-full ${PRIORITY_DOT[t.priority] || 'bg-slate-300'}`} /><span className="capitalize">{t.priority}</span></div>
-                      <span>{timeAgo(t.createdAt)}</span>
-                    </div>
-                    {t.vehiclePlate && <div className="mt-1.5 text-xs text-slate-500">Vehicle: {t.vehiclePlate}</div>}
-                    <div className="mt-3">
-                      <Select onValueChange={(v) => handleStatusUpdate(t.id, v)}>
-                        <SelectTrigger className="h-8 text-xs w-full"><SelectValue placeholder="Update status" /></SelectTrigger>
-                        <SelectContent>
-                          {['open', 'in_progress', 'pending', 'resolved', 'closed'].map(s => (
-                            <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Desktop Table */}
-          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
-            <Table>
-              <TableHeader><TableRow className="bg-slate-50/80">
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Ticket #</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Subject</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Vehicle</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Created</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {tickets.map((t) => (
-                  <TableRow key={t.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-xs text-slate-600">{t.ticketNumber}</TableCell>
-                    <TableCell className="font-medium text-sm max-w-[200px] truncate">{t.subject}</TableCell>
-                    <TableCell><div className="flex items-center gap-1.5"><div className={`w-2 h-2 rounded-full ${PRIORITY_DOT[t.priority] || 'bg-slate-300'}`} /><span className="text-xs text-slate-600 capitalize">{t.priority}</span></div></TableCell>
-                    <TableCell><Badge className={`text-[11px] ${STATUS_COLORS[t.status] || 'bg-slate-100 text-slate-600'} border-0`}>{t.status.replace('_', ' ')}</Badge></TableCell>
-                    <TableCell className="text-sm text-slate-600">{t.vehiclePlate || '—'}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{timeAgo(t.createdAt)}</TableCell>
-                    <TableCell>
-                      <Select onValueChange={(v) => handleStatusUpdate(t.id, v)}>
-                        <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Update..." /></SelectTrigger>
-                        <SelectContent>
-                          {['open', 'in_progress', 'pending', 'resolved', 'closed'].map(s => (
-                            <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
+      {/* DataTable */}
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={tickets as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as TicketItem).id}
+        loading={loading}
+        emptyMessage="No tickets found. Create a new ticket or adjust your filters."
+        emptyIcon={Ticket}
+        searchable
+        searchPlaceholder="Search tickets..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        pagination={{
+          page,
+          pageSize: 12,
+          totalPages,
+          onPageChange: setPage,
+        }}
+        toolbar={
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {['open', 'in_progress', 'pending', 'resolved', 'closed'].map(s => (
+                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</SelectItem>
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}><ChevronLeft className="w-4 h-4 mr-1" /> Previous</Button>
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-            </div>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Priority" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priority</SelectItem>
+                {['low', 'medium', 'high', 'urgent'].map(p => (
+                  <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => exportCSV({ data: tickets, filename: 'tickets', columns: TICKET_COLUMNS })}
+              disabled={tickets.length === 0}
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
           </div>
-        </>
-      )}
+        }
+      />
     </div>
   );
 }

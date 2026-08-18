@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
-  FileText, Plus, Search, ChevronLeft, ChevronRight,
-  DollarSign, Clock, CheckCircle2, AlertTriangle, Download,
+  FileText, Plus, DollarSign, Clock, CheckCircle2, AlertTriangle, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,15 +17,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { exportCSV, INVOICE_COLUMNS } from '@/lib/export';
-
-
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { authFetch } from '@/lib/api';
+
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   paid: 'bg-emerald-100 text-emerald-700',
@@ -127,6 +122,56 @@ export default function InvoicesView() {
   const paidAmount = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);
   const pendingAmount = invoices.filter(i => i.status === 'pending' || i.status === 'overdue').reduce((s, i) => s + i.total, 0);
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'invoiceNumber', label: 'Invoice #', sortable: true,
+      render: (_, row) => <span className="font-mono text-sm font-bold text-slate-900">{(row as unknown as Invoice).invoiceNumber}</span>,
+    },
+    {
+      key: 'subscription', label: 'Plan',
+      render: (_, row) => <span className="text-sm text-slate-600">{(row as unknown as Invoice).subscription?.plan?.name || '—'}</span>,
+    },
+    {
+      key: 'amount', label: 'Amount', align: 'right',
+      render: (_, row) => <span className="text-sm text-slate-700">AED {(row as unknown as Invoice).amount.toLocaleString()}</span>,
+    },
+    {
+      key: 'tax', label: 'Tax', align: 'right',
+      render: (_, row) => <span className="text-sm text-slate-500">AED {(row as unknown as Invoice).tax.toLocaleString()}</span>,
+    },
+    {
+      key: 'total', label: 'Total', align: 'right',
+      render: (_, row) => <span className="text-sm font-semibold text-slate-900">AED {(row as unknown as Invoice).total.toLocaleString()}</span>,
+    },
+    {
+      key: 'status', label: 'Status',
+      render: (_, row) => {
+        const inv = row as unknown as Invoice;
+        return <Badge className={`text-[11px] ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-600'} border-0`}>{inv.status}</Badge>;
+      },
+    },
+    {
+      key: 'dueDate', label: 'Due Date',
+      render: (_, row) => <span className="text-sm text-slate-600">{new Date((row as unknown as Invoice).dueDate).toLocaleDateString()}</span>,
+    },
+    {
+      key: 'actions', label: 'Actions',
+      render: (_, row) => {
+        const inv = row as unknown as Invoice;
+        return (
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.open(`/api/invoices/${inv.id}/pdf`, '_blank'); }}><Download className="w-3 h-3" /> PDF</Button>
+            {inv.status === 'pending' ? (
+              <Button className="h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => handleMarkPaid(inv.id)}>Pay</Button>
+            ) : inv.status === 'paid' ? (
+              <span className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Paid</span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -138,15 +183,6 @@ export default function InvoicesView() {
           </div>
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-0 text-sm px-2.5">{total}</Badge>
         </div>
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => exportCSV({ data: invoices, filename: 'invoices', columns: INVOICE_COLUMNS })}
-          disabled={invoices.length === 0}
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </Button>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"><Plus className="w-4 h-4" /> New Invoice</Button>
@@ -194,36 +230,18 @@ export default function InvoicesView() {
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search by invoice number..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {['pending', 'paid', 'overdue', 'cancelled'].map(s => (
-              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <Card className="rounded-xl border-slate-200/60 shadow-sm"><div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div></Card>
-      ) : invoices.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <FileText className="w-10 h-10 mb-3" /><p className="text-sm font-medium">No invoices found</p><p className="text-xs mt-1">Create a new invoice</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
+      {/* Mobile Cards */}
+      <div className="lg:hidden">
+        {loading ? (
+          <Card className="rounded-xl border-slate-200/60 shadow-sm"><div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div></Card>
+        ) : invoices.length === 0 ? (
+          <Card className="rounded-xl border-slate-200/60">
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <FileText className="w-10 h-10 mb-3" /><p className="text-sm font-medium">No invoices found</p><p className="text-xs mt-1">Create a new invoice</p>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {invoices.map((inv) => (
               <motion.div key={inv.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 <Card className="rounded-xl border-slate-200/60 shadow-sm">
@@ -246,56 +264,42 @@ export default function InvoicesView() {
               </motion.div>
             ))}
           </div>
+        )}
+      </div>
 
-          {/* Desktop Table */}
-          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
-            <Table>
-              <TableHeader><TableRow className="bg-slate-50/80">
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Invoice #</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Plan</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Amount</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Tax</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Total</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Due Date</TableHead>
-                <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {invoices.map((inv) => (
-                  <TableRow key={inv.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-sm font-bold text-slate-900">{inv.invoiceNumber}</TableCell>
-                    <TableCell className="text-sm text-slate-600">{inv.subscription?.plan?.name || '—'}</TableCell>
-                    <TableCell className="text-sm text-slate-700">AED {inv.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-slate-500">AED {inv.tax.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm font-semibold text-slate-900">AED {inv.total.toLocaleString()}</TableCell>
-                    <TableCell><Badge className={`text-[11px] ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-600'} border-0`}>{inv.status}</Badge></TableCell>
-                    <TableCell className="text-sm text-slate-600">{new Date(inv.dueDate).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.open(`/api/invoices/${inv.id}/pdf`, '_blank'); }}><Download className="w-3 h-3" /> PDF</Button>
-                        {inv.status === 'pending' ? (
-                          <Button className="h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => handleMarkPaid(inv.id)}>Pay</Button>
-                        ) : inv.status === 'paid' ? (
-                          <span className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Paid</span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+      {/* Desktop Table */}
+      <div className="hidden lg:block">
+        <DataTable
+          columns={columns}
+          data={invoices as unknown as Record<string, unknown>[]}
+          keyExtractor={(row) => (row as unknown as Invoice).id}
+          loading={loading}
+          emptyMessage="No invoices found"
+          emptyIcon={FileText}
+          searchable
+          searchPlaceholder="Search by invoice number..."
+          searchValue={search}
+          onSearch={(q) => { setSearch(q); setPage(1); }}
+          toolbar={(
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {['pending', 'paid', 'overdue', 'cancelled'].map(s => (
+                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}><ChevronLeft className="w-4 h-4 mr-1" /> Previous</Button>
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-            </div>
-          </div>
-        </>
-      )}
+              </SelectContent>
+            </Select>
+          )}
+          pagination={{
+            page,
+            pageSize: 12,
+            totalPages,
+            onPageChange: setPage,
+          }}
+          exportFilename="invoices"
+        />
+      </div>
     </div>
   );
 }
