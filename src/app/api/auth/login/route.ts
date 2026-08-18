@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     });
 
     if (!user || !user.passwordHash) {
+      // Audit log failed login (user not found)
+      await logAudit({ user: { id: '__unknown__', email: email.toLowerCase().trim(), name: 'Unknown', role: 'unknown', organizationId: null }, action: 'login', entity: 'Session', ipAddress: ip, metadata: { reason: 'user_not_found' } });
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -49,6 +51,8 @@ export async function POST(request: Request) {
     // Verify password
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
+      // Audit log failed login (wrong password)
+      await logAudit({ user: { id: user.id, email: user.email, name: user.name, role: user.role, organizationId: user.organizationId }, action: 'login', entity: 'Session', ipAddress: ip, metadata: { reason: 'wrong_password' } });
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }

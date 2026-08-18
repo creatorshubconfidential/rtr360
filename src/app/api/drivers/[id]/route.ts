@@ -26,15 +26,17 @@ export async function PATCH(
     const body = await request.json();
     const { status, name, phone, email, employeeId, licenseNumber, licenseType, licenseExpiry, emirate, nationality, notes } = body;
 
-    const existing = await db.driver.findUnique({ where: { id } });
+    // IDOR-safe: use findFirst with org filter to prevent cross-tenant access
+    const existing = await db.driver.findFirst({
+      where: user.role !== 'super_admin' && user.organizationId
+        ? { id, organizationId: user.organizationId }
+        : { id },
+    });
     if (!existing) {
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
     }
 
-    // Tenant check
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // No separate tenant check needed — findFirst already enforces it
 
     const updateData: Record<string, unknown> = {};
     if (status && VALID_STATUSES.includes(status)) updateData.status = status;
@@ -73,13 +75,15 @@ export async function DELETE(
     if (permErr) return permErr;
 
     const { id } = await params;
-    const existing = await db.driver.findUnique({ where: { id } });
+
+    // IDOR-safe: use findFirst with org filter
+    const existing = await db.driver.findFirst({
+      where: user.role !== 'super_admin' && user.organizationId
+        ? { id, organizationId: user.organizationId }
+        : { id },
+    });
     if (!existing) {
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
-    }
-
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Unassign from vehicles first

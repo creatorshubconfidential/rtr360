@@ -26,13 +26,14 @@ export async function PATCH(
     const body = await request.json();
     const { status, model, manufacturer, deviceType, protocol, simId, warehouse, notes, firmware } = body;
 
-    const existing = await db.device.findUnique({ where: { id } });
+    // IDOR-safe: use findFirst with org filter
+    const existing = await db.device.findFirst({
+      where: user.role !== 'super_admin' && user.organizationId
+        ? { id, organizationId: user.organizationId }
+        : { id },
+    });
     if (!existing) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
-    }
-
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -74,17 +75,18 @@ export async function DELETE(
     if (permErr) return permErr;
 
     const { id } = await params;
-    const existing = await db.device.findUnique({ where: { id } });
+    // IDOR-safe: use findFirst with org filter
+    const existing = await db.device.findFirst({
+      where: user.role !== 'super_admin' && user.organizationId
+        ? { id, organizationId: user.organizationId }
+        : { id },
+    });
     if (!existing) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
     if (existing.status === 'installed') {
       return NextResponse.json({ error: 'Cannot delete an installed device. Uninstall it first.' }, { status: 400 });
-    }
-
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await db.vehicle.updateMany({ where: { deviceId: id }, data: { deviceId: null } });

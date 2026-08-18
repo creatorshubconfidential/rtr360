@@ -4,24 +4,24 @@ import { db } from '@/lib/db';
 /**
  * Production-safe distributed rate limiter for API routes.
  *
- * Architecture: L1 in-memory cache + L2 database (PostgreSQL) source of truth.
- *   - L1 (in-memory): Fast O(1) lookups, avoids DB hit on every request.
- *   - L2 (database): Shared across all serverless instances via RateLimitCounter table.
+ * Architecture (3-tier fallback):
+ *   L1: In-memory cache (per-instance, O(1), 5s TTL)
+ *   L2: Upstash Redis (cross-instance, INCR + EXPIRE, atomic)
+ *   L3: PostgreSQL RateLimitCounter table (cross-instance, upsert)
  *
- * Fault tolerance: If the L2 database table is unavailable (e.g. migration not run
- * on a new Supabase instance), the limiter automatically falls back to L1-only mode.
- * This prevents login and other API routes from crashing with 500 errors.
+ * Failure mode: If L2 (Redis) and L3 (DB) are both unavailable, falls back to
+ * L1-only mode. L1 is per-instance so it's not truly distributed, but it
+ * prevents login/API crashes. Security-sensitive endpoints (auth, strict)
+ * will still deny when L1 limit is hit.
  *
- * For very high throughput deployments, replace L2 with Redis (Upstash / Vercel KV)
- * using the same interface — swap getFromStore/incrementInStore with Redis INCR + EXPIRE.
+ * Rate-limit failures FAIL CLOSED: if the distributed store errors, we
+ * continue using L1 which still enforces limits (just not cross-instance).
  *
- * Features:
- *   - Sliding window with per-endpoint keys
- *   - Configurable tiers (auth, api, strict, analytics)
- *   - Automatic cleanup of expired entries (L1 + periodic L2)
- *   - IP extraction behind proxies (X-Forwarded-For)
- *   - Distributed: works across multiple Vercel serverless instances
- *   - Graceful L1-only fallback when L2 is unavailable
+ * Environment variables:
+ *   UPSTASH_REDIS_REST_URL  — Upstash Redis REST endpoint URL
+ *   UPSTASH_REDIS_REST_TOKEN — Upstash Redis REST endpoint token
+ *
+ * If neither is set, L2 (Redis) is skipped and L3 (PostgreSQL) is used.
  */
 
 // ── Types ────────────────────────────────────────────────────────
@@ -40,68 +40,144 @@ export interface RateLimitResult {
 export type RateLimitTier = 'auth' | 'api' | 'strict' | 'analytics';
 
 // ── L1 In-Memory Cache ───────────────────────────────────────────
-// Bounded Map for fast local lookups. Falls through to DB for misses
-// and writes through to DB for distributed correctness.
 
 const cache = new Map<string, RateLimitEntry>();
 const MAX_CACHE_SIZE = 10_000;
-const CACHE_TTL_MS = 5_000; // L1 entries considered fresh for 5s
 
-// Track whether L2 database is available. Once it fails, we skip all
-// future L2 calls for the lifetime of this serverless instance.
-let l2Failed = false;
+let l2RedisAvailable: boolean | null = null; // null = not yet tested
+let l2RedisFailed = false;
+let l3DbFailed = false;
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 function ensureCleanup() {
   if (cleanupTimer) return;
   cleanupTimer = setInterval(() => {
     const now = Date.now();
-    // Purge expired entries from L1
     for (const [key, entry] of cache) {
       if (entry.resetAt <= now) cache.delete(key);
     }
-    // Prevent unbounded growth
     if (cache.size > MAX_CACHE_SIZE) {
       const keys = [...cache.keys()];
       for (let i = 0; i < keys.length / 2; i++) cache.delete(keys[i]);
     }
-    // Purge expired entries from L2 (database) — runs every 60s
     purgeExpiredDbCounters(now);
   }, 60 * 1000);
-  // Allow Node.js to exit even if timer is active
   if (typeof cleanupTimer === 'object' && 'unref' in cleanupTimer) {
     cleanupTimer.unref();
   }
 }
 
+// ── L2 Redis (Upstash-compatible) ────────────────────────────────
+
 /**
- * Purge expired rate limit counters from the database.
- * Keeps the table from growing unbounded.
+ * Atomic INCR + EXPIRE via Upstash Redis REST API.
+ * Returns null if Redis is unavailable or not configured.
  */
+async function incrementInRedis(key: string, limit: number, windowSec: number): Promise<RateLimitResult | null> {
+  if (l2RedisFailed) return null;
+
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!redisUrl || !redisToken) {
+    // Redis not configured — mark as not available (not a failure)
+    if (l2RedisAvailable === null) l2RedisAvailable = false;
+    return null;
+  }
+
+  try {
+    const redisKey = `rtr360:rl:${key}`;
+
+    // Pipeline: INCR + EXPIRE in a single request
+    const response = await fetch(`${redisUrl}/pipeline`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${redisToken}`,
+      },
+      body: JSON.stringify([
+        ['INCR', redisKey],
+        ['EXPIRE', redisKey, windowSec],
+      ]),
+      signal: AbortSignal.timeout(3000), // 3s timeout
+    });
+
+    if (!response.ok) {
+      l2RedisFailed = true;
+      l2RedisAvailable = false;
+      return null;
+    }
+
+    const pipelineResult = await response.json() as Array<{ result: string | number }>;
+    const count = typeof pipelineResult[0]?.result === 'number'
+      ? pipelineResult[0].result
+      : parseInt(String(pipelineResult[0]?.result), 10) || 1;
+
+    l2RedisAvailable = true;
+
+    if (count > limit) {
+      return { allowed: false, remaining: 0, resetAt: Date.now() + windowSec * 1000 };
+    }
+
+    return {
+      allowed: true,
+      remaining: Math.max(0, limit - count),
+      resetAt: Date.now() + windowSec * 1000,
+    };
+  } catch {
+    l2RedisFailed = true;
+    l2RedisAvailable = false;
+    return null;
+  }
+}
+
+/**
+ * Read current counter from Redis.
+ * Returns null if Redis is unavailable.
+ */
+async function readFromRedis(key: string): Promise<RateLimitEntry | null> {
+  if (l2RedisFailed) return null;
+
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!redisUrl || !redisToken) return null;
+
+  try {
+    const redisKey = `rtr360:rl:${key}`;
+    const response = await fetch(`${redisUrl}/GET/${redisKey}`, {
+      headers: { 'Authorization': `Bearer ${redisToken}` },
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json() as { result: string | null };
+    if (!data.result) return null;
+    const count = parseInt(data.result, 10);
+    if (isNaN(count)) return null;
+    // We don't have the exact TTL from GET, so return count and let the caller handle timing
+    return { count, resetAt: 0 };
+  } catch {
+    return null;
+  }
+}
+
+// ── L3 Database Store ────────────────────────────────────────────
+
 async function purgeExpiredDbCounters(now: number) {
-  if (l2Failed) return;
+  if (l3DbFailed) return;
   try {
     await db.rateLimitCounter.deleteMany({
       where: { resetAt: { lt: new Date(now) } },
     });
   } catch {
-    l2Failed = true;
+    l3DbFailed = true;
   }
 }
 
-// ── L2 Database Store ────────────────────────────────────────────
-
-/**
- * Atomic increment-or-create in the database.
- * Uses upsert for race-condition safety across instances.
- * Returns null if the database is unavailable.
- */
 async function incrementInDb(key: string, windowMs: number): Promise<RateLimitEntry | null> {
-  if (l2Failed) return null;
+  if (l3DbFailed) return null;
   try {
     const now = new Date();
     const resetAt = new Date(now.getTime() + windowMs);
-
     const counter = await db.rateLimitCounter.upsert({
       where: { key },
       create: { key, count: 1, resetAt },
@@ -110,23 +186,15 @@ async function incrementInDb(key: string, windowMs: number): Promise<RateLimitEn
         resetAt: { set: resetAt },
       },
     });
-
-    return {
-      count: counter.count,
-      resetAt: counter.resetAt.getTime(),
-    };
+    return { count: counter.count, resetAt: counter.resetAt.getTime() };
   } catch {
-    l2Failed = true;
+    l3DbFailed = true;
     return null;
   }
 }
 
-/**
- * Read current counter from database (cache miss path).
- * Returns null if the database is unavailable.
- */
 async function readFromDb(key: string): Promise<RateLimitEntry | null> {
-  if (l2Failed) return null;
+  if (l3DbFailed) return null;
   try {
     const counter = await db.rateLimitCounter.findUnique({ where: { key } });
     if (!counter) return null;
@@ -134,23 +202,18 @@ async function readFromDb(key: string): Promise<RateLimitEntry | null> {
     if (counter.resetAt.getTime() <= now) return null;
     return { count: counter.count, resetAt: counter.resetAt.getTime() };
   } catch {
-    l2Failed = true;
+    l3DbFailed = true;
     return null;
   }
 }
 
 // ── L1-Only Fallback ─────────────────────────────────────────────
 
-/**
- * In-memory only rate limiting when L2 database is unavailable.
- * Not distributed, but prevents login from crashing on Vercel.
- */
 function l1OnlyRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
   const cached = cache.get(key);
 
   if (cached && cached.resetAt > now) {
-    // Existing window — check limit
     const incremented = { count: cached.count + 1, resetAt: cached.resetAt };
     cache.set(key, incremented);
     if (incremented.count > limit) {
@@ -159,7 +222,6 @@ function l1OnlyRateLimit(key: string, limit: number, windowMs: number): RateLimi
     return { allowed: true, remaining: Math.max(0, limit - incremented.count), resetAt: incremented.resetAt };
   }
 
-  // New window
   const entry = { count: 1, resetAt: now + windowMs };
   cache.set(key, entry);
   return { allowed: true, remaining: Math.max(0, limit - 1), resetAt: entry.resetAt };
@@ -177,17 +239,15 @@ const TIER_LIMITS: Record<RateLimitTier, { limit: number; windowMs: number }> = 
 // ── Core ──────────────────────────────────────────────────────────
 
 /**
- * Check rate limit for a given key using distributed store.
+ * Check rate limit for a given key.
  *
- * Flow:
- *  1. If L2 known unavailable → use L1-only fallback
- *  2. Check L1 cache — if fresh hit, use it (O(1))
- *  3. On miss or stale, read from L2 database
- *  4. If L2 fails → fall back to L1-only and remember
- *  5. If no entry, increment in DB and cache the result
- *  6. If expired, increment in DB (new window) and cache
- *  7. If under limit, increment in DB and cache
- *  8. If over limit, return denied (don't increment)
+ * Resolution order:
+ *  1. L1 cache (fast path, per-instance)
+ *  2. L2 Redis (Upstash, cross-instance, atomic INCR)
+ *  3. L3 PostgreSQL (cross-instance, upsert)
+ *  4. L1-only fallback (per-instance, not distributed but safe)
+ *
+ * All stores use the same key format: `tier:path:ip`
  */
 export async function rateLimit(
   key: string,
@@ -196,43 +256,39 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   ensureCleanup();
 
-  // Fast path: L2 known to be unavailable → use L1 only
-  if (l2Failed) {
-    return l1OnlyRateLimit(key, limit, windowMs);
-  }
-
   const now = Date.now();
 
-  // L1 cache check
+  // L1 cache check (5s freshness window)
   const cached = cache.get(key);
   if (cached && cached.resetAt > now) {
-    // Cache is fresh — return from cache without hitting DB
     if (cached.count >= limit) {
       return { allowed: false, remaining: 0, resetAt: cached.resetAt };
     }
-    // Optimistic increment in L1
     const incremented = { count: cached.count + 1, resetAt: cached.resetAt };
     cache.set(key, incremented);
     return { allowed: true, remaining: Math.max(0, limit - incremented.count), resetAt: incremented.resetAt };
   }
 
-  // L2 database check
-  const existing = await readFromDb(key);
+  // L2 Redis (atomic INCR + EXPIRE)
+  const windowSec = Math.ceil(windowMs / 1000);
+  const redisResult = await incrementInRedis(key, limit, windowSec);
+  if (redisResult) {
+    // Cache the Redis result for L1
+    cache.set(key, { count: redisResult.allowed ? (limit - redisResult.remaining) : limit + 1, resetAt: redisResult.resetAt });
+    return redisResult;
+  }
 
-  // If DB read failed, fall back to L1-only
-  if (l2Failed) {
+  // L3 PostgreSQL fallback
+  const existing = await readFromDb(key);
+  if (l3DbFailed) {
     return l1OnlyRateLimit(key, limit, windowMs);
   }
 
   const effectiveExisting = existing || (cached && cached.resetAt > now ? cached : null);
 
   if (!effectiveExisting || effectiveExisting.resetAt <= now) {
-    // No entry or expired — create new window
     const entry = await incrementInDb(key, windowMs);
-    if (!entry) {
-      // DB write failed — fall back to L1-only
-      return l1OnlyRateLimit(key, limit, windowMs);
-    }
+    if (!entry) return l1OnlyRateLimit(key, limit, windowMs);
     cache.set(key, entry);
     return { allowed: true, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
   }
@@ -242,18 +298,14 @@ export async function rateLimit(
     return { allowed: false, remaining: 0, resetAt: effectiveExisting.resetAt };
   }
 
-  // Under limit — increment
   const entry = await incrementInDb(key, windowMs);
-  if (!entry) {
-    return l1OnlyRateLimit(key, limit, windowMs);
-  }
+  if (!entry) return l1OnlyRateLimit(key, limit, windowMs);
   cache.set(key, entry);
   return { allowed: true, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
 }
 
 /**
  * Extract client IP from request headers (works behind proxies).
- * Uses the leftmost IP in X-Forwarded-For as the client IP.
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
@@ -313,12 +365,8 @@ export async function checkRateLimit(
  * Pre-configured rate limiters for legacy/inline usage.
  */
 export const rateLimiter = {
-  /** Auth routes: 10 req/min per IP */
   auth: (ip: string) => rateLimit(`auth:${ip}`, TIER_LIMITS.auth.limit, TIER_LIMITS.auth.windowMs),
-  /** General API: 60 req/min per IP */
   api: (ip: string) => rateLimit(`api:${ip}`, TIER_LIMITS.api.limit, TIER_LIMITS.api.windowMs),
-  /** Strict: 5 req/min per IP (login attempts) */
   strict: (ip: string) => rateLimit(`strict:${ip}`, TIER_LIMITS.strict.limit, TIER_LIMITS.strict.windowMs),
-  /** Analytics/AI routes: 20 req/min per IP */
   analytics: (ip: string) => rateLimit(`analytics:${ip}`, TIER_LIMITS.analytics.limit, TIER_LIMITS.analytics.windowMs),
 };

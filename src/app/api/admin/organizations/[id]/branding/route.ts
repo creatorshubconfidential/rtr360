@@ -79,8 +79,7 @@ export async function PUT(request: Request, context: RouteContext) {
       hideMianxBranding,
     } = body;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (primaryColor !== undefined) updateData.primaryColor = primaryColor;
     if (accentColor !== undefined) updateData.accentColor = accentColor;
     if (customLogo !== undefined) updateData.customLogo = customLogo;
