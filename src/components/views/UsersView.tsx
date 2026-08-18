@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
-  Users, Plus, Search, ChevronLeft, ChevronRight, Trash2,
+  Users, Plus, Trash2,
   Edit, UserCheck, UserX, Shield, Mail, Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -48,12 +46,6 @@ const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500',
   inactive: 'bg-slate-400',
   suspended: 'bg-red-500',
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  inactive: 'bg-slate-100 text-slate-600',
-  suspended: 'bg-red-100 text-red-700',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -201,9 +193,6 @@ export default function UsersView() {
   const activeCount = users.filter((u) => u.status === 'active').length;
   const inactiveCount = users.filter((u) => u.status === 'inactive').length;
 
-  const formatDate = (v: string) =>
-    new Date(v).toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' });
-
   const formatDateTime = (v: string | null) => {
     if (!v) return '—';
     return new Date(v).toLocaleDateString('en-AE', {
@@ -218,6 +207,113 @@ export default function UsersView() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+
+  const tableColumns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_value, row) => {
+        const user = row as unknown as User;
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+              {getInitials(user.name)}
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-slate-900">{user.name}</p>
+              {!user.emailVerified && (
+                <span className="text-[10px] text-amber-600">Not verified</span>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm text-slate-600 flex items-center gap-1">
+          <Mail className="w-3 h-3 text-slate-400" />
+          {value as string}
+        </span>
+      ),
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      render: (value) => (
+        <span className="text-sm text-slate-600 flex items-center gap-1">
+          <Phone className="w-3 h-3 text-slate-400" />
+          {(value as string) || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'role',
+      label: 'Role',
+      sortable: true,
+      render: (value) => (
+        <Badge variant="outline" className={`text-[10px] ${ROLE_COLORS[value as string] || ROLE_COLORS.viewer}`}>
+          <Shield className="w-2.5 h-2.5 mr-1" />
+          {ROLE_LABELS[value as string] || (value as string)}
+        </Badge>
+      ),
+    },
+    {
+      key: 'organization',
+      label: 'Organization',
+      render: (_value, row) => {
+        const user = row as unknown as User;
+        return <span className="text-sm text-slate-600">{user.organization?.name || '—'}</span>;
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (value) => (
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[value as string] || 'bg-slate-400'}`} />
+          <span className="text-sm text-slate-700 capitalize">{value as string}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'lastLoginAt',
+      label: 'Last Login',
+      render: (value) => {
+        if (!value) return '—';
+        return (
+          <span className="text-xs text-slate-500">
+            {new Date(value as string).toLocaleDateString('en-AE', {
+              day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right' as const,
+      render: (_value, row) => {
+        const user = row as unknown as User;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEdit(user)}>
+              <Edit className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => setDeleteTarget(user)}>
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -258,144 +354,51 @@ export default function UsersView() {
         </Card>
       </div>
 
-      {/* Filters + Create */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search users by name or email..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-9 h-9"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
-            <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="All Roles" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              {ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="h-9 w-[130px]"><SelectValue placeholder="All Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1.5" />Create User
-          </Button>
-        </div>
-      </div>
-
       {/* Desktop Table */}
       <div className="hidden md:block">
-        <Card className="rounded-xl border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Name</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Email</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Phone</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Role</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Organization</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Status</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500">Last Login</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-500 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <div className="h-4 bg-slate-100 rounded animate-pulse w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
-                    <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">No users found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((user, idx) => (
-                  <motion.tr
-                    key={user.id}
-                    className="border-b last:border-0 hover:bg-slate-50/50 transition-colors"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
-                          {getInitials(user.name)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm text-slate-900">{user.name}</p>
-                          {!user.emailVerified && (
-                            <span className="text-[10px] text-amber-600">Not verified</span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-slate-600 flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-slate-400" />
-                        {user.email}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-slate-600 flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        {user.phone || '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] ${ROLE_COLORS[user.role] || ROLE_COLORS.viewer}`}>
-                        <Shield className="w-2.5 h-2.5 mr-1" />
-                        {ROLE_LABELS[user.role] || user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-slate-600">{user.organization?.name || '—'}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[user.status] || 'bg-slate-400'}`} />
-                        <span className="text-sm text-slate-700 capitalize">{user.status}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-slate-500">{formatDateTime(user.lastLoginAt)}</span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEdit(user)}>
-                          <Edit className="w-3.5 h-3.5 text-slate-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => setDeleteTarget(user)}>
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </motion.tr>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+        <DataTable<Record<string, unknown>>
+          columns={tableColumns}
+          data={users as unknown as Record<string, unknown>[]}
+          keyExtractor={(row) => (row as unknown as User).id}
+          loading={loading}
+          emptyMessage="No users found"
+          emptyIcon={Users}
+          searchable
+          searchPlaceholder="Search users by name or email..."
+          searchValue={search}
+          onSearch={(q) => { setSearch(q); setPage(1); }}
+          pagination={{
+            page,
+            pageSize: 15,
+            totalPages,
+            onPageChange: setPage,
+          }}
+          toolbar={
+            <div className="flex items-center gap-2">
+              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
+                <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="All Roles" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+                <SelectTrigger className="h-9 w-[130px]"><SelectValue placeholder="All Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
+                <Plus className="w-4 h-4 mr-1.5" />Create User
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       {/* Mobile Cards */}
@@ -471,17 +474,50 @@ export default function UsersView() {
         )}
       </div>
 
-      {/* Pagination */}
+      {/* Mobile Search + Filters */}
+      <div className="md:hidden flex flex-col gap-3">
+        <Input
+          placeholder="Search users by name or email..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          className="h-9"
+        />
+        <div className="flex gap-2">
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
+            <SelectTrigger className="h-9 flex-1"><SelectValue placeholder="All Roles" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              {ROLES.map((r) => (
+                <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="h-9 flex-1"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />Create
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="md:hidden flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            <ChevronLeft className="w-4 h-4" />
+            ← Prev
           </Button>
           <span className="text-sm text-slate-500">
             Page {page} of {totalPages}
           </span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            <ChevronRight className="w-4 h-4" />
+            Next →
           </Button>
         </div>
       )}
