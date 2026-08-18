@@ -2,10 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
-  Route, Plus, Search, ChevronLeft, ChevronRight, Trash2,
-  Edit, Truck, Gauge, Clock, MapPin, Zap, Timer, CheckCircle2,
+  Route, Plus, Trash2, Edit, Truck, Gauge, Clock, MapPin, Zap, Timer, CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,15 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { authFetch } from '@/lib/api';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -242,6 +238,112 @@ export default function TripsView() {
     }
   };
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'vehicle',
+      label: 'Vehicle',
+      render: (_v, row) => {
+        const t = row as unknown as Trip;
+        return (
+          <div className="flex items-center gap-2">
+            <Truck className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-bold text-sm text-slate-900">
+              {t.vehicle?.plateNumber || '—'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'driverName',
+      label: 'Driver',
+      render: (v) => <span className="text-sm text-slate-700">{(v as string) || '—'}</span>,
+    },
+    {
+      key: 'startTime',
+      label: 'Start Time',
+      render: (v) => <span className="text-xs text-slate-600">{formatDateTime(v as string)}</span>,
+    },
+    {
+      key: 'endTime',
+      label: 'End Time',
+      render: (v) => <span className="text-xs text-slate-600">{formatDateTime(v as string)}</span>,
+    },
+    {
+      key: 'distance',
+      label: 'Distance',
+      render: (v) => <span className="text-sm font-medium text-slate-700">{(v as number)?.toFixed(1) || '0'} km</span>,
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      render: (v) => <span className="text-sm text-slate-600">{formatDuration(v as number)}</span>,
+    },
+    {
+      key: 'maxSpeed',
+      label: 'Max Spd',
+      render: (v) => (
+        <span className={`text-sm font-medium ${(v as number) > 120 ? 'text-red-600' : 'text-slate-700'}`}>
+          {(v as number) || 0} km/h
+        </span>
+      ),
+    },
+    {
+      key: 'avgSpeed',
+      label: 'Avg Spd',
+      render: (v) => <span className="text-sm text-slate-600">{(v as number) || 0} km/h</span>,
+    },
+    {
+      key: 'idleTime',
+      label: 'Idle',
+      render: (v) => <span className="text-sm text-slate-600">{formatDuration(v as number)}</span>,
+    },
+    {
+      key: 'overspeedCount',
+      label: 'Overspd',
+      render: (v) => (
+        <span className={`text-sm font-medium ${(v as number) > 0 ? 'text-red-600' : 'text-slate-600'}`}>
+          {(v as number) || 0}
+        </span>
+      ),
+    },
+    {
+      key: 'harshEvents',
+      label: 'Harsh',
+      render: (_v, row) => {
+        const t = row as unknown as Trip;
+        return <span className="text-sm text-slate-600">{(t.harshBrakes || 0) + (t.harshAccel || 0)}</span>;
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (v) => (
+        <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[v as string] || ''}`}>
+          {STATUS_LABELS[v as string] || (v as string)}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right',
+      render: (_v, row) => {
+        const t = row as unknown as Trip;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEdit(t)}>
+              <Edit className="w-3 h-3 text-slate-500" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setDeleteTarget(t)}>
+              <Trash2 className="w-3 h-3 text-red-400" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Summary Bar */}
@@ -303,265 +405,42 @@ export default function TripsView() {
         </Card>
       </div>
 
-      {/* Filters + Create */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search by driver or plate..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-9 h-9"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="All Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1.5" />New Trip
-          </Button>
-        </div>
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden lg:block">
-        <Card className="rounded-xl border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Vehicle</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Driver</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Start Time</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">End Time</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Distance</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Duration</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Max Spd</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Avg Spd</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Idle</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Overspd</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Harsh</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500">Status</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-500 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 13 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <div className="h-4 bg-slate-100 rounded animate-pulse w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : trips.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={13} className="text-center py-12">
-                      <Route className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">No trips found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  trips.map((trip, idx) => (
-                    <motion.tr
-                      key={trip.id}
-                      className="border-b last:border-0 hover:bg-slate-50/50 transition-colors"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.02 }}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Truck className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="font-bold text-sm text-slate-900">
-                            {trip.vehicle?.plateNumber || '—'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-700">{trip.driverName || '—'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-slate-600">{formatDateTime(trip.startTime)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-slate-600">{formatDateTime(trip.endTime)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium text-slate-700">{trip.distance?.toFixed(1) || '0'} km</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{formatDuration(trip.duration)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-sm font-medium ${trip.maxSpeed > 120 ? 'text-red-600' : 'text-slate-700'}`}>
-                          {trip.maxSpeed || 0} km/h
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{trip.avgSpeed || 0} km/h</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{formatDuration(trip.idleTime)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-sm font-medium ${(trip.overspeedCount || 0) > 0 ? 'text-red-600' : 'text-slate-600'}`}>
-                          {trip.overspeedCount || 0}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">
-                          {(trip.harshBrakes || 0) + (trip.harshAccel || 0)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[trip.status] || ''}`}>
-                          {STATUS_LABELS[trip.status] || trip.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEdit(trip)}>
-                            <Edit className="w-3 h-3 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setDeleteTarget(trip)}>
-                            <Trash2 className="w-3 h-3 text-red-400" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+      {/* DataTable */}
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={trips as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => row.id as string}
+        loading={loading}
+        emptyMessage="No trips found"
+        emptyIcon={Route}
+        searchable
+        searchPlaceholder="Search by driver or plate..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        pagination={{
+          page,
+          pageSize: 15,
+          totalPages,
+          onPageChange: setPage,
+        }}
+        toolbar={
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1.5" />New Trip
+            </Button>
           </div>
-        </Card>
-      </div>
-
-      {/* Mobile + Tablet Cards */}
-      <div className="lg:hidden space-y-3">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-slate-200">
-              <CardContent className="p-4 space-y-3">
-                <div className="h-4 bg-slate-100 rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
-              </CardContent>
-            </Card>
-          ))
-        ) : trips.length === 0 ? (
-          <Card className="rounded-xl border-slate-200">
-            <CardContent className="p-8 text-center">
-              <Route className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No trips found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          trips.map((trip, idx) => (
-            <motion.div
-              key={trip.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.04 }}
-            >
-              <Card className="rounded-xl border-slate-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
-                        <Truck className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-slate-900">
-                          {trip.vehicle?.plateNumber || '—'}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {[trip.vehicle?.make, trip.vehicle?.model].filter(Boolean).join(' ')}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[trip.status] || ''}`}>
-                      {STATUS_LABELS[trip.status] || trip.status}
-                    </Badge>
-                  </div>
-                  <div className="mt-3 text-xs text-slate-600">
-                    <span className="text-slate-400">Driver: </span>{trip.driverName || '—'}
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Distance</p>
-                      <p className="text-sm font-bold text-slate-900">{trip.distance?.toFixed(1) || 0} km</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Duration</p>
-                      <p className="text-sm font-bold text-slate-900">{formatDuration(trip.duration)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Max Speed</p>
-                      <p className={`text-sm font-bold ${trip.maxSpeed > 120 ? 'text-red-600' : 'text-slate-900'}`}>
-                        {trip.maxSpeed || 0} km/h
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Avg Speed</p>
-                      <p className="text-sm font-medium text-slate-700">{trip.avgSpeed || 0} km/h</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Overspeeds</p>
-                      <p className={`text-sm font-medium ${(trip.overspeedCount || 0) > 0 ? 'text-red-600' : 'text-slate-700'}`}>
-                        {trip.overspeedCount || 0}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Harsh</p>
-                      <p className="text-sm font-medium text-slate-700">
-                        {(trip.harshBrakes || 0) + (trip.harshAccel || 0)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">
-                      {formatDateTime(trip.startTime)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEdit(trip)}>
-                        <Edit className="w-3 h-3 mr-1" />Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-red-600" onClick={() => setDeleteTarget(trip)}>
-                        <Trash2 className="w-3 h-3 mr-1" />Delete
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+        }
+        exportFilename="trips"
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

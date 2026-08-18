@@ -2,22 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import {
   Plus,
-  Search,
-  ChevronLeft,
-  ChevronRight,
   Users,
-  Phone,
-  Mail,
-  Building2,
   Pencil,
   Trash2,
   MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -29,15 +21,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { authFetch, formatDate } from '@/lib/api';
 import type { Contact } from '@/lib/types';
 
@@ -144,6 +128,66 @@ export default function ContactsView() {
     } catch { toast.error('Failed to delete contact'); }
   };
 
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, row) => {
+        const c = row as unknown as Contact;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs">
+              {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            </div>
+            <span className="font-medium text-sm">{c.name}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'position',
+      label: 'Position',
+      sortable: true,
+      render: (v) => v ? String(v) : '—',
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      render: (v) => v ? String(v) : '—',
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (v) => v ? String(v) : '—',
+    },
+    {
+      key: 'createdAt',
+      label: 'Added',
+      render: (v) => formatDate(v as string),
+    },
+    {
+      key: 'actions',
+      label: '',
+      className: 'w-10',
+      render: (_, row) => {
+        const c = row as unknown as Contact;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="w-8 h-8"><MoreVertical className="w-4 h-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600" onClick={() => deleteContact(c.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -157,168 +201,58 @@ export default function ContactsView() {
             {total}
           </Badge>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-              <Plus className="w-4 h-4" /> Add Contact
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add New Contact</DialogTitle></DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>Full Name *</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Contact name" />
-              </div>
-              <div className="space-y-2">
-                <Label>Position</Label>
-                <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="e.g. Fleet Manager" />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+971 5x xxx xxxx" />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@company.ae" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
-                {submitting ? 'Creating...' : 'Add Contact'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input placeholder="Search contacts..." value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
-        </div>
-      ) : contacts.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Users className="w-10 h-10 mb-3" />
-            <p className="text-sm font-medium">No contacts found</p>
-            <p className="text-xs mt-1">Add your first contact</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4">
-            {contacts.map((c) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <Card className="rounded-xl border-slate-200/60 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-sm">
-                        {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{c.name}</p>
-                        {c.position && <p className="text-xs text-slate-500">{c.position}</p>}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-8 h-8"><MoreVertical className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600" onClick={() => deleteContact(c.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="mt-3 space-y-1.5">
-                      {c.phone && (
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" /> <a href={`tel:${c.phone}`} className="text-emerald-600 hover:underline">{c.phone}</a>
-                        </div>
-                      )}
-                      {c.email && (
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Mail className="w-3.5 h-3.5 text-slate-400" /> <a href={`mailto:${c.email}`} className="text-emerald-600 hover:underline truncate">{c.email}</a>
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-2 text-[10px] text-slate-400">Added {formatDate(c.createdAt)}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Desktop Table */}
-          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden hidden lg:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80">
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Position</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Phone</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Email</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Added</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contacts.map((c) => (
-                  <TableRow key={c.id} className="hover:bg-slate-50/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs">
-                          {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </div>
-                        <span className="font-medium text-sm">{c.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">{c.position || '—'}</TableCell>
-                    <TableCell className="text-sm text-slate-600">{c.phone || '—'}</TableCell>
-                    <TableCell className="text-sm text-slate-600">{c.email || '—'}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{formatDate(c.createdAt)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-8 h-8"><MoreVertical className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600" onClick={() => deleteContact(c.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+      {/* Data Table */}
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={contacts as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as Contact).id}
+        loading={loading}
+        emptyMessage="No contacts found"
+        emptyIcon={Users}
+        searchable
+        searchPlaceholder="Search contacts..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        pagination={{ page, pageSize: 20, totalPages, onPageChange: setPage }}
+        toolbar={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                <Plus className="w-4 h-4" /> Add Contact
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Add New Contact</DialogTitle></DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Full Name *</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Contact name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Position</Label>
+                  <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="e.g. Fleet Manager" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+971 5x xxx xxxx" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@company.ae" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCreate} disabled={submitting}>
+                  {submitting ? 'Creating...' : 'Add Contact'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       {/* Edit Dialog */}
       <Dialog open={!!editContact} onOpenChange={(open) => { if (!open) setEditContact(null); }}>

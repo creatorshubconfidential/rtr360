@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import { UserPlus, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +13,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { authFetch } from '@/lib/api';
 import { STATUS_COLORS, PRIORITY_COLORS, EMIRATES, VEHICLE_TYPES, LEAD_SOURCES, VALID_LEAD_STATUSES } from '@/lib/constants';
 import type { Lead } from '@/lib/types';
@@ -95,6 +91,37 @@ export default function LeadsView() {
 
   const pipelineStatuses = ['new', 'contacted', 'qualified', 'demo', 'quotation', 'won', 'lost'];
 
+  const columns: ColumnDef<Record<string, unknown>>[] = useMemo(() => [
+    { key: 'name', label: 'Name', sortable: true, className: 'font-medium text-sm' },
+    { key: 'company', label: 'Company', render: (v) => <span className="text-sm text-slate-600">{(v as string) || '—'}</span> },
+    { key: 'phone', label: 'Phone', render: (v) => <span className="text-sm text-slate-600">{(v as string) || '—'}</span> },
+    { key: 'emirate', label: 'Emirate', render: (v) => <span className="text-sm text-slate-600">{(v as string) || '—'}</span> },
+    { key: 'source', label: 'Source', render: (v) =>
+        v ? <Badge variant="secondary" className="text-[11px] bg-slate-100 text-slate-600 border-0">{v as string}</Badge> : '—',
+    },
+    { key: 'status', label: 'Status', render: (_, row) => (
+        <Badge className={`text-[11px] ${STATUS_COLORS[row.status as string] || 'bg-slate-100 text-slate-600'} border-0`}>
+          {row.status as string}
+        </Badge>
+    )},
+    { key: 'priority', label: 'Priority', render: (_, row) => (
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[row.priority as string] || 'bg-slate-300'}`} />
+          <span className="text-xs text-slate-600 capitalize">{row.priority as string}</span>
+        </div>
+    )},
+    { key: 'createdAt', label: 'Created', render: (v) => <span className="text-xs text-slate-500">{new Date(v as string).toLocaleDateString()}</span> },
+    { key: 'actions', label: 'Actions', render: (_, row) => {
+        const lead = row as unknown as Lead;
+        return (
+          <Select onValueChange={(v) => handleStatusUpdate(lead.id, v)}>
+            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Move to..." /></SelectTrigger>
+            <SelectContent>{VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+          </Select>
+        );
+    }},
+  ], [handleStatusUpdate]);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -142,81 +169,32 @@ export default function LeadsView() {
           </Badge>
         ))}
       </div>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search leads..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Status</SelectItem>{VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Priority" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Priority</SelectItem><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
-        </Select>
-      </div>
-      <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-        ) : leads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <UserPlus className="w-10 h-10 mb-3" /><p className="text-sm font-medium">No leads found</p><p className="text-xs mt-1">Create a new lead or adjust your filters</p>
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={leads as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => row.id as string}
+        loading={loading}
+        emptyMessage="No leads found"
+        emptyIcon={UserPlus}
+        searchable
+        searchPlaceholder="Search leads..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        toolbar={
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All Status</SelectItem>{VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="All Priority" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All Priority</SelectItem><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
+            </Select>
           </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow className="bg-slate-50/80">
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Name</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Company</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden md:table-cell">Phone</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Emirate</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden sm:table-cell">Source</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Priority</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500 hidden lg:table-cell">Created</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={lead.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-medium text-sm">{lead.name}</TableCell>
-                      <TableCell className="text-sm text-slate-600">{lead.company || '—'}</TableCell>
-                      <TableCell className="text-sm text-slate-600 hidden md:table-cell">{lead.phone || '—'}</TableCell>
-                      <TableCell className="text-sm text-slate-600 hidden lg:table-cell">{lead.emirate || '—'}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {lead.source ? <Badge variant="secondary" className="text-[11px] bg-slate-100 text-slate-600 border-0">{lead.source}</Badge> : '—'}
-                      </TableCell>
-                      <TableCell><Badge className={`text-[11px] ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'} border-0`}>{lead.status}</Badge></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[lead.priority] || 'bg-slate-300'}`} />
-                          <span className="text-xs text-slate-600 capitalize">{lead.priority}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500 hidden lg:table-cell">{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Select onValueChange={(v) => handleStatusUpdate(lead.id, v)}>
-                          <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Move to..." /></SelectTrigger>
-                          <SelectContent>{VALID_LEAD_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-              <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}><ChevronLeft className="w-4 h-4 mr-1" /> Previous</Button>
-                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-              </div>
-            </div>
-          </>
-        )}
-      </Card>
+        }
+        pagination={{ page, pageSize: 10, totalPages, onPageChange: setPage }}
+        exportFilename="leads"
+      />
     </div>
   );
 }
