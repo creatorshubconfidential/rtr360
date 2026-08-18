@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, Bell, Bot, ExternalLink, Settings, LogOut, Truck,
+  AlertTriangle, Ticket, Wrench, CreditCard, Info as InfoIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -99,7 +100,7 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifList, setNotifList] = useState<Array<{ id: string; title: string; body: string; read: boolean }>>([]);
+  const [notifList, setNotifList] = useState<Array<{ id: string; title: string; body: string; read: boolean; type?: string }>>([]);
   const [notifCount, setNotifCount] = useState(0);
 
   const fetchNotifPreview = useCallback(async () => {
@@ -113,8 +114,34 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
     } catch { /* silent */ }
   }, []);
 
+  // Initial fetch + auto-refresh every 30s
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchNotifPreview(); }, [fetchNotifPreview]);
+  useEffect(() => {
+    fetchNotifPreview();
+    const interval = setInterval(fetchNotifPreview, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchNotifPreview]);
+
+  const markNotifRead = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      setNotifList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setNotifCount(prev => Math.max(0, prev - 1));
+    } catch { /* silent */ }
+  };
+
+  const NOTIF_ICONS: Record<string, React.ElementType> = {
+    alert: AlertTriangle, ticket: Ticket, maintenance: Wrench,
+    invoice: CreditCard, system: Settings, info: InfoIcon,
+  };
+  const NOTIF_COLORS: Record<string, string> = {
+    alert: 'text-amber-500', ticket: 'text-blue-500', maintenance: 'text-orange-500',
+    invoice: 'text-emerald-500', system: 'text-slate-500', info: 'text-blue-400',
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -226,12 +253,26 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
                         <div className="p-6 text-center text-slate-400 text-sm">No notifications</div>
                       ) : (
                         <div className="divide-y divide-slate-50">
-                          {notifList.slice(0, 8).map((n) => (
-                            <div key={n.id} className={`px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
-                              <p className={`text-xs ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
-                              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+                          {notifList.slice(0, 8).map((n) => {
+                            const NIcon = NOTIF_ICONS[n.type || 'info'] || InfoIcon;
+                            const NColor = NOTIF_COLORS[n.type || 'info'] || 'text-slate-400';
+                            return (
+                            <div
+                              key={n.id}
+                              onClick={() => { if (!n.read) markNotifRead(n.id); }}
+                              className={`px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 ${!n.read ? 'bg-emerald-50/30' : ''}`}
+                            >
+                              <NIcon className={`w-4 h-4 mt-0.5 shrink-0 ${NColor}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
+                                  <p className={`text-xs truncate ${!n.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{n.title}</p>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+                              </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </ScrollArea>
