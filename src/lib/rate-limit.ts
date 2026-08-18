@@ -8,8 +8,12 @@ import { db } from '@/lib/db';
  *   - L1 (in-memory): Fast O(1) lookups, avoids DB hit on every request.
  *   - L2 (database): Shared across all serverless instances via RateLimitCounter table.
  *
+ * Fault tolerance: If the L2 database table is unavailable (e.g. migration not run
+ * on a new Supabase instance), the limiter automatically falls back to L1-only mode.
+ * This prevents login and other API routes from crashing with 500 errors.
+ *
  * For very high throughput deployments, replace L2 with Redis (Upstash / Vercel KV)
- * using the same interface — swap `getFromStore`/`incrementInStore` with Redis INCR + EXPIRE.
+ * using the same interface — swap getFromStore/incrementInStore with Redis INCR + EXPIRE.
  *
  * Features:
  *   - Sliding window with per-endpoint keys
@@ -17,6 +21,7 @@ import { db } from '@/lib/db';
  *   - Automatic cleanup of expired entries (L1 + periodic L2)
  *   - IP extraction behind proxies (X-Forwarded-For)
  *   - Distributed: works across multiple Vercel serverless instances
+ *   - Graceful L1-only fallback when L2 is unavailable
  */
 
 // ── Types ────────────────────────────────────────────────────────
@@ -41,6 +46,10 @@ export type RateLimitTier = 'auth' | 'api' | 'strict' | 'analytics';
 const cache = new Map<string, RateLimitEntry>();
 const MAX_CACHE_SIZE = 10_000;
 const CACHE_TTL_MS = 5_000; // L1 entries considered fresh for 5s
+
+// Track whether L2 database is available. Once it fails, we skip all
+// future L2 calls for the lifetime of this serverless instance.
+let l2Failed = false;
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 function ensureCleanup() {
@@ -70,12 +79,13 @@ function ensureCleanup() {
  * Keeps the table from growing unbounded.
  */
 async function purgeExpiredDbCounters(now: number) {
+  if (l2Failed) return;
   try {
     await db.rateLimitCounter.deleteMany({
       where: { resetAt: { lt: new Date(now) } },
     });
   } catch {
-    // Silently fail — cleanup is best-effort
+    l2Failed = true;
   }
 }
 
@@ -84,36 +94,75 @@ async function purgeExpiredDbCounters(now: number) {
 /**
  * Atomic increment-or-create in the database.
  * Uses upsert for race-condition safety across instances.
+ * Returns null if the database is unavailable.
  */
-async function incrementInDb(key: string, windowMs: number): Promise<RateLimitEntry> {
-  const now = new Date();
-  const resetAt = new Date(now.getTime() + windowMs);
+async function incrementInDb(key: string, windowMs: number): Promise<RateLimitEntry | null> {
+  if (l2Failed) return null;
+  try {
+    const now = new Date();
+    const resetAt = new Date(now.getTime() + windowMs);
 
-  // Upsert: increment count if exists and not expired, or create new
-  const counter = await db.rateLimitCounter.upsert({
-    where: { key },
-    create: { key, count: 1, resetAt },
-    update: {
-      count: { increment: 1 },
-      resetAt: { set: resetAt },
-    },
-  });
+    const counter = await db.rateLimitCounter.upsert({
+      where: { key },
+      create: { key, count: 1, resetAt },
+      update: {
+        count: { increment: 1 },
+        resetAt: { set: resetAt },
+      },
+    });
 
-  return {
-    count: counter.count,
-    resetAt: counter.resetAt.getTime(),
-  };
+    return {
+      count: counter.count,
+      resetAt: counter.resetAt.getTime(),
+    };
+  } catch {
+    l2Failed = true;
+    return null;
+  }
 }
 
 /**
  * Read current counter from database (cache miss path).
+ * Returns null if the database is unavailable.
  */
 async function readFromDb(key: string): Promise<RateLimitEntry | null> {
-  const counter = await db.rateLimitCounter.findUnique({ where: { key } });
-  if (!counter) return null;
+  if (l2Failed) return null;
+  try {
+    const counter = await db.rateLimitCounter.findUnique({ where: { key } });
+    if (!counter) return null;
+    const now = Date.now();
+    if (counter.resetAt.getTime() <= now) return null;
+    return { count: counter.count, resetAt: counter.resetAt.getTime() };
+  } catch {
+    l2Failed = true;
+    return null;
+  }
+}
+
+// ── L1-Only Fallback ─────────────────────────────────────────────
+
+/**
+ * In-memory only rate limiting when L2 database is unavailable.
+ * Not distributed, but prevents login from crashing on Vercel.
+ */
+function l1OnlyRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
-  if (counter.resetAt.getTime() <= now) return null; // expired
-  return { count: counter.count, resetAt: counter.resetAt.getTime() };
+  const cached = cache.get(key);
+
+  if (cached && cached.resetAt > now) {
+    // Existing window — check limit
+    const incremented = { count: cached.count + 1, resetAt: cached.resetAt };
+    cache.set(key, incremented);
+    if (incremented.count > limit) {
+      return { allowed: false, remaining: 0, resetAt: incremented.resetAt };
+    }
+    return { allowed: true, remaining: Math.max(0, limit - incremented.count), resetAt: incremented.resetAt };
+  }
+
+  // New window
+  const entry = { count: 1, resetAt: now + windowMs };
+  cache.set(key, entry);
+  return { allowed: true, remaining: Math.max(0, limit - 1), resetAt: entry.resetAt };
 }
 
 // ── Tiers ─────────────────────────────────────────────────────────
@@ -131,12 +180,14 @@ const TIER_LIMITS: Record<RateLimitTier, { limit: number; windowMs: number }> = 
  * Check rate limit for a given key using distributed store.
  *
  * Flow:
- *  1. Check L1 cache — if fresh hit, use it (O(1))
- *  2. On miss or stale, read from L2 database
- *  3. If no entry, increment in DB and cache the result
- *  4. If expired, increment in DB (new window) and cache
- *  5. If under limit, increment in DB and cache
- *  6. If over limit, return denied (don't increment)
+ *  1. If L2 known unavailable → use L1-only fallback
+ *  2. Check L1 cache — if fresh hit, use it (O(1))
+ *  3. On miss or stale, read from L2 database
+ *  4. If L2 fails → fall back to L1-only and remember
+ *  5. If no entry, increment in DB and cache the result
+ *  6. If expired, increment in DB (new window) and cache
+ *  7. If under limit, increment in DB and cache
+ *  8. If over limit, return denied (don't increment)
  */
 export async function rateLimit(
   key: string,
@@ -145,34 +196,57 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   ensureCleanup();
 
+  // Fast path: L2 known to be unavailable → use L1 only
+  if (l2Failed) {
+    return l1OnlyRateLimit(key, limit, windowMs);
+  }
+
   const now = Date.now();
 
   // L1 cache check
   const cached = cache.get(key);
   if (cached && cached.resetAt > now) {
-    // Cache is fresh — but we still need to increment in DB for distributed accuracy
-    // However, for performance, we do a lazy write: only increment on cache miss
-    // This means L1 is "optimistic" — slightly over-counting is acceptable for rate limiting
+    // Cache is fresh — return from cache without hitting DB
+    if (cached.count >= limit) {
+      return { allowed: false, remaining: 0, resetAt: cached.resetAt };
+    }
+    // Optimistic increment in L1
+    const incremented = { count: cached.count + 1, resetAt: cached.resetAt };
+    cache.set(key, incremented);
+    return { allowed: true, remaining: Math.max(0, limit - incremented.count), resetAt: incremented.resetAt };
   }
 
-  // L2 database check + increment
+  // L2 database check
   const existing = await readFromDb(key);
-  
-  if (!existing || existing.resetAt <= now) {
+
+  // If DB read failed, fall back to L1-only
+  if (l2Failed) {
+    return l1OnlyRateLimit(key, limit, windowMs);
+  }
+
+  const effectiveExisting = existing || (cached && cached.resetAt > now ? cached : null);
+
+  if (!effectiveExisting || effectiveExisting.resetAt <= now) {
     // No entry or expired — create new window
     const entry = await incrementInDb(key, windowMs);
+    if (!entry) {
+      // DB write failed — fall back to L1-only
+      return l1OnlyRateLimit(key, limit, windowMs);
+    }
     cache.set(key, entry);
     return { allowed: true, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
   }
 
-  if (existing.count >= limit) {
-    // Over limit — don't increment, return denied
-    cache.set(key, existing);
-    return { allowed: false, remaining: 0, resetAt: existing.resetAt };
+  if (effectiveExisting.count >= limit) {
+    cache.set(key, effectiveExisting);
+    return { allowed: false, remaining: 0, resetAt: effectiveExisting.resetAt };
   }
 
   // Under limit — increment
   const entry = await incrementInDb(key, windowMs);
+  if (!entry) {
+    return l1OnlyRateLimit(key, limit, windowMs);
+  }
   cache.set(key, entry);
   return { allowed: true, remaining: Math.max(0, limit - entry.count), resetAt: entry.resetAt };
 }
@@ -185,7 +259,6 @@ export function getClientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     const firstIp = forwarded.split(',')[0].trim();
-    // Basic validation: must look like an IPv4 or IPv6
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(firstIp) ||
         /^[0-9a-fA-F:]+$/.test(firstIp)) {
       return firstIp;
@@ -211,10 +284,6 @@ export async function perEndpointRateLimit(
 /**
  * Middleware-style rate limit check for Next.js API route handlers.
  * Returns a 429 NextResponse if rate limited, or null if allowed.
- *
- * Usage:
- *   const rl = await checkRateLimit(request, 'api');
- *   if (rl) return rl;
  */
 export async function checkRateLimit(
   request: Request,
@@ -242,7 +311,6 @@ export async function checkRateLimit(
 
 /**
  * Pre-configured rate limiters for legacy/inline usage.
- * NOTE: These return Promises now — await them.
  */
 export const rateLimiter = {
   /** Auth routes: 10 req/min per IP */
