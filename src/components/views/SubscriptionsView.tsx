@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
-  CreditCard, Plus, Search, ChevronLeft, ChevronRight,
+  CreditCard, Plus,
   CheckCircle2, PauseCircle, XCircle, Clock, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -18,10 +18,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 
 
 import { authFetch } from '@/lib/api';
@@ -68,6 +65,7 @@ export default function SubscriptionsView() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -82,6 +80,7 @@ export default function SubscriptionsView() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: '12' });
       if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (search) params.set('search', search);
       const res = await authFetch(`/api/subscriptions?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
@@ -91,7 +90,7 @@ export default function SubscriptionsView() {
       }
     } catch { toast.error('Failed to load subscriptions'); }
     finally { setLoading(false); }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, search]);
 
   const fetchPlans = async () => {
     try {
@@ -132,6 +131,86 @@ export default function SubscriptionsView() {
 
   const activeCount = subscriptions.filter(s => s.status === 'active').length;
   const monthlyRevenue = subscriptions.filter(s => s.status === 'active').reduce((sum, s) => sum + (s.plan?.priceMonthly || 0), 0);
+
+  const columns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'plan',
+      label: 'Plan',
+      sortable: true,
+      render: (_value, row) => {
+        const sub = row as unknown as Subscription;
+        return (
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${STATUS_COLORS[sub.status] || 'bg-slate-100 text-slate-600'}`}>
+              {(() => { const Icon = STATUS_ICONS[sub.status] || Clock; return <Icon className="w-4 h-4" />; })()}
+            </div>
+            <div>
+              <div className="font-semibold text-slate-900">{sub.plan?.name || 'No Plan'}</div>
+              <div className="text-xs text-slate-500">{sub.organization?.name || ''}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (_value, row) => {
+        const sub = row as unknown as Subscription;
+        return (
+          <Badge className={`text-[11px] ${STATUS_COLORS[sub.status] || 'bg-slate-100 text-slate-600'} border-0`}>
+            {sub.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'vehicleCount',
+      label: 'Vehicles',
+      sortable: true,
+      align: 'center',
+    },
+    {
+      key: 'priceMonthly',
+      label: 'Monthly Price',
+      sortable: true,
+      align: 'right',
+      render: (_value, row) => {
+        const sub = row as unknown as Subscription;
+        return <span>AED {(sub.plan?.priceMonthly || 0).toLocaleString()}</span>;
+      },
+    },
+    {
+      key: 'startsAt',
+      label: 'Start Date',
+      sortable: true,
+      render: (value) => <span>{formatDate(value as string)}</span>,
+    },
+    {
+      key: 'endsAt',
+      label: 'Expiry',
+      render: (value) => <span className="text-xs text-slate-500">{value ? formatDate(value as string) : 'No expiry'}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'center',
+      render: (_value, row) => {
+        const sub = row as unknown as Subscription;
+        return (
+          <Select onValueChange={(v) => handleStatusUpdate(sub.id, v)}>
+            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Update..." /></SelectTrigger>
+            <SelectContent>
+              {['active', 'paused', 'cancelled', 'expired'].map(s => (
+                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-5">
@@ -189,93 +268,37 @@ export default function SubscriptionsView() {
         ))}
       </div>
 
-      {/* Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {['active', 'paused', 'cancelled', 'expired'].map(s => (
-              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <Card className="rounded-xl border-slate-200/60 shadow-sm"><div className="p-6 space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div></Card>
-      ) : subscriptions.length === 0 ? (
-        <Card className="rounded-xl border-slate-200/60">
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <CreditCard className="w-10 h-10 mb-3" /><p className="text-sm font-medium">No subscriptions found</p>
-          </div>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {subscriptions.map((sub) => {
-              const StatusIcon = STATUS_ICONS[sub.status] || Clock;
-              return (
-                <motion.div key={sub.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className="rounded-xl border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${STATUS_COLORS[sub.status] || 'bg-slate-100 text-slate-600'}`}>
-                            <StatusIcon className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-slate-900">{sub.plan?.name || 'No Plan'}</div>
-                            <div className="text-xs text-slate-500">{sub.organization?.name || ''}</div>
-                          </div>
-                        </div>
-                        <Badge className={`text-[11px] ${STATUS_COLORS[sub.status] || 'bg-slate-100 text-slate-600'} border-0`}>
-                          {sub.status}
-                        </Badge>
-                      </div>
-                      <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <div className="text-lg font-bold text-slate-900">{sub.vehicleCount}</div>
-                          <div className="text-[11px] text-slate-500">Vehicles</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-slate-900">AED {(sub.plan?.priceMonthly || 0).toLocaleString()}</div>
-                          <div className="text-[11px] text-slate-500">/month</div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-700">{formatDate(sub.startsAt)}</div>
-                          <div className="text-[11px] text-slate-500">Start Date</div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="text-xs text-slate-500">
-                          {sub.endsAt ? `Expires: ${formatDate(sub.endsAt)}` : 'No expiry'}
-                        </div>
-                        <Select onValueChange={(v) => handleStatusUpdate(sub.id, v)}>
-                          <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Update..." /></SelectTrigger>
-                          <SelectContent>
-                            {['active', 'paused', 'cancelled', 'expired'].map(s => (
-                              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}><ChevronLeft className="w-4 h-4 mr-1" /> Previous</Button>
-              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Data Table */}
+      <DataTable<Record<string, unknown>>
+        columns={columns}
+        data={subscriptions as unknown as Record<string, unknown>[]}
+        keyExtractor={(row) => (row as unknown as Subscription).id}
+        loading={loading}
+        emptyMessage="No subscriptions found"
+        emptyIcon={CreditCard}
+        searchable
+        searchPlaceholder="Search subscriptions..."
+        searchValue={search}
+        onSearch={(q) => { setSearch(q); setPage(1); }}
+        toolbar={(
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {['active', 'paused', 'cancelled', 'expired'].map(s => (
+                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        pagination={{
+          page,
+          pageSize: 12,
+          totalPages,
+          onPageChange: setPage,
+        }}
+        exportFilename="subscriptions"
+      />
     </div>
   );
 }

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { authFetch } from '@/lib/api';
 import { exportCSV } from '@/lib/export';
 import {
@@ -311,6 +312,81 @@ export default function ReportsView() {
       });
     }
   };
+
+  // ──── Driver Table Columns ────
+
+  const driverColumns: ColumnDef<Record<string, unknown>>[] = [
+    {
+      key: 'name',
+      label: 'Driver',
+      sortable: true,
+      render: (_value, row) => (
+        <span className="font-medium text-slate-800">{row.name as string}</span>
+      ),
+    },
+    {
+      key: 'score',
+      label: 'Score',
+      sortable: true,
+      render: (_value, row) => {
+        const score = row.score as number;
+        return (
+          <Badge
+            className={
+              score > 80
+                ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                : score > 60
+                  ? 'bg-amber-100 text-amber-700 border-amber-200'
+                  : 'bg-red-100 text-red-700 border-red-200'
+            }
+            variant="outline"
+          >
+            {score}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'totalTrips',
+      label: 'Trips',
+      sortable: true,
+      align: 'right',
+      render: (value) => (
+        <span className="text-slate-600">{(value as number)?.toLocaleString()}</span>
+      ),
+    },
+    {
+      key: 'totalDistance',
+      label: 'Distance (km)',
+      sortable: true,
+      align: 'right',
+      render: (value) => (
+        <span className="text-slate-600">{(value as number)?.toLocaleString()}</span>
+      ),
+    },
+    {
+      key: 'totalViolations',
+      label: 'Violations',
+      sortable: true,
+      align: 'right',
+      render: (value) => {
+        const v = value as number;
+        return (
+          <span
+            className={
+              v === 0
+                ? 'text-emerald-600'
+                : v <= 2
+                  ? 'text-amber-600'
+                  : 'text-red-600'
+            }
+          >
+            {v}
+          </span>
+        );
+      },
+    },
+  ];
 
   // ──── Render ────
 
@@ -641,70 +717,13 @@ export default function ReportsView() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600">Driver</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600">Score</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">Trips</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">Distance (km)</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">Violations</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.drivers.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-400">
-                      No driver data available
-                    </td>
-                  </tr>
-                ) : (
-                  data.drivers.map((driver, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="py-3 px-4 font-medium text-slate-800">{driver.name}</td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          className={
-                            driver.score > 80
-                              ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                              : driver.score > 60
-                                ? 'bg-amber-100 text-amber-700 border-amber-200'
-                                : 'bg-red-100 text-red-700 border-red-200'
-                          }
-                          variant="outline"
-                        >
-                          {driver.score}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-right text-slate-600">
-                        {driver.totalTrips.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-right text-slate-600">
-                        {driver.totalDistance.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span
-                          className={
-                            driver.totalViolations === 0
-                              ? 'text-emerald-600'
-                              : driver.totalViolations <= 2
-                                ? 'text-amber-600'
-                                : 'text-red-600'
-                          }
-                        >
-                          {driver.totalViolations}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={driverColumns}
+            data={data.drivers as unknown as Record<string, unknown>[]}
+            keyExtractor={(row) => String(row.name ?? '')}
+            emptyMessage="No driver data available"
+            exportFilename="rtr360_driver_performance"
+          />
         </CardContent>
       </Card>
 
