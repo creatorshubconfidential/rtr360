@@ -8,8 +8,24 @@ datasource db {
 }
 
 // ============================================================
-// RTR 360 — Fleet Technology & Management Platform
-// Powered by Mianx.ai | Multi-tenant SaaS Architecture
+// RTR 360 Database Schema
+// ============================================================
+//
+// TENANT CLASSIFICATION:
+//   GLOBAL       — Setting, Plan, Session, ApiKey, RateLimitCounter
+//                  (no organizationId — platform-wide)
+//   TENANT_SCOPED — All other models MUST be filtered by
+//                  organizationId in every API route.
+//   User.note     — super_admin users may have null orgId (intentional).
+//   Device.note  — warehouse devices may be unassigned (intentional).
+//   SIM.note      — SIM cards may be unassigned (intentional).
+//
+// AUDIT FINDING (2026-08-19):
+//   - Money fields use Decimal (not Float). Opportunity.value converted.
+//   - Tenant isolation enforced at API route level via requireAuth + orgFilter.
+//   - Null orgId on User/Device/SIM/Lead is intentional for certain states.
+//   - TODO: Future migration to make User/Lead orgId required.
+//
 // ============================================================
 
 // ----------------------
