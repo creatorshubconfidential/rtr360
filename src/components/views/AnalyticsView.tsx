@@ -25,6 +25,7 @@ import { authFetch } from '@/lib/api';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 
 
 const aedFmt = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED' });
@@ -316,52 +317,41 @@ function DriverTrendsTab() {
       <Card>
         <CardHeader><CardTitle className="text-base">Driver Performance Leaderboard</CardTitle></CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Trend</TableHead>
-                  <TableHead>Risk</TableHead>
-                  <TableHead>Trips</TableHead>
-                  <TableHead>Distance</TableHead>
-                  <TableHead>Harsh Brake</TableHead>
-                  <TableHead>Overspeed</TableHead>
-                  <TableHead>Idle %</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.drivers.map((d: any, i: number) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{i + 1}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{d.name}</div>
-                      <div className="text-xs text-slate-500">{d.nationality || ''} {d.emirate ? `• ${d.emirate}` : ''}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={d.score} className="w-12 h-2" />
-                        <span className="text-sm font-medium">{d.score}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {d.trend === 'improving' && <TrendingUp className="w-4 h-4 text-emerald-500" />}
-                      {d.trend === 'declining' && <TrendingDown className="w-4 h-4 text-red-500" />}
-                      {d.trend === 'stable' && <Activity className="w-4 h-4 text-blue-500" />}
-                    </TableCell>
-                    <TableCell><Badge style={{ backgroundColor: RISK_COLORS[d.riskLevel] + '20', color: RISK_COLORS[d.riskLevel] }}>{d.riskLevel}</Badge></TableCell>
-                    <TableCell>{d.totalTrips}</TableCell>
-                    <TableCell>{d.totalDistance ? `${fmtNum(Math.round(d.totalDistance))} km` : '—'}</TableCell>
-                    <TableCell>{d.avgHarshBrakes}</TableCell>
-                    <TableCell>{d.avgOverspeed}</TableCell>
-                    <TableCell>{d.idleRatio}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable<Record<string, unknown>>
+            columns={[
+              { key: '_rank', label: '#', sortable: true, render: (_, row) => <span className="font-medium">{row._rank as number}</span> },
+              { key: 'name', label: 'Driver', sortable: true, render: (_, row) => (
+                <div>
+                  <div className="font-medium">{row.name as string}</div>
+                  <div className="text-xs text-slate-500">{String(row.nationality || '')} {row.emirate ? `• ${row.emirate}` : ''}</div>
+                </div>
+              )},
+              { key: 'score', label: 'Score', sortable: true, render: (_, row) => (
+                <div className="flex items-center gap-2">
+                  <Progress value={row.score as number} className="w-12 h-2" />
+                  <span className="text-sm font-medium">{String(row.score)}</span>
+                </div>
+              )},
+              { key: 'trend', label: 'Trend', render: (_, row) => {
+                const t = row.trend as string;
+                return t === 'improving' ? <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  : t === 'declining' ? <TrendingDown className="w-4 h-4 text-red-500" />
+                  : t === 'stable' ? <Activity className="w-4 h-4 text-blue-500" />
+                  : null;
+              }},
+              { key: 'riskLevel', label: 'Risk', sortable: true, render: (_, row) => <Badge style={{ backgroundColor: RISK_COLORS[row.riskLevel as string] + '20', color: RISK_COLORS[row.riskLevel as string] }}>{row.riskLevel as string}</Badge> },
+              { key: 'totalTrips', label: 'Trips', sortable: true },
+              { key: 'totalDistance', label: 'Distance', sortable: true, render: (_, row) => row.totalDistance ? `${fmtNum(Math.round(row.totalDistance as number))} km` : '—' },
+              { key: 'avgHarshBrakes', label: 'Harsh Brake', sortable: true },
+              { key: 'avgOverspeed', label: 'Overspeed', sortable: true },
+              { key: 'idleRatio', label: 'Idle %', sortable: true, render: (_, row) => <span>{String(row.idleRatio)}%</span> },
+            ] as ColumnDef<Record<string, unknown>>[]}
+            data={(data.drivers ?? []).map((d: any, i: number) => ({ ...d, _rank: i + 1 })) as unknown as Record<string, unknown>[]}
+            keyExtractor={(row) => String(row.id)}
+            searchable
+            searchPlaceholder="Search drivers…"
+            exportFilename="driver-leaderboard"
+          />
         </CardContent>
       </Card>
 

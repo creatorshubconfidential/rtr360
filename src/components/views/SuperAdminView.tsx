@@ -14,8 +14,6 @@ import {
   AlertTriangle,
   Plus,
   Search,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Pencil,
   Trash2,
@@ -66,15 +64,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { Textarea } from '@/components/ui/textarea';
+
+type Row = Record<string, unknown>;
 
 // ────────────────────────────────────────
 // Types
@@ -542,6 +535,127 @@ function OrganizationsTable() {
 
   const totalPages = Math.ceil(total / 12);
 
+  const columns: ColumnDef<Row>[] = [
+    {
+      key: 'name',
+      label: 'Organization',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-slate-800">{org.tradeName || org.name}</div>
+              {org.email && <div className="text-[11px] text-slate-400">{org.email}</div>}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'planName',
+      label: 'Plan',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <Badge variant="secondary" className="text-[11px] bg-violet-100 text-violet-700 border-0">
+            {org.planName || 'Free'}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'emirate',
+      label: 'Emirate',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return <span className="text-sm text-slate-600">{org.emirate || '—'}</span>;
+      },
+    },
+    {
+      key: 'vehicles',
+      label: 'Vehicles',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <span className="text-sm">
+            <span className={org._count.vehicles > org.vehicleLimit ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+              {org._count.vehicles}
+            </span>
+            <span className="text-slate-400">/{org.vehicleLimit}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'users',
+      label: 'Users',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <span className="text-sm">
+            <span className={org._count.users > org.userLimit ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+              {org._count.users}
+            </span>
+            <span className="text-slate-400">/{org.userLimit}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'whiteLabel',
+      label: 'White-Label',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return org.whiteLabelEnabled ? (
+          <Badge className="text-[10px] bg-purple-100 text-purple-700 border-0 gap-1"><Palette className="w-3 h-3" /> On</Badge>
+        ) : (
+          <span className="text-xs text-slate-400">Off</span>
+        );
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <Badge className={`text-[11px] border-0 ${org.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+            {org.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return <span className="text-xs text-slate-500">{new Date(org.createdAt).toLocaleDateString()}</span>;
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_val, row) => {
+        const org = row as unknown as OrgSummary;
+        return (
+          <div className="flex items-center gap-1">
+            <button onClick={() => openDetail(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="View Details"><Eye className="w-3.5 h-3.5 text-slate-500" /></button>
+            <button onClick={() => openEdit(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5 text-slate-500" /></button>
+            <button onClick={() => openBranding(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Branding"><Palette className="w-3.5 h-3.5 text-slate-500" /></button>
+            <button onClick={() => openUsage(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Usage"><Activity className="w-3.5 h-3.5 text-slate-500" /></button>
+            {org.status === 'active' && (
+              <button onClick={() => handleDeactivate(org)} className="p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer" title="Deactivate"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Status Summary Badges */}
@@ -557,8 +671,8 @@ function OrganizationsTable() {
         </Badge>
       </div>
 
-      {/* Search */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Mobile Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3 lg:hidden">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
@@ -578,119 +692,71 @@ function OrganizationsTable() {
         </Select>
       </div>
 
-      {/* Table */}
-      <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden">
+      {/* Mobile Cards */}
+      <div className="lg:hidden">
         {loading ? (
-          <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+            <div className="p-6 space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+          </Card>
         ) : orgs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Building2 className="w-10 h-10 mb-3" />
-            <p className="text-sm font-medium">No organizations found</p>
-          </div>
+          <Card className="rounded-xl border-slate-200/60 shadow-sm">
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <Building2 className="w-10 h-10 mb-3" />
+              <p className="text-sm font-medium">No organizations found</p>
+            </div>
+          </Card>
         ) : (
-          <>
-            {/* Mobile Cards */}
-            <div className="lg:hidden divide-y divide-slate-100">
+          <Card className="rounded-xl border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="divide-y divide-slate-100">
               {orgs.map((org) => (
                 <OrgCard key={org.id} org={org} onDetail={openDetail} onEdit={openEdit} onBrand={openBranding} onUsage={openUsage} onDeactivate={handleDeactivate} />
               ))}
             </div>
-
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/80">
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Organization</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Plan</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Emirate</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Vehicles</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Users</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">White-Label</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Status</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Created</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wide text-slate-500">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orgs.map((org) => (
-                    <TableRow key={org.id} className="hover:bg-slate-50/50">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                            <Building2 className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-slate-800">{org.tradeName || org.name}</div>
-                            {org.email && <div className="text-[11px] text-slate-400">{org.email}</div>}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[11px] bg-violet-100 text-violet-700 border-0">
-                          {org.planName || 'Free'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-600">{org.emirate || '—'}</TableCell>
-                      <TableCell className="text-sm">
-                        <span className={org._count.vehicles > org.vehicleLimit ? 'text-red-600 font-semibold' : 'text-slate-700'}>
-                          {org._count.vehicles}
-                        </span>
-                        <span className="text-slate-400">/{org.vehicleLimit}</span>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        <span className={org._count.users > org.userLimit ? 'text-red-600 font-semibold' : 'text-slate-700'}>
-                          {org._count.users}
-                        </span>
-                        <span className="text-slate-400">/{org.userLimit}</span>
-                      </TableCell>
-                      <TableCell>
-                        {org.whiteLabelEnabled ? (
-                          <Badge className="text-[10px] bg-purple-100 text-purple-700 border-0 gap-1"><Palette className="w-3 h-3" /> On</Badge>
-                        ) : (
-                          <span className="text-xs text-slate-400">Off</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`text-[11px] border-0 ${org.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                          {org.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {new Date(org.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => openDetail(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="View Details"><Eye className="w-3.5 h-3.5 text-slate-500" /></button>
-                          <button onClick={() => openEdit(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5 text-slate-500" /></button>
-                          <button onClick={() => openBranding(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Branding"><Palette className="w-3.5 h-3.5 text-slate-500" /></button>
-                          <button onClick={() => openUsage(org)} className="p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Usage"><Activity className="w-3.5 h-3.5 text-slate-500" /></button>
-                          {org.status === 'active' && (
-                            <button onClick={() => handleDeactivate(org)} className="p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer" title="Deactivate"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-              <p className="text-sm text-slate-500">Page {page} of {totalPages || 1}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Previous</Button>
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</Button>
+                </div>
               </div>
-            </div>
-          </>
+            )}
+          </Card>
         )}
-      </Card>
+      </div>
+
+      {/* Desktop DataTable */}
+      <div className="hidden lg:block">
+        <DataTable<Row>
+          columns={columns}
+          data={orgs as unknown as Row[]}
+          keyExtractor={(row) => row.id as string}
+          loading={loading}
+          emptyMessage="No organizations found"
+          emptyIcon={Building2}
+          searchable
+          searchPlaceholder="Search organizations..."
+          searchValue={search}
+          onSearch={(q) => { setSearch(q); setPage(1); }}
+          toolbar={
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+          pagination={{
+            page,
+            pageSize: 12,
+            totalPages,
+            onPageChange: setPage,
+          }}
+          exportFilename="organizations"
+        />
+      </div>
 
       {/* Org Detail Dialog */}
       <Dialog open={!!detailOrg} onOpenChange={(open) => !open && setDetailOrg(null)}>
