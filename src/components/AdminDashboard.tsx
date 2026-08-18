@@ -55,6 +55,7 @@ import RealtimeEventToasts from '@/components/RealtimeEventToasts';
 
 // AI Assistant
 import AIChatPanel from '@/components/AIChatPanel';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 import type { UserSession, ViewType } from '@/lib/types';
 
@@ -147,6 +148,8 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
       default: return <DashboardView />;
     }
   };
+
+  const view = renderView();
 
   return (
     <div className="min-h-screen flex bg-[var(--rtr-bg)]">
@@ -280,7 +283,9 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {renderView()}
+              <ErrorBoundary>
+                {view}
+              </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </main>
