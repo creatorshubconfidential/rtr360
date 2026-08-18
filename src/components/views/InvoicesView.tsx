@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
   FileText, Plus, DollarSign, Clock, CheckCircle2, AlertTriangle, Download,
 } from 'lucide-react';
+import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,8 @@ export default function InvoicesView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +73,8 @@ export default function InvoicesView() {
       const params = new URLSearchParams({ page: String(page), limit: '12' });
       if (search) params.set('search', search);
       if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo) params.set('to', dateTo);
       const res = await authFetch(`/api/invoices?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
@@ -79,7 +84,7 @@ export default function InvoicesView() {
       }
     } catch { toast.error('Failed to load invoices'); }
     finally { setLoading(false); }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
@@ -281,6 +286,8 @@ export default function InvoicesView() {
           searchValue={search}
           onSearch={(q) => { setSearch(q); setPage(1); }}
           toolbar={(
+            <div className="flex gap-2">
+              <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={(v) => { setDateFrom(v); setPage(1); }} onToChange={(v) => { setDateTo(v); setPage(1); }} />
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-44"><SelectValue placeholder="All Status" /></SelectTrigger>
               <SelectContent>
@@ -290,6 +297,7 @@ export default function InvoicesView() {
                 ))}
               </SelectContent>
             </Select>
+            </div>
           )}
           pagination={{
             page,

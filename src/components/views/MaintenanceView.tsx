@@ -8,6 +8,7 @@ import {
   Download,
 } from 'lucide-react';
 import { exportCSV, MAINTENANCE_COLUMNS } from '@/lib/export';
+import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,6 +95,8 @@ export default function MaintenanceView() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -113,6 +116,8 @@ export default function MaintenanceView() {
       if (search) params.set('search', search);
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (typeFilter !== 'all') params.set('type', typeFilter);
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo) params.set('to', dateTo);
       const res = await authFetch(`/api/maintenance?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
@@ -125,7 +130,7 @@ export default function MaintenanceView() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, typeFilter]);
+  }, [page, search, statusFilter, typeFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchRecords();
@@ -424,6 +429,7 @@ export default function MaintenanceView() {
       onSearch={(q) => { setSearch(q); setPage(1); }}
       toolbar={
         <div className="flex items-center gap-2">
+          <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={(v) => { setDateFrom(v); setPage(1); }} onToChange={(v) => { setDateTo(v); setPage(1); }} />
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
             <SelectTrigger className="w-44">
               <SelectValue placeholder="All Status" />

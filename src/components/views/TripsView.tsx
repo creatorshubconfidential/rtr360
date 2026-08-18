@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   Route, Plus, Trash2, Edit, Truck, Gauge, Clock, MapPin, Zap, Timer, CheckCircle2,
 } from 'lucide-react';
+import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -102,6 +103,8 @@ export default function TripsView() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Trip | null>(null);
@@ -114,6 +117,8 @@ export default function TripsView() {
       const params = new URLSearchParams({ page: String(page), limit: '15' });
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (search) params.set('search', search);
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo) params.set('to', dateTo);
       const res = await authFetch(`/api/trips?${params}`);
       const data = await res.json();
       if (res.ok) {
@@ -125,7 +130,7 @@ export default function TripsView() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, dateFrom, dateTo]);
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -425,6 +430,7 @@ export default function TripsView() {
         }}
         toolbar={
           <div className="flex gap-2">
+            <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={(v) => { setDateFrom(v); setPage(1); }} onToChange={(v) => { setDateTo(v); setPage(1); }} />
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="All Status" /></SelectTrigger>
               <SelectContent>
