@@ -212,7 +212,7 @@ model Contact {
 model Opportunity {
   id             String   @id @default(cuid())
   name           String
-  value          Float?
+  value          Decimal?
   stage          String   @default("new")
   leadId         String?  @map("lead_id")
   organizationId String   @map("organization_id")

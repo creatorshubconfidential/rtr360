@@ -111,7 +111,7 @@ async function buildFleetContext(organizationId: string | null) {
     topDrivers,
     recentAlerts,
     upcomingMaintenance,
-    vehicleTypeBreakdown: vehicleTypeBreakdown.map((v) => ({
+    vehicleTypeBreakdown: vehicleTypeBreakdown.map((v: { vehicleType: string | null; _count: { vehicleType: number } }) => ({
       type: v.vehicleType ?? 'Unspecified',
       count: v._count.vehicleType,
     })),
@@ -140,16 +140,16 @@ async function generateAIResponse(
 - **Total Fleet Mileage**: ${ctx.totalMileage.toLocaleString()} km
 
 ### Vehicle Type Breakdown
-${ctx.vehicleTypeBreakdown.map(v => `- ${v.type}: ${v.count}`).join('\n')}
+${ctx.vehicleTypeBreakdown.map((v: { type: string; count: number }) => `- ${v.type}: ${v.count}`).join('\n')}
 
 ### Top 5 Drivers (by score)
-${ctx.topDrivers.map((d, i) => `${i + 1}. ${d.name} — Score: ${d.score}, Trips: ${d.totalTrips}, Distance: ${(d.totalDistance || 0).toLocaleString()} km, Violations: ${d.totalViolations || 0}`).join('\n')}
+${ctx.topDrivers.map((d: {name:string;score:number;totalTrips:number;totalDistance:number|null;totalViolations:number}, i: number) => `${i + 1}. ${d.name} — Score: ${d.score}, Trips: ${d.totalTrips}, Distance: ${(d.totalDistance || 0).toLocaleString()} km, Violations: ${d.totalViolations || 0}`).join('\n')}
 
 ### Recent Alerts (last 10)
-${ctx.recentAlerts.length > 0 ? ctx.recentAlerts.map(a => `- [${a.severity}] ${a.type}: ${a.message} (${a.vehiclePlate || 'N/A'}, ${a.driverName || 'N/A'})`).join('\n') : 'No open alerts'}
+${ctx.recentAlerts.length > 0 ? ctx.recentAlerts.map((a: {severity:string;type:string;message:string;vehiclePlate:string|null;driverName:string|null}) => `- [${a.severity}] ${a.type}: ${a.message} (${a.vehiclePlate || 'N/A'}, ${a.driverName || 'N/A'})`).join('\n') : 'No open alerts'}
 
 ### Upcoming Maintenance (next 10)
-${ctx.upcomingMaintenance.length > 0 ? ctx.upcomingMaintenance.map(m => `- ${m.vehicle.plateNumber} (${m.vehicle.make} ${m.vehicle.model}): ${m.type} — ${m.scheduledDate ? new Date(m.scheduledDate).toLocaleDateString() : 'No date'} — ${m.cost ? 'AED ' + m.cost : 'Cost TBD'} `).join('\n') : 'No upcoming maintenance'}
+${ctx.upcomingMaintenance.length > 0 ? ctx.upcomingMaintenance.map((m) => `- ${m.vehicle.plateNumber} (${m.vehicle.make} ${m.vehicle.model}): ${m.type} — ${m.scheduledDate ? new Date(m.scheduledDate).toLocaleDateString() : 'No date'} — ${m.cost ? 'AED ' + m.cost : 'Cost TBD'} `).join('\n') : 'No upcoming maintenance'}
 
 ## Instructions
 - Answer fleet management questions using the data above
@@ -206,8 +206,8 @@ function generateMockResponse(
   // ── Vehicle queries ──
   if (/how many (vehicles?|cars?|trucks?|fleet)/i.test(msg) || /vehicle count|fleet size|total vehicles/i.test(msg)) {
     const typeLines = ctx.vehicleTypeBreakdown
-      .sort((a, b) => b.count - a.count)
-      .map((v) => `  - **${v.type}**: ${v.count}`)
+      .sort((a: {type:string;count:number}, b: {type:string;count:number}) => b.count - a.count)
+      .map((v: {type:string;count:number}) => `  - **${v.type}**: ${v.count}`)
       .join('\n');
 
     return `## 🚛 Fleet Overview
@@ -261,7 +261,7 @@ Great news! Your fleet currently has **0 open alerts**. All systems are running 
     const alertList = ctx.recentAlerts
       .slice(0, 5)
       .map(
-        (a, i) =>
+        (a: {type:string;severity:string;vehiclePlate:string|null;driverName:string|null;message:string}, i: number) =>
           `${i + 1}. **${a.type}** (${a.severity}) — ${a.vehiclePlate ?? 'Unknown vehicle'}${a.driverName ? ` / ${a.driverName}` : ''}: ${a.message}`,
       )
       .join('\n');
@@ -294,14 +294,14 @@ You have **${ctx.driverCount} drivers** registered, but no performance data is a
 
     const driverLines = ctx.topDrivers
       .map(
-        (d, i) => {
+        (d: {name:string;score:number;totalTrips:number;totalDistance:number|null;totalViolations:number}, i: number) => {
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
           return `${medal} **${d.name}** — Score: ${d.score}/100 | Trips: ${d.totalTrips} | Dist: ${Math.round(d.totalDistance ?? 0).toLocaleString()} km | Violations: ${d.totalViolations}`;
         },
       )
       .join('\n');
 
-    const avgScore = Math.round(ctx.topDrivers.reduce((s, d) => s + d.score, 0) / ctx.topDrivers.length);
+    const avgScore = Math.round(ctx.topDrivers.reduce((s: number, d: {score:number}) => s + d.score, 0) / ctx.topDrivers.length);
 
     return `## 👥 Driver Performance Rankings
 
@@ -335,7 +335,7 @@ All clear! No upcoming or pending maintenance records.
 
     const maintList = ctx.upcomingMaintenance
       .slice(0, 7)
-      .map((m, i) => {
+      .map((m: {vehicle:{plateNumber:string;make:string|null;model:string|null};type:string;description:string|null;scheduledDate:Date|null;status:string}, i: number) => {
         const plate = m.vehicle.plateNumber;
         const vehicle = m.vehicle.make && m.vehicle.model ? `${m.vehicle.make} ${m.vehicle.model}` : 'Unknown';
         const date = m.scheduledDate ? new Date(m.scheduledDate).toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai' }) : 'Not scheduled';
@@ -715,7 +715,7 @@ export async function GET(request: Request) {
     });
 
     // Parse first user message as title, and message count
-    const enriched = conversations.map((c) => {
+    const enriched = conversations.map((c: {id:string;type:string;createdAt:Date;updatedAt:Date;messages:string}) => {
       let parsed: ChatMessage[] = [];
       try {
         parsed = JSON.parse(c.messages) as ChatMessage[];

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     ]);
 
     // Parse JSON string fields for client
-    const parsedRules = rules.map(r => ({
+    const parsedRules = rules.map((r: { conditions: string | null; channels: string | null }) => ({
       ...r,
       conditions: r.conditions ? JSON.parse(r.conditions) : null,
       channels: r.channels ? JSON.parse(r.channels) : ['in_app'],

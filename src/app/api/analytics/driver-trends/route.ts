@@ -22,9 +22,9 @@ export async function GET(request: Request) {
 
     // Build driver→vehicleId map so we can match trips to drivers via vehicle
     const driverVehicleIds = new Map<string, string[]>();
-    drivers.forEach(d => {
+    drivers.forEach((d: {name:string;vehicles:{id:string}[]}) => {
       driverVehicleIds.set(d.name, (driverVehicleIds.get(d.name) || []));
-      d.vehicles.forEach(v => {
+      d.vehicles.forEach((v: {id:string}) => {
         const ids = driverVehicleIds.get(d.name) || [];
         ids.push(v.id);
         driverVehicleIds.set(d.name, ids);
@@ -46,20 +46,23 @@ export async function GET(request: Request) {
     });
 
     // Map driver name → trip data
-    const tripMap = new Map(driverTrips.map(d => [d.driverName || 'Unknown', d]));
+    const tripMap = new Map<string, Record<string, unknown>>(driverTrips.map((d: {driverName:string|null}) => [d.driverName || 'Unknown', d] as [string, Record<string, unknown>]));
 
     // 3. Build driver profiles
-    const driverProfiles = drivers.map(d => {
+    const driverProfiles = drivers.map((d: {id:string;name:string;phone:string|null;emirate:string|null;nationality:string|null;licenseType:string|null;licenseExpiry:Date|null;status:string;score:number;vehicles:{id:string;plateNumber:string;vehicleType:string|null}[];_count:{vehicles:number}}) => {
       const trips = tripMap.get(d.name);
-      const totalTrips = trips?._count ?? 0;
-      const totalDistance = Number(trips?._sum?.distance ?? 0);
-      const avgSpeed = Number(trips?._avg?.avgSpeed ?? 0);
-      const avgHarshBrakes = Number(trips?._avg?.harshBrakes ?? 0);
-      const avgHarshAccel = Number(trips?._avg?.harshAccel ?? 0);
-      const avgOverspeed = Number(trips?._avg?.overspeedCount ?? 0);
-      const totalIdleMinutes = Number(trips?._sum?.idleTime ?? 0);
-      const totalDuration = Number(trips?._sum?.duration ?? 0);
-      const avgDistance = Number(trips?._avg?.distance ?? 0);
+      const tripsCount = (trips as Record<string, unknown> | undefined)?._count as number | undefined;
+      const tripsSum = (trips as Record<string, unknown> | undefined)?._sum as Record<string, unknown> | undefined;
+      const tripsAvg = (trips as Record<string, unknown> | undefined)?._avg as Record<string, unknown> | undefined;
+      const totalTrips = tripsCount ?? 0;
+      const totalDistance = Number(tripsSum?.distance ?? 0);
+      const avgSpeed = Number(tripsAvg?.avgSpeed ?? 0);
+      const avgHarshBrakes = Number(tripsAvg?.harshBrakes ?? 0);
+      const avgHarshAccel = Number(tripsAvg?.harshAccel ?? 0);
+      const avgOverspeed = Number(tripsAvg?.overspeedCount ?? 0);
+      const totalIdleMinutes = Number(tripsSum?.idleTime ?? 0);
+      const totalDuration = Number(tripsSum?.duration ?? 0);
+      const avgDistance = Number(tripsAvg?.distance ?? 0);
 
       // Risk categories
       let riskLevel = 'low';
@@ -69,14 +72,14 @@ export async function GET(request: Request) {
       // Trend: use score relative to fleet average, improved with trip activity data
       let trend: 'improving' | 'stable' | 'declining' = 'stable';
       if (totalTrips >= 3) {
-        const firstTripDate = trips?._min?.startTime;
-        const lastTripDate = trips?._max?.startTime;
+        const firstTripDate = (trips as Record<string, Record<string, unknown>> | undefined)?._min?.startTime as Date | undefined;
+        const lastTripDate = (trips as Record<string, Record<string, unknown>> | undefined)?._max?.startTime as Date | undefined;
         const daySpan = firstTripDate && lastTripDate
           ? (lastTripDate.getTime() - firstTripDate.getTime()) / (1000 * 60 * 60 * 24)
           : 0;
 
         if (daySpan > 7) {
-          const avgFleetScore = drivers.length > 0 ? drivers.reduce((s, dr) => s + dr.score, 0) / drivers.length : 50;
+          const avgFleetScore = drivers.length > 0 ? drivers.reduce((s: number, dr: {score:number}) => s + dr.score, 0) / drivers.length : 50;
           if (d.score > avgFleetScore + 10) trend = 'improving';
           else if (d.score < avgFleetScore - 10) trend = 'declining';
         }
@@ -99,9 +102,9 @@ export async function GET(request: Request) {
         avgHarshBrakes: Math.round(avgHarshBrakes * 100) / 100,
         avgHarshAccel: Math.round(avgHarshAccel * 100) / 100,
         avgOverspeed: Math.round(avgOverspeed * 100) / 100,
-        totalHarshBrakes: Number(trips?._sum?.harshBrakes ?? 0),
-        totalHarshAccel: Number(trips?._sum?.harshAccel ?? 0),
-        totalOverspeed: Number(trips?._sum?.overspeedCount ?? 0),
+        totalHarshBrakes: Number(tripsSum?.harshBrakes ?? 0),
+        totalHarshAccel: Number(tripsSum?.harshAccel ?? 0),
+        totalOverspeed: Number(tripsSum?.overspeedCount ?? 0),
         idleRatio: totalTrips > 0 && totalDuration > 0 ? Math.round((totalIdleMinutes / totalDuration) * 100) : 0,
         riskLevel,
         trend,
@@ -111,28 +114,28 @@ export async function GET(request: Request) {
     });
 
     // Sort by score descending
-    driverProfiles.sort((a, b) => b.score - a.score);
+    driverProfiles.sort((a: {score:number}, b: {score:number}) => b.score - a.score);
 
     // 4. Aggregate statistics
     const avgFleetScore = driverProfiles.length > 0
-      ? Math.round(driverProfiles.reduce((s, d) => s + d.score, 0) / driverProfiles.length)
+      ? Math.round(driverProfiles.reduce((s: number, d: {score:number}) => s + d.score, 0) / driverProfiles.length)
       : 0;
 
-    const riskDistribution = ['low', 'medium', 'high'].map(r => ({
+    const riskDistribution = ['low', 'medium', 'high'].map((r: string) => ({
       risk: r,
-      count: driverProfiles.filter(d => d.riskLevel === r).length,
+      count: driverProfiles.filter((d: {riskLevel:string}) => d.riskLevel === r).length,
     }));
 
-    const trendDistribution = ['improving', 'stable', 'declining'].map(t => ({
+    const trendDistribution = ['improving', 'stable', 'declining'].map((t: string) => ({
       trend: t,
-      count: driverProfiles.filter(d => d.trend === t).length,
+      count: driverProfiles.filter((d: {trend:string}) => d.trend === t).length,
     }));
 
     // 5. Behavior leaderboard
     const violationLeaderboard = [...driverProfiles]
-      .sort((a, b) => (b.totalHarshBrakes + b.totalHarshAccel + b.totalOverspeed) - (a.totalHarshBrakes + a.totalHarshAccel + a.totalOverspeed))
+      .sort((a: {totalHarshBrakes:number;totalHarshAccel:number;totalOverspeed:number}, b: {totalHarshBrakes:number;totalHarshAccel:number;totalOverspeed:number}) => (b.totalHarshBrakes + b.totalHarshAccel + b.totalOverspeed) - (a.totalHarshBrakes + a.totalHarshAccel + a.totalOverspeed))
       .slice(0, 10)
-      .map(d => ({
+      .map((d: {name:string;totalHarshBrakes:number;totalHarshAccel:number;totalOverspeed:number;score:number;riskLevel:string}) => ({
         name: d.name,
         totalViolations: d.totalHarshBrakes + d.totalHarshAccel + d.totalOverspeed,
         harshBrakes: d.totalHarshBrakes,
@@ -150,8 +153,8 @@ export async function GET(request: Request) {
       { range: '61-80', min: 61, max: 80, count: 0 },
       { range: '81-100', min: 81, max: 100, count: 0 },
     ];
-    driverProfiles.forEach(d => {
-      const bucket = scoreBuckets.find(b => d.score >= b.min && d.score <= b.max);
+    driverProfiles.forEach((d: {score:number}) => {
+      const bucket = scoreBuckets.find((b: {min:number;max:number}) => d.score >= b.min && d.score <= b.max);
       if (bucket) bucket.count++;
     });
 

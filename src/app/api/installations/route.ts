@@ -78,13 +78,13 @@ export async function GET(request: Request) {
 
     // Enrich with vehicle and device data
     const enriched = await Promise.all(
-      installations.map(async (inst) => {
+      installations.map(async (inst: Record<string, unknown>) => {
         const vehicle = await db.vehicle.findUnique({
-          where: { id: inst.vehicleId },
+          where: { id: inst.vehicleId as string },
           select: { id: true, plateNumber: true, make: true, model: true, vehicleType: true },
         });
         const device = await db.device.findUnique({
-          where: { id: inst.deviceId },
+          where: { id: inst.deviceId as string },
           select: { id: true, imei: true, model: true, deviceType: true },
         });
         return { ...inst, vehicle, device };
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       _count: { status: true },
     });
     const counts: Record<string, number> = {};
-    statusCounts.forEach((s) => { counts[s.status] = s._count.status; });
+    statusCounts.forEach((s: Record<string, unknown>) => { counts[s.status as string] = s._count as number; });
 
     return NextResponse.json({
       installations: enriched,
