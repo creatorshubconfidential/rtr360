@@ -150,21 +150,28 @@ describe('P1 FINAL — Rate Limiter Architecture', () => {
     const content = fs.readFileSync(path.join(LIB_DIR, 'rate-limit.ts'), 'utf-8');
     // L1-only fallback must exist
     expect(content).toContain('l1OnlyRateLimit');
-    // Redis failure must set a flag, not throw
-    expect(content).toContain('l2RedisFailed');
+    // DB failure flag must exist
     expect(content).toContain('l3DbFailed');
+    // Redis failures must not throw — redis.ts handles circuit breaker
+    const redisContent = fs.readFileSync(path.join(LIB_DIR, 'redis.ts'), 'utf-8');
+    expect(redisContent).toContain('CIRCUIT_BREAKER');
+    expect(redisContent).toContain('timeout');
   });
 
   it('Redis uses atomic pipeline (INCR + EXPIRE)', () => {
-    const content = fs.readFileSync(path.join(LIB_DIR, 'rate-limit.ts'), 'utf-8');
-    expect(content).toContain('pipeline');
-    expect(content).toContain('INCR');
-    expect(content).toContain('EXPIRE');
+    const redisContent = fs.readFileSync(path.join(LIB_DIR, 'redis.ts'), 'utf-8');
+    expect(redisContent).toContain('incrWithExpire');
+    expect(redisContent).toContain('INCR');
+    expect(redisContent).toContain('EXPIRE');
+    // Rate limiter must use the shared redis abstraction
+    const rlContent = fs.readFileSync(path.join(LIB_DIR, 'rate-limit.ts'), 'utf-8');
+    expect(rlContent).toContain("from '@/lib/redis'");
   });
 
   it('Redis has connection timeout', () => {
-    const content = fs.readFileSync(path.join(LIB_DIR, 'rate-limit.ts'), 'utf-8');
-    expect(content).toContain('AbortSignal.timeout');
+    const redisContent = fs.readFileSync(path.join(LIB_DIR, 'redis.ts'), 'utf-8');
+    expect(redisContent).toContain('AbortController');
+    expect(redisContent).toContain('timeout');
   });
 });
 

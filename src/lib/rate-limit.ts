@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { redis } from '@/lib/redis';
 
 /**
  * Production-safe distributed rate limiter for API routes.
  *
  * Architecture (3-tier fallback):
  *   L1: In-memory cache (per-instance, O(1), 5s TTL)
- *   L2: Upstash Redis (cross-instance, INCR + EXPIRE, atomic)
+ *   L2: Upstash Redis via shared redis.ts abstraction (cross-instance, atomic INCR)
  *   L3: PostgreSQL RateLimitCounter table (cross-instance, upsert)
  *
  * Failure mode: If L2 (Redis) and L3 (DB) are both unavailable, falls back to
@@ -16,12 +17,6 @@ import { db } from '@/lib/db';
  *
  * Rate-limit failures FAIL CLOSED: if the distributed store errors, we
  * continue using L1 which still enforces limits (just not cross-instance).
- *
- * Environment variables:
- *   UPSTASH_REDIS_REST_URL  — Upstash Redis REST endpoint URL
- *   UPSTASH_REDIS_REST_TOKEN — Upstash Redis REST endpoint token
- *
- * If neither is set, L2 (Redis) is skipped and L3 (PostgreSQL) is used.
  */
 
 // ── Types ────────────────────────────────────────────────────────
@@ -44,8 +39,6 @@ export type RateLimitTier = 'auth' | 'api' | 'strict' | 'analytics';
 const cache = new Map<string, RateLimitEntry>();
 const MAX_CACHE_SIZE = 10_000;
 
-let l2RedisAvailable: boolean | null = null; // null = not yet tested
-let l2RedisFailed = false;
 let l3DbFailed = false;
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -67,97 +60,27 @@ function ensureCleanup() {
   }
 }
 
-// ── L2 Redis (Upstash-compatible) ────────────────────────────────
+// ── L2 Redis (via shared abstraction) ────────────────────────────
 
 /**
- * Atomic INCR + EXPIRE via Upstash Redis REST API.
+ * Atomic INCR + EXPIRE via the shared redis.ts abstraction.
  * Returns null if Redis is unavailable or not configured.
  */
 async function incrementInRedis(key: string, limit: number, windowSec: number): Promise<RateLimitResult | null> {
-  if (l2RedisFailed) return null;
+  const redisKey = `rtr360:rl:${key}`;
+  const count = await redis.incrWithExpire(redisKey, windowSec);
 
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (count === null) return null;
 
-  if (!redisUrl || !redisToken) {
-    // Redis not configured — mark as not available (not a failure)
-    if (l2RedisAvailable === null) l2RedisAvailable = false;
-    return null;
+  if (count > limit) {
+    return { allowed: false, remaining: 0, resetAt: Date.now() + windowSec * 1000 };
   }
 
-  try {
-    const redisKey = `rtr360:rl:${key}`;
-
-    // Pipeline: INCR + EXPIRE in a single request
-    const response = await fetch(`${redisUrl}/pipeline`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${redisToken}`,
-      },
-      body: JSON.stringify([
-        ['INCR', redisKey],
-        ['EXPIRE', redisKey, windowSec],
-      ]),
-      signal: AbortSignal.timeout(3000), // 3s timeout
-    });
-
-    if (!response.ok) {
-      l2RedisFailed = true;
-      l2RedisAvailable = false;
-      return null;
-    }
-
-    const pipelineResult = await response.json() as Array<{ result: string | number }>;
-    const count = typeof pipelineResult[0]?.result === 'number'
-      ? pipelineResult[0].result
-      : parseInt(String(pipelineResult[0]?.result), 10) || 1;
-
-    l2RedisAvailable = true;
-
-    if (count > limit) {
-      return { allowed: false, remaining: 0, resetAt: Date.now() + windowSec * 1000 };
-    }
-
-    return {
-      allowed: true,
-      remaining: Math.max(0, limit - count),
-      resetAt: Date.now() + windowSec * 1000,
-    };
-  } catch {
-    l2RedisFailed = true;
-    l2RedisAvailable = false;
-    return null;
-  }
-}
-
-/**
- * Read current counter from Redis.
- * Returns null if Redis is unavailable.
- */
-async function readFromRedis(key: string): Promise<RateLimitEntry | null> {
-  if (l2RedisFailed) return null;
-
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!redisUrl || !redisToken) return null;
-
-  try {
-    const redisKey = `rtr360:rl:${key}`;
-    const response = await fetch(`${redisUrl}/GET/${redisKey}`, {
-      headers: { 'Authorization': `Bearer ${redisToken}` },
-      signal: AbortSignal.timeout(2000),
-    });
-    if (!response.ok) return null;
-    const data = await response.json() as { result: string | null };
-    if (!data.result) return null;
-    const count = parseInt(data.result, 10);
-    if (isNaN(count)) return null;
-    // We don't have the exact TTL from GET, so return count and let the caller handle timing
-    return { count, resetAt: 0 };
-  } catch {
-    return null;
-  }
+  return {
+    allowed: true,
+    remaining: Math.max(0, limit - count),
+    resetAt: Date.now() + windowSec * 1000,
+  };
 }
 
 // ── L3 Database Store ────────────────────────────────────────────
@@ -258,7 +181,7 @@ export async function rateLimit(
 
   const now = Date.now();
 
-  // L1 cache check (5s freshness window)
+  // L1 cache check
   const cached = cache.get(key);
   if (cached && cached.resetAt > now) {
     if (cached.count >= limit) {
@@ -273,7 +196,6 @@ export async function rateLimit(
   const windowSec = Math.ceil(windowMs / 1000);
   const redisResult = await incrementInRedis(key, limit, windowSec);
   if (redisResult) {
-    // Cache the Redis result for L1
     cache.set(key, { count: redisResult.allowed ? (limit - redisResult.remaining) : limit + 1, resetAt: redisResult.resetAt });
     return redisResult;
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getRequestId, REQUEST_ID_HEADER } from '@/lib/request-id';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,8 +16,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Generate or validate incoming request ID
+  const requestId = getRequestId(request);
+
   // Security headers for all responses
   const response = NextResponse.next();
+
+  // Attach request ID to response
+  response.headers.set(REQUEST_ID_HEADER, requestId);
 
   // Content Security Policy
   // 'unsafe-inline' in style-src is required for Tailwind CSS runtime classes.
