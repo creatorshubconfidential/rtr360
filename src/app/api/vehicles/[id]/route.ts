@@ -101,6 +101,24 @@ export async function PUT(
       return NextResponse.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
     }
 
+    // Validate FK references belong to user's org (cross-tenant FK protection)
+    if (branchId !== undefined && branchId) {
+      const branch = await db.branch.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: branchId, organizationId: user.organizationId }
+          : { id: branchId },
+      });
+      if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 400 });
+    }
+    if (driverId !== undefined && driverId) {
+      const driver = await db.driver.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: driverId, organizationId: user.organizationId }
+          : { id: driverId },
+      });
+      if (!driver) return NextResponse.json({ error: 'Driver not found' }, { status: 400 });
+    }
+
     // Build update data
     const updateData: Record<string, unknown> = {};
     if (plateNumber !== undefined) updateData.plateNumber = plateNumber.trim();
@@ -117,7 +135,6 @@ export async function PUT(
     if (mileage !== undefined) updateData.mileage = mileage;
     if (installDate !== undefined) updateData.installDate = installDate ? new Date(installDate) : null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vehicle = await db.vehicle.update({
       where: { id },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -115,11 +115,12 @@ export default function AdminDashboard({ user, onLogout }: { user: UserSession; 
   }, []);
 
   // Initial fetch + auto-refresh every 30s
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    fetchNotifPreview();
-    const interval = setInterval(fetchNotifPreview, 30_000);
-    return () => clearInterval(interval);
+    let cancelled = false;
+    const load = async () => { if (!cancelled) await fetchNotifPreview(); };
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [fetchNotifPreview]);
 
   const markNotifRead = async (id: string) => {

@@ -80,14 +80,14 @@ export default function LeadsView() {
     } catch { toast.error('Failed to create lead'); } finally { setSubmitting(false); }
   };
 
-  const handleStatusUpdate = async (leadId: string, newStatus: string) => {
+  const handleStatusUpdate = useCallback(async (leadId: string, newStatus: string) => {
     try {
       const res = await authFetch(`/api/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
       if (!res.ok) { const data = await res.json(); toast.error(data.error || 'Failed to update status'); return; }
       toast.success(`Lead moved to ${newStatus}`);
       fetchLeads();
     } catch { toast.error('Failed to update lead status'); }
-  };
+  }, [fetchLeads]);
 
   const pipelineStatuses = ['new', 'contacted', 'qualified', 'demo', 'quotation', 'won', 'lost'];
 

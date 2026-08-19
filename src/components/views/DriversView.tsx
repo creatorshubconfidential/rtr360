@@ -95,22 +95,22 @@ export default function DriversView() {
     } catch { toast.error('Network error'); }
   };
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = useCallback(async (id: string, status: string) => {
     try {
       const res = await authFetch(`/api/drivers/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
       if (res.ok) { toast.success(`Driver status updated to ${status}`); fetchDrivers(); }
       else { const d = await res.json(); toast.error(d.error); }
     } catch { toast.error('Network error'); }
-  };
+  }, [fetchDrivers]);
 
-  const deleteDriver = async (id: string) => {
+  const deleteDriver = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this driver?')) return;
     try {
       const res = await authFetch(`/api/drivers/${id}`, { method: 'DELETE' });
       if (res.ok) { toast.success('Driver deleted'); fetchDrivers(); }
       else { const d = await res.json(); toast.error(d.error); }
     } catch { toast.error('Network error'); }
-  };
+  }, [fetchDrivers]);
 
   const columns = useMemo<ColumnDef<Row>[]>(() => [
     {

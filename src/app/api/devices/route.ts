@@ -127,6 +127,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Invalid device type. Valid: ${DEVICE_TYPES.join(', ')}` }, { status: 400 });
     }
 
+    // Validate simId belongs to user's org (cross-tenant FK protection)
+    if (simId) {
+      const sim = await db.sIM.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: simId, organizationId: user.organizationId }
+          : { id: simId },
+      });
+      if (!sim) return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
+    }
+
     const deviceData: Record<string, unknown> = {
       imei: imei.trim(),
       serialNumber: serialNumber?.trim() || null,

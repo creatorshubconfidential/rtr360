@@ -55,7 +55,7 @@ describe('P2-3: Audit Logging', () => {
 
   it('all write routes import from @/lib/audit', () => {
     const routeFiles = getRouteFiles();
-    const SKIP = ['auth/login', 'auth/logout', 'setup/seed']; // Auth handled separately; setup is bootstrap endpoint
+    const SKIP = ['auth/login', 'auth/logout', 'setup/seed', 'setup/init']; // Auth handled separately; setup endpoints are bootstrap-only
 
     let missing: string[] = [];
     for (const file of routeFiles) {
@@ -78,7 +78,7 @@ describe('P2-3: Audit Logging', () => {
     let missing: string[] = [];
 
     // notifications POST is actually an update (mark as read), not a create
-    const EXCEPTIONS = ['notifications/route.ts', 'setup/seed/route.ts', 'setup/seed-demo/route.ts'];
+    const EXCEPTIONS = ['notifications/route.ts', 'setup/seed/route.ts', 'setup/seed-demo/route.ts', 'setup/init/route.ts'];
 
     for (const file of routeFiles) {
       const content = fs.readFileSync(file, 'utf-8');

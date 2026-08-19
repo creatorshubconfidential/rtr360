@@ -114,6 +114,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate branchId belongs to user's org (cross-tenant FK protection)
+    if (branchId) {
+      if (!user.organizationId && user.role !== 'super_admin') {
+        return NextResponse.json({ error: 'Cannot assign branch without organization' }, { status: 403 });
+      }
+      const branch = await db.branch.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: branchId, organizationId: user.organizationId }
+          : { id: branchId },
+      });
+      if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 400 });
+    }
+
     const vehicleData: Record<string, unknown> = {
       plateNumber: plateNumber.trim(),
       make: make?.trim() || null,

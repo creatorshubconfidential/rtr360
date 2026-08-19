@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+const VALID_STATUSES = ['draft', 'active', 'expired', 'terminated'];
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -31,7 +32,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (title !== undefined) updateData.title = title.trim();
     if (startDate !== undefined) updateData.startDate = new Date(startDate);
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) {
+      if (!VALID_STATUSES.includes(status)) {
+        return NextResponse.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
+      }
+      updateData.status = status;
+    }
     if (terms !== undefined) updateData.terms = terms;
 
     const contract = await db.contract.update({

@@ -15,9 +15,19 @@ interface ChatMessage {
 // Fleet data context builder
 // ────────────────────────────────────────────────
 async function buildFleetContext(organizationId: string | null) {
-  const orgFilter: { organizationId?: string } = organizationId
-    ? { organizationId }
-    : {};
+  // Safety: if no org filter, return zeros to prevent cross-tenant data exposure
+  if (!organizationId) {
+    return {
+      vehicleCount: 0, activeVehicles: 0, inactiveVehicles: 0,
+      maintenanceVehicles: 0, driverCount: 0, openAlertsCount: 0,
+      openMaintenanceCount: 0, todayTrips: 0, todayTripsWithDistance: 0,
+      totalDistanceToday: 0, totalMileage: 0, totalDurationToday: 0,
+      topDrivers: [], recentAlerts: [], upcomingMaintenance: [],
+      vehicleTypeBreakdown: [],
+    };
+  }
+
+  const orgFilter = { organizationId };
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -696,13 +706,12 @@ export async function GET(request: Request) {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
+    // User-scoped: only return conversations belonging to this user.
+    // super_admin can see all conversations across the platform.
     const conversations = await db.aIConversation.findMany({
-      where: {
-        OR: [
-          { userId: user.id },
-          ...(user.organizationId ? [{ organizationId: user.organizationId }] : []),
-        ],
-      },
+      where: user.role === 'super_admin'
+        ? (user.organizationId ? { organizationId: user.organizationId } : {})
+        : { userId: user.id },
       orderBy: { updatedAt: 'desc' },
       take: 50,
       select: {

@@ -92,6 +92,15 @@ export async function PATCH(
       }
     }
 
+    // Validate technicianId belongs to user's org (cross-tenant FK protection)
+    if (technicianId !== undefined && technicianId) {
+      const tech = await db.technician.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: technicianId, organizationId: user.organizationId }
+          : { id: technicianId },
+      });
+      if (!tech) return NextResponse.json({ error: 'Technician not found' }, { status: 400 });
+    }
     if (technicianId !== undefined) updateData.technicianId = technicianId || null;
     if (scheduledDate !== undefined) updateData.scheduledDate = scheduledDate ? new Date(scheduledDate) : null;
     if (scheduledTime !== undefined) updateData.scheduledTime = scheduledTime || null;

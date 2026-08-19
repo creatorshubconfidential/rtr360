@@ -126,6 +126,17 @@ export async function POST(request: Request) {
     });
     const ticketNumber = `TKT-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
 
+    // Validate assignedToId belongs to user's org (cross-tenant FK protection)
+    if (assignedToId) {
+      const assignee = await db.user.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: assignedToId, organizationId: user.organizationId }
+          : { id: assignedToId },
+        select: { id: true },
+      });
+      if (!assignee) return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
+    }
+
     // Determine resolvedAt based on status
     let resolvedAt: Date | null = null;
     if (status === 'resolved' || status === 'closed') {

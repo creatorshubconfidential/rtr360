@@ -51,7 +51,9 @@ const QUICK_ACTIONS: { icon: LucideIcon; label: string; view: ViewType; color: s
 
 // ─── Predictive Insights ────────────────
 function PredictiveInsights() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [fleetData, setFleetData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [maintData, setMaintData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

@@ -158,9 +158,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
-    // Validate technician if provided
+    // Validate technician if provided (cross-tenant FK protection)
     if (technicianId) {
-      const tech = await db.technician.findUnique({ where: { id: technicianId } });
+      const tech = await db.technician.findFirst({
+        where: user.role !== 'super_admin' && user.organizationId
+          ? { id: technicianId, organizationId: user.organizationId }
+          : { id: technicianId },
+      });
       if (!tech) {
         return NextResponse.json({ error: 'Technician not found' }, { status: 404 });
       }
