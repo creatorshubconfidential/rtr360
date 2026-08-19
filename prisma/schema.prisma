@@ -33,70 +33,73 @@ datasource db {
 // ----------------------
 
 model Organization {
-  id            String   @id @default(cuid())
-  name          String
-  tradeName     String?  @map("trade_name")
-  legalName     String?  @map("legal_name")
-  industry      String?
-  email         String?
-  phone         String?
-  website       String?
-  emirate       String?
-  address       String?
-  city          String?
-  country       String   @default("AE")
-  logo          String?
-  status        String   @default("active")
-  currency      String   @default("AED")
-  timezone      String   @default("Asia/Dubai")
-  locale        String   @default("en")
+  id                String   @id @default(cuid())
+  name              String
+  tradeName         String?  @map("trade_name")
+  legalName         String?  @map("legal_name")
+  industry          String?
+  email             String?
+  phone             String?
+  website           String?
+  emirate           String?
+  address           String?
+  city              String?
+  country           String   @default("AE")
+  logo              String?
+  status            String   @default("active")
+  currency          String   @default("AED")
+  timezone          String   @default("Asia/Dubai")
+  locale            String   @default("en")
   // White-label branding
-  primaryColor  String?  @map("primary_color")
-  accentColor   String?  @map("accent_color")
-  customLogo    String?  @map("custom_logo")
-  favicon       String?
-  loginBgImage  String?  @map("login_bg_image")
-  customDomain  String?  @map("custom_domain")
-  domainVerified Boolean  @default(false) @map("domain_verified")
-  whiteLabelEnabled Boolean @default(false) @map("white_label_enabled")
-  brandedAppName   String? @map("branded_app_name")
-  brandedFooter   String? @map("branded_footer")
-  hideMianxBranding Boolean @default(false) @map("hide_mianx_branding")
+  primaryColor      String?  @map("primary_color")
+  accentColor       String?  @map("accent_color")
+  customLogo        String?  @map("custom_logo")
+  favicon           String?
+  loginBgImage      String?  @map("login_bg_image")
+  customDomain      String?  @map("custom_domain")
+  domainVerified    Boolean  @default(false) @map("domain_verified")
+  whiteLabelEnabled Boolean  @default(false) @map("white_label_enabled")
+  brandedAppName    String?  @map("branded_app_name")
+  brandedFooter     String?  @map("branded_footer")
+  hideMianxBranding Boolean  @default(false) @map("hide_mianx_branding")
   // Plan limits
-  planName      String?  @map("plan_name")
-  vehicleLimit  Int      @default(0) @map("vehicle_limit")
-  userLimit     Int      @default(0) @map("user_limit")
-  featureFlags  String?  @map("feature_flags")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  planName          String?  @map("plan_name")
+  vehicleLimit      Int      @default(0) @map("vehicle_limit")
+  userLimit         Int      @default(0) @map("user_limit")
+  featureFlags      String?  @map("feature_flags")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-  branches       Branch[]
-  users          User[]
-  vehicles       Vehicle[]
-  drivers        Driver[]
-  devices        Device[]
-  leads          Lead[]
-  contacts       Contact[]
-  opportunities  Opportunity[]
-  geofences      Geofence[]
-  alertRules     AlertRule[]
-  alerts         Alert[]
-  tickets        Ticket[]
-  contracts      Contract[]
-  invoices       Invoice[]
-  documents      Document[]
-  notifications  Notification[]
-  quotations    Quotation[]
-  technicians   Technician[]
-  installations  Installation[]
+  branches           Branch[]
+  users              User[]
+  vehicles           Vehicle[]
+  drivers            Driver[]
+  devices            Device[]
+  leads              Lead[]
+  contacts           Contact[]
+  opportunities      Opportunity[]
+  geofences          Geofence[]
+  alertRules         AlertRule[]
+  alerts             Alert[]
+  tickets            Ticket[]
+  contracts          Contract[]
+  invoices           Invoice[]
+  documents          Document[]
+  notifications      Notification[]
+  quotations         Quotation[]
+  technicians        Technician[]
+  installations      Installation[]
   maintenanceRecords MaintenanceRecord[]
-  subscriptions  Subscription[]
-  apiKeys        ApiKey[]
-  auditLogs      AuditLog[] @relation("AuditLogOrganization")
-  sims           SIM[]
-  aiConversations AIConversation[]
-  trips          Trip[]
-  activities     Activity[]
+  subscriptions      Subscription[]
+  apiKeys            ApiKey[]
+  auditLogs          AuditLog[]          @relation("AuditLogOrganization")
+  sims               SIM[]
+  aiConversations    AIConversation[]
+  trips              Trip[]
+  activities         Activity[]
+  backgroundJobs     BackgroundJob[]
+  webhookEndpoints   WebhookEndpoint[]
+  webhookDeliveries  WebhookDelivery[]
 
   @@index([status])
   @@index([emirate])
@@ -112,8 +115,9 @@ model Branch {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vehicles       Vehicle[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicles     Vehicle[]
+
   @@index([organizationId])
 }
 
@@ -122,49 +126,52 @@ model Branch {
 // ----------------------
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  passwordHash   String?  @map("password_hash")
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?   @map("password_hash")
   name           String
   phone          String?
   avatar         String?
-  role           String   @default("viewer")
-  organizationId String?  @map("organization_id")
-  status         String   @default("active")
+  role           String    @default("viewer")
+  organizationId String?   @map("organization_id")
+  status         String    @default("active")
   lastLoginAt    DateTime? @map("last_login_at")
-  emailVerified  Boolean  @default(false) @map("email_verified")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  auditLogs      AuditLog[]
-  activities     Activity[]
-  assignedLeads  Lead[] @relation("LeadAssigned")
-  assignedOpportunities Opportunity[] @relation("OpportunityAssigned")
-  assignedTickets  Ticket[] @relation("TicketAssigned")
-  documents      Document[] @relation("DocumentUploader")
-  notifications  Notification[] @relation("NotificationUser")
-  aiConversations AIConversation[] @relation("AIConversationUser")
-  sessions       Session[]
-  apiKeys        ApiKey[]
+  organization          Organization?    @relation(fields: [organizationId], references: [id])
+  auditLogs             AuditLog[]
+  activities            Activity[]
+  assignedLeads         Lead[]           @relation("LeadAssigned")
+  assignedOpportunities Opportunity[]    @relation("OpportunityAssigned")
+  assignedTickets       Ticket[]         @relation("TicketAssigned")
+  documents             Document[]       @relation("DocumentUploader")
+  notifications         Notification[]   @relation("NotificationUser")
+  aiConversations       AIConversation[] @relation("AIConversationUser")
+  sessions              Session[]
+  apiKeys               ApiKey[]
+  backgroundJobs        BackgroundJob[]
+
   @@index([organizationId])
   @@index([role])
   @@index([status])
 }
 
 model AuditLog {
-  id            String   @id @default(cuid())
-  userId        String?  @map("user_id")
-  action        String
-  entity        String
-  entityId      String?  @map("entity_id")
-  metadata      String?
-  ipAddress     String?  @map("ip_address")
+  id             String   @id @default(cuid())
+  userId         String?  @map("user_id")
+  action         String
+  entity         String
+  entityId       String?  @map("entity_id")
+  metadata       String?
+  ipAddress      String?  @map("ip_address")
   organizationId String?  @map("organization_id")
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  user          User?    @relation(fields: [userId], references: [id])
-  organization   Organization? @relation("AuditLogOrganization", fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation("AuditLogOrganization", fields: [organizationId], references: [id])
+
   @@index([userId])
   @@index([organizationId])
   @@index([action])
@@ -199,11 +206,12 @@ model Lead {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  assignedTo     User?         @relation("LeadAssigned", fields: [assignedToId], references: [id])
-  activities     Activity[]
-  opportunities  Opportunity[] @relation("OpportunityLead")
-  quotations     Quotation[]
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  assignedTo    User?         @relation("LeadAssigned", fields: [assignedToId], references: [id])
+  activities    Activity[]
+  opportunities Opportunity[] @relation("OpportunityLead")
+  quotations    Quotation[]
+
   @@index([organizationId])
   @@index([assignedToId])
   @@index([status])
@@ -220,50 +228,53 @@ model Contact {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  quotations     Quotation[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  quotations   Quotation[]
+
   @@index([organizationId])
 }
 
 model Opportunity {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
   value          Decimal?
-  stage          String   @default("new")
-  leadId         String?  @map("lead_id")
-  organizationId String   @map("organization_id")
-  assignedToId   String?  @map("assigned_to_id")
+  stage          String    @default("new")
+  leadId         String?   @map("lead_id")
+  organizationId String    @map("organization_id")
+  assignedToId   String?   @map("assigned_to_id")
   expectedClose  DateTime? @map("expected_close")
   notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignedTo     User?         @relation("OpportunityAssigned", fields: [assignedToId], references: [id])
-  lead           Lead?         @relation("OpportunityLead", fields: [leadId], references: [id])
-  activities     Activity[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("OpportunityAssigned", fields: [assignedToId], references: [id])
+  lead         Lead?        @relation("OpportunityLead", fields: [leadId], references: [id])
+  activities   Activity[]
+
   @@index([organizationId])
   @@index([leadId])
   @@index([stage])
 }
 
 model Activity {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   type           String
   title          String
   description    String?
   dueDate        DateTime? @map("due_date")
-  completed      Boolean  @default(false)
-  userId         String?  @map("user_id")
-  leadId         String?  @map("lead_id")
-  opportunityId  String?  @map("opportunity_id")
-  organizationId String?  @map("organization_id")
-  createdAt      DateTime @default(now()) @map("created_at")
+  completed      Boolean   @default(false)
+  userId         String?   @map("user_id")
+  leadId         String?   @map("lead_id")
+  opportunityId  String?   @map("opportunity_id")
+  organizationId String?   @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  user           User?       @relation(fields: [userId], references: [id])
-  lead           Lead?       @relation(fields: [leadId], references: [id])
-  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  lead         Lead?         @relation(fields: [leadId], references: [id])
+  opportunity  Opportunity?  @relation(fields: [opportunityId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([userId])
   @@index([leadId])
   @@index([opportunityId])
@@ -275,36 +286,37 @@ model Activity {
 // ----------------------
 
 model Vehicle {
-  id             String   @id @default(cuid())
-  internalId     String?  @map("internal_id")
-  plateNumber    String   @map("plate_number")
+  id             String    @id @default(cuid())
+  internalId     String?   @map("internal_id")
+  plateNumber    String    @map("plate_number")
   make           String?
   model          String?
   year           Int?
-  vehicleType    String?  @map("vehicle_type")
+  vehicleType    String?   @map("vehicle_type")
   vin            String?
   color          String?
-  organizationId String   @map("organization_id")
-  branchId       String?  @map("branch_id")
-  driverId       String?  @map("driver_id")
-  deviceId       String?  @map("device_id")
-  status         String   @default("active")
+  organizationId String    @map("organization_id")
+  branchId       String?   @map("branch_id")
+  driverId       String?   @map("driver_id")
+  deviceId       String?   @map("device_id")
+  status         String    @default("active")
   mileage        Float?
-  engineHours    Float?  @map("engine_hours")
+  engineHours    Float?    @map("engine_hours")
   installDate    DateTime? @map("install_date")
   warrantyExpiry DateTime? @map("warranty_expiry")
   notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branch         Branch?    @relation(fields: [branchId], references: [id])
-  driver         Driver?    @relation(fields: [driverId], references: [id])
-  device         Device?    @relation(fields: [deviceId], references: [id])
-  trips          Trip[]
-  installations  Installation[]
-  alerts         Alert[] @relation("AlertVehicle")
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  driver             Driver?             @relation(fields: [driverId], references: [id])
+  device             Device?             @relation(fields: [deviceId], references: [id])
+  trips              Trip[]
+  installations      Installation[]
+  alerts             Alert[]             @relation("AlertVehicle")
   maintenanceRecords MaintenanceRecord[]
+
   @@index([organizationId])
   @@index([plateNumber])
   @@index([driverId])
@@ -317,32 +329,33 @@ model Vehicle {
 // ----------------------
 
 model Driver {
-  id             String   @id @default(cuid())
-  name           String
-  employeeId     String?  @map("employee_id")
-  phone          String?
-  email          String?
-  licenseNumber  String?  @map("license_number")
-  licenseType    String?  @map("license_type")
-  licenseExpiry  DateTime? @map("license_expiry")
-  emirate        String?
-  nationality    String?
-  passportNumber String?  @map("passport_number")
-  dateOfBirth    DateTime? @map("date_of_birth")
-  emergencyContact String? @map("emergency_contact")
-  emergencyPhone   String? @map("emergency_phone")
-  organizationId String   @map("organization_id")
-  status         String   @default("active")
-  score          Float    @default(100)
-  totalTrips     Int      @default(0) @map("total_trips")
-  totalDistance   Float?   @map("total_distance")
-  totalViolations Int     @default(0) @map("total_violations")
-  notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  name             String
+  employeeId       String?   @map("employee_id")
+  phone            String?
+  email            String?
+  licenseNumber    String?   @map("license_number")
+  licenseType      String?   @map("license_type")
+  licenseExpiry    DateTime? @map("license_expiry")
+  emirate          String?
+  nationality      String?
+  passportNumber   String?   @map("passport_number")
+  dateOfBirth      DateTime? @map("date_of_birth")
+  emergencyContact String?   @map("emergency_contact")
+  emergencyPhone   String?   @map("emergency_phone")
+  organizationId   String    @map("organization_id")
+  status           String    @default("active")
+  score            Float     @default(100)
+  totalTrips       Int       @default(0) @map("total_trips")
+  totalDistance    Float?    @map("total_distance")
+  totalViolations  Int       @default(0) @map("total_violations")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vehicles       Vehicle[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicles     Vehicle[]
+
   @@index([organizationId])
   @@index([status])
   @@index([licenseNumber])
@@ -353,50 +366,52 @@ model Driver {
 // ----------------------
 
 model Device {
-  id             String   @id @default(cuid())
-  imei           String   @unique
-  serialNumber   String?  @map("serial_number")
+  id             String    @id @default(cuid())
+  imei           String    @unique
+  serialNumber   String?   @map("serial_number")
   model          String?
   manufacturer   String?
-  deviceType     String?  @map("device_type")
+  deviceType     String?   @map("device_type")
   protocol       String?
   phoneNumber    String?
   firmware       String?
-  simId          String?  @map("sim_id")
-  organizationId String?  @map("organization_id")
+  simId          String?   @map("sim_id")
+  organizationId String?   @map("organization_id")
   warehouse      String?
-  status         String   @default("warehouse")
+  status         String    @default("warehouse")
   purchaseDate   DateTime? @map("purchase_date")
-  purchaseCost   Decimal? @map("purchase_cost")
+  purchaseCost   Decimal?  @map("purchase_cost")
   installDate    DateTime? @map("install_date")
   warrantyExpiry DateTime? @map("warranty_expiry")
   lastPingAt     DateTime? @map("last_ping_at")
-  batteryLevel   Int?     @map("battery_level")
+  batteryLevel   Int?      @map("battery_level")
   notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  vehicles       Vehicle[]
-  installations  Installation[]
-  sim            SIM?      @relation(fields: [simId], references: [id])
+  organization  Organization?  @relation(fields: [organizationId], references: [id])
+  vehicles      Vehicle[]
+  installations Installation[]
+  sim           SIM?           @relation(fields: [simId], references: [id])
+
   @@index([organizationId])
   @@index([status])
 }
 
 model SIM {
-  id             String   @id @default(cuid())
-  number         String   @unique
+  id             String    @id @default(cuid())
+  number         String    @unique
   provider       String?
-  dataPlan       String?  @map("data_plan")
-  status         String   @default("available")
+  dataPlan       String?   @map("data_plan")
+  status         String    @default("available")
   activatedAt    DateTime? @map("activated_at")
-  organizationId String?  @map("organization_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  organizationId String?   @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  devices        Device[]
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  devices      Device[]
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId])
   @@index([status])
 }
@@ -420,8 +435,9 @@ model Technician {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  installations  Installation[]
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  installations Installation[]
+
   @@index([organizationId])
   @@index([status])
 }
@@ -431,34 +447,35 @@ model Technician {
 // ----------------------
 
 model Installation {
-  id             String   @id @default(cuid())
-  installationNumber String @unique @map("installation_number")
-  organizationId String   @map("organization_id")
-  vehicleId      String   @map("vehicle_id")
-  deviceId       String   @map("device_id")
-  technicianId   String?  @map("technician_id")
-  status         String   @default("scheduled")
-  scheduledDate  DateTime? @map("scheduled_date")
-  scheduledTime  String?  @map("scheduled_time")
-  completedAt    DateTime? @map("completed_at")
-  emirate        String?
-  location       String?
-  latitude       Float?
-  longitude      Float?
-  photos         String?
-  testResult     String?  @map("test_result")
-  gpsSignal      Boolean? @default(false) @map("gps_signal")
-  powerWiring    Boolean? @default(false) @map("power_wiring")
-  antennaMounted Boolean? @default(false) @map("antenna_mounted")
-  signature      String?
-  notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                 String    @id @default(cuid())
+  installationNumber String    @unique @map("installation_number")
+  organizationId     String    @map("organization_id")
+  vehicleId          String    @map("vehicle_id")
+  deviceId           String    @map("device_id")
+  technicianId       String?   @map("technician_id")
+  status             String    @default("scheduled")
+  scheduledDate      DateTime? @map("scheduled_date")
+  scheduledTime      String?   @map("scheduled_time")
+  completedAt        DateTime? @map("completed_at")
+  emirate            String?
+  location           String?
+  latitude           Float?
+  longitude          Float?
+  photos             String?
+  testResult         String?   @map("test_result")
+  gpsSignal          Boolean?  @default(false) @map("gps_signal")
+  powerWiring        Boolean?  @default(false) @map("power_wiring")
+  antennaMounted     Boolean?  @default(false) @map("antenna_mounted")
+  signature          String?
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  technician    Technician?  @relation(fields: [technicianId], references: [id])
-  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
-  device        Device     @relation(fields: [deviceId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  technician   Technician?  @relation(fields: [technicianId], references: [id])
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id])
+  device       Device       @relation(fields: [deviceId], references: [id])
+
   @@index([organizationId])
   @@index([status])
   @@index([technicianId])
@@ -471,26 +488,27 @@ model Installation {
 // ----------------------
 
 model Trip {
-  id             String   @id @default(cuid())
-  vehicleId      String   @map("vehicle_id")
-  organizationId String?  @map("organization_id")
+  id             String    @id @default(cuid())
+  vehicleId      String    @map("vehicle_id")
+  organizationId String?   @map("organization_id")
   driverName     String?
-  startTime      DateTime @map("start_time")
+  startTime      DateTime  @map("start_time")
   endTime        DateTime? @map("end_time")
   distance       Float?
   duration       Int?
-  maxSpeed       Float?   @map("max_speed")
-  avgSpeed       Float?   @map("avg_speed")
-  idleTime       Int?     @map("idle_time")
-  overspeedCount Int?     @map("overspeed_count")
-  harshBrakes    Int?     @map("harsh_brakes")
-  harshAccel     Int?     @map("harsh_accel")
-  status         String   @default("in_progress")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  maxSpeed       Float?    @map("max_speed")
+  avgSpeed       Float?    @map("avg_speed")
+  idleTime       Int?      @map("idle_time")
+  overspeedCount Int?      @map("overspeed_count")
+  harshBrakes    Int?      @map("harsh_brakes")
+  harshAccel     Int?      @map("harsh_accel")
+  status         String    @default("in_progress")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([vehicleId])
   @@index([organizationId])
   @@index([startTime])
@@ -513,7 +531,8 @@ model Geofence {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId])
 }
 
@@ -532,28 +551,30 @@ model AlertRule {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId])
   @@index([type])
 }
 
 model Alert {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   type           String
-  severity       String   @default("medium")
-  vehicleId      String?  @map("vehicle_id")
+  severity       String    @default("medium")
+  vehicleId      String?   @map("vehicle_id")
   driverName     String?
   vehiclePlate   String?
   message        String
   metadata       String?
-  status         String   @default("open")
-  organizationId String   @map("organization_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  status         String    @default("open")
+  organizationId String    @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
   resolvedAt     DateTime? @map("resolved_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vehicle        Vehicle?    @relation("AlertVehicle", fields: [vehicleId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle?     @relation("AlertVehicle", fields: [vehicleId], references: [id])
+
   @@index([organizationId])
   @@index([status])
   @@index([vehicleId])
@@ -565,22 +586,23 @@ model Alert {
 // ----------------------
 
 model MaintenanceRecord {
-  id             String   @id @default(cuid())
-  vehicleId      String   @map("vehicle_id")
+  id             String    @id @default(cuid())
+  vehicleId      String    @map("vehicle_id")
   type           String
   description    String?
-  triggerType    String?  @map("trigger_type")
+  triggerType    String?   @map("trigger_type")
   triggerValue   Float?
   scheduledDate  DateTime? @map("scheduled_date")
   completedDate  DateTime? @map("completed_date")
   cost           Decimal?
-  status         String   @default("upcoming")
-  organizationId String   @map("organization_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  status         String    @default("upcoming")
+  organizationId String    @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id])
+
   @@index([vehicleId])
   @@index([organizationId])
   @@index([status])
@@ -591,52 +613,53 @@ model MaintenanceRecord {
 // ----------------------
 
 model Plan {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  priceMonthly   Decimal  @map("price_monthly")
-  priceAnnual    Decimal? @map("price_annual")
-  vehicleLimit   Int      @default(0) @map("vehicle_limit")
-  features       String?
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  priceMonthly Decimal  @map("price_monthly")
+  priceAnnual  Decimal? @map("price_annual")
+  vehicleLimit Int      @default(0) @map("vehicle_limit")
+  features     String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  subscriptions  Subscription[]
+  subscriptions Subscription[]
 }
 
 model Subscription {
-  id             String   @id @default(cuid())
-  organizationId String   @unique @map("organization_id")
-  planId         String   @map("plan_id")
-  status         String   @default("active")
-  vehicleCount   Int      @default(0) @map("vehicle_count")
-  startsAt       DateTime @map("starts_at")
+  id             String    @id @default(cuid())
+  organizationId String    @unique @map("organization_id")
+  planId         String    @map("plan_id")
+  status         String    @default("active")
+  vehicleCount   Int       @default(0) @map("vehicle_count")
+  startsAt       DateTime  @map("starts_at")
   endsAt         DateTime? @map("ends_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  plan           Plan       @relation(fields: [planId], references: [id])
-  invoices       Invoice[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  plan         Plan         @relation(fields: [planId], references: [id])
+  invoices     Invoice[]
 }
 
 model Invoice {
-  id             String   @id @default(cuid())
-  invoiceNumber  String   @unique @map("invoice_number")
-  organizationId String   @map("organization_id")
-  subscriptionId String?  @map("subscription_id")
+  id             String    @id @default(cuid())
+  invoiceNumber  String    @unique @map("invoice_number")
+  organizationId String    @map("organization_id")
+  subscriptionId String?   @map("subscription_id")
   amount         Decimal
-  tax            Decimal  @default(0)
+  tax            Decimal   @default(0)
   total          Decimal
-  status         String   @default("pending")
-  dueDate        DateTime @map("due_date")
+  status         String    @default("pending")
+  dueDate        DateTime  @map("due_date")
   paidAt         DateTime? @map("paid_at")
   notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
   @@index([organizationId])
   @@index([status])
   @@index([subscriptionId])
@@ -647,26 +670,26 @@ model Invoice {
 // ----------------------
 
 model Quotation {
-  id              String          @id @default(cuid())
-  quotationNumber String          @unique @map("quotation_number")
-  leadId          String?         @map("lead_id")
-  contactId       String?         @map("contact_id")
-  organizationId  String          @map("organization_id")
+  id              String    @id @default(cuid())
+  quotationNumber String    @unique @map("quotation_number")
+  leadId          String?   @map("lead_id")
+  contactId       String?   @map("contact_id")
+  organizationId  String    @map("organization_id")
   subtotal        Decimal
-  taxRate         Decimal         @default(5) @map("tax_rate")
-  tax             Decimal         @default(0)
+  taxRate         Decimal   @default(5) @map("tax_rate")
+  tax             Decimal   @default(0)
   total           Decimal
-  status          String          @default("draft")
-  validUntil      DateTime?       @map("valid_until")
+  status          String    @default("draft")
+  validUntil      DateTime? @map("valid_until")
   notes           String?
   terms           String?
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  items          QuotationItem[]
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact        Contact?         @relation(fields: [contactId], references: [id])
-  lead           Lead?            @relation(fields: [leadId], references: [id])
+  items        QuotationItem[]
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact?        @relation(fields: [contactId], references: [id])
+  lead         Lead?           @relation(fields: [leadId], references: [id])
 
   @@index([organizationId])
   @@index([leadId])
@@ -674,14 +697,14 @@ model Quotation {
 }
 
 model QuotationItem {
-  id          String    @id @default(cuid())
-  quotationId String    @map("quotation_id")
-  sortOrder   Int       @default(0) @map("sort_order")
+  id          String  @id @default(cuid())
+  quotationId String  @map("quotation_id")
+  sortOrder   Int     @default(0) @map("sort_order")
   description String
   quantity    Int
-  unitPrice   Decimal  @map("unit_price")
+  unitPrice   Decimal @map("unit_price")
 
-  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
   @@index([quotationId])
 }
@@ -691,21 +714,22 @@ model QuotationItem {
 // ----------------------
 
 model Ticket {
-  id             String   @id @default(cuid())
-  ticketNumber   String   @unique @map("ticket_number")
-  organizationId String   @map("organization_id")
+  id             String    @id @default(cuid())
+  ticketNumber   String    @unique @map("ticket_number")
+  organizationId String    @map("organization_id")
   subject        String
   description    String?
-  priority       String   @default("medium")
-  status         String   @default("open")
+  priority       String    @default("medium")
+  status         String    @default("open")
   vehiclePlate   String?
-  assignedToId   String?  @map("assigned_to_id")
+  assignedToId   String?   @map("assigned_to_id")
   resolvedAt     DateTime? @map("resolved_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignedTo     User? @relation("TicketAssigned", fields: [assignedToId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("TicketAssigned", fields: [assignedToId], references: [id])
+
   @@index([organizationId])
   @@index([status])
   @@index([assignedToId])
@@ -716,17 +740,18 @@ model Ticket {
 // ----------------------
 
 model Contract {
-  id             String   @id @default(cuid())
-  organizationId String   @map("organization_id")
+  id             String    @id @default(cuid())
+  organizationId String    @map("organization_id")
   title          String
-  startDate      DateTime @map("start_date")
+  startDate      DateTime  @map("start_date")
   endDate        DateTime? @map("end_date")
-  status         String   @default("active")
+  status         String    @default("active")
   terms          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId])
   @@index([status])
 }
@@ -748,7 +773,8 @@ model Document {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  uploadedByUser User?      @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+  uploadedByUser User?        @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+
   @@index([organizationId])
   @@index([type])
 }
@@ -769,8 +795,9 @@ model Notification {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user           User? @relation("NotificationUser", fields: [userId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation("NotificationUser", fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
   @@index([userId])
   @@index([organizationId])
 }
@@ -780,12 +807,13 @@ model Notification {
 // ----------------------
 
 model Session {
-  id             String   @id @default(cuid())
-  token          String   @unique
-  userId         String   @map("user_id")
-  expiresAt      DateTime @map("expires_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
@@ -803,21 +831,22 @@ model Setting {
 // ----------------------
 
 model ApiKey {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
-  key            String   @unique
-  keyPrefix      String   @map("key_prefix")
-  organizationId String?  @map("organization_id")
-  userId         String?  @map("user_id")
-  permissions    String   @default("read")
+  key            String    @unique
+  keyPrefix      String    @map("key_prefix")
+  organizationId String?   @map("organization_id")
+  userId         String?   @map("user_id")
+  permissions    String    @default("read")
   expiresAt      DateTime? @map("expires_at")
   lastUsedAt     DateTime? @map("last_used_at")
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([organizationId])
   @@index([userId])
 }
@@ -835,8 +864,8 @@ model AIConversation {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user           User? @relation("AIConversationUser", fields: [userId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation("AIConversationUser", fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([userId])
   @@index([organizationId])
@@ -855,4 +884,87 @@ model RateLimitCounter {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([resetAt])
+}
+
+// ----------------------
+// BACKGROUND JOBS
+// ----------------------
+
+model BackgroundJob {
+  id             String    @id @default(cuid())
+  type           String
+  status         String    @default("pending")
+  priority       Int       @default(0)
+  payload        Json?
+  result         Json?
+  idempotencyKey String?   @unique @map("idempotency_key")
+  organizationId String?   @map("organization_id")
+  userId         String?   @map("user_id")
+  maxAttempts    Int       @default(3) @map("max_attempts")
+  attempt        Int       @default(0)
+  lastError      String?   @map("last_error")
+  runAt          DateTime? @map("run_at")
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  failedAt       DateTime? @map("failed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+
+  @@index([type, status])
+  @@index([status, priority, runAt])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+// ----------------------
+// WEBHOOKS
+// ----------------------
+
+model WebhookEndpoint {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  url            String
+  events         Json
+  secret         String
+  active         Boolean  @default(true)
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  endpointId     String    @map("endpoint_id")
+  eventId        String    @map("event_id")
+  eventType      String    @map("event_type")
+  organizationId String    @map("organization_id")
+  payload        Json
+  status         String    @default("pending")
+  statusCode     Int?      @map("status_code")
+  response       String?
+  attempt        Int       @default(0)
+  maxAttempts    Int       @default(5) @map("max_attempts")
+  nextRetryAt    DateTime? @map("next_retry_at")
+  lastError      String?   @map("last_error")
+  deliveredAt    DateTime? @map("delivered_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  endpoint     WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  organization Organization    @relation(fields: [organizationId], references: [id])
+
+  @@unique([endpointId, eventId])
+  @@index([status, nextRetryAt])
+  @@index([organizationId])
+  @@index([eventType])
+  @@index([createdAt])
 }

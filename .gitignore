@@ -2,6 +2,7 @@
 node_modules/
 /.pnp
 .pnp.js
+.pnp.*
 .yarn/install-state.gz
 
 # Next.js
@@ -19,10 +20,8 @@ pnpm-debug.log*
 
 # Env files — NEVER track secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # Vercel
 .vercel
@@ -31,11 +30,14 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Prisma local DB
+# Database files (never commit databases)
 prisma/db/*.db
 prisma/db/*.db-journal
+db/
 *.db
 *.db-journal
+*.sqlite
+*.sqlite3
 
 # IDE
 .idea/
@@ -46,15 +48,29 @@ prisma/db/*.db-journal
 # OS
 .DS_Store
 Thumbs.db
+*.pem
+
+# AI tool artifacts (not project source)
+.claude
+.z-ai-config
+local-*
+.zscripts/
+agent-ctx/
+download/
 
 # Project-specific
 skills/
 tools/
 upload/
 tool-results/
+*.log
 dev.log
+dev.out.log
 server.log
+
+# Bun lockfile (npm is canonical)
 bun.lock
+bun.lockb
 
 # Misc
 AGENTS.md
