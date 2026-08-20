@@ -2,26 +2,34 @@
 --
 -- Changes:
 --   1. Add leased_until column for lease-based stale job recovery
---   2. Replace global idempotency UNIQUE with tenant-scoped composite UNIQUE
---   3. Update organization FK to ON DELETE CASCADE
---   4. Replace indexes with queue-optimized versions
+--   2. Add locked_by column for worker identity and stale worker protection
+--   3. Add request_id column for request-to-job correlation
+--   4. Replace global idempotency UNIQUE with tenant-scoped composite UNIQUE
+--   5. Update organization FK to ON DELETE CASCADE
+--   6. Replace indexes with queue-optimized versions
 
 -- 1. Add leased_until column
 ALTER TABLE "BackgroundJob" ADD COLUMN "leased_until" TIMESTAMP(3);
 
--- 2. Drop global idempotency unique constraint
+-- 2. Add locked_by column (worker identity for ownership verification)
+ALTER TABLE "BackgroundJob" ADD COLUMN "locked_by" TEXT;
+
+-- 3. Add request_id column (HTTP request → job correlation)
+ALTER TABLE "BackgroundJob" ADD COLUMN "request_id" TEXT;
+
+-- 4. Drop global idempotency unique constraint
 --    PostgreSQL names it automatically based on column name
 ALTER TABLE "BackgroundJob" DROP CONSTRAINT IF EXISTS "BackgroundJob_idempotency_key_key";
 
--- 3. Add tenant-scoped idempotency constraint
+-- 5. Add tenant-scoped idempotency constraint
 --    Same org + same key = duplicate. NULL org is a distinct group.
 CREATE UNIQUE INDEX "BackgroundJob_organization_id_idempotency_key_key" ON "BackgroundJob"("organization_id", "idempotency_key");
 
--- 4. Update organization FK to CASCADE
+-- 6. Update organization FK to CASCADE
 ALTER TABLE "BackgroundJob" DROP CONSTRAINT IF EXISTS "BackgroundJob_organization_id_fkey";
 ALTER TABLE "BackgroundJob" ADD CONSTRAINT "BackgroundJob_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- 5. Drop old indexes and create queue-optimized ones
+-- 7. Drop old indexes and create queue-optimized ones
 DROP INDEX IF EXISTS "BackgroundJob_type_status_idx";
 DROP INDEX IF EXISTS "BackgroundJob_status_priority_run_at_idx";
 DROP INDEX IF EXISTS "BackgroundJob_organization_id_idx";

@@ -908,6 +908,8 @@ model BackgroundJob {
   completedAt    DateTime? @map("completed_at")
   failedAt       DateTime? @map("failed_at")
   leasedUntil    DateTime? @map("leased_until")
+  lockedBy       String?   @map("locked_by")
+  requestId      String?   @map("request_id")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 

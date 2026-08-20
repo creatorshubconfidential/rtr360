@@ -1,21 +1,23 @@
 /**
  * RTR 360 — Background Job Worker
  *
- * Long-running process that polls the queue and executes jobs.
+ * Long-running process that polls the PostgreSQL queue and executes jobs.
  * Designed to run as a standalone process (not inside Next.js serverless).
  *
  * Features:
+ *   - Unique worker identity (rtr-worker-{uuid})
  *   - Bounded concurrency (configurable max concurrent jobs)
  *   - Graceful shutdown (SIGTERM/SIGINT handling)
  *   - Stale job recovery on each poll cycle
- *   - Structured logging with job correlation
+ *   - Structured logging with job + request correlation
  *   - Safe failure isolation (one bad job must not stop the queue)
  *   - No infinite tight loop (configurable polling interval)
+ *   - Error classification (transient vs permanent)
  */
 
 import { claimJob, completeJob, failJob, recoverStaleJobs, type ClaimedJob } from '@/lib/queue';
 import { logger } from '@/lib/logger';
-import { getJobTypeConfig } from '@/lib/job-types';
+import { getJobTypeConfig, validateJobPayload } from '@/lib/job-types';
 import { serializeError } from '@/lib/errors';
 import { randomUUID } from 'crypto';
 
@@ -28,8 +30,6 @@ export interface WorkerConfig {
   concurrency: number;
   /** Milliseconds between poll cycles (default: 2000) */
   pollingIntervalMs: number;
-  /** Maximum jobs to claim per poll cycle (default: 10) */
-  maxJobsPerCycle: number;
   /** Lease duration in milliseconds (default: 300000 = 5 min) */
   leaseDurationMs: number;
   /** If set, only processes jobs for this organization */
@@ -49,10 +49,20 @@ export interface WorkerState {
 const DEFAULT_CONFIG: WorkerConfig = {
   concurrency: 5,
   pollingIntervalMs: 2000,
-  maxJobsPerCycle: 10,
   leaseDurationMs: 5 * 60 * 1000,
   recoverStaleJobs: true,
 };
+
+// ── Worker Identity ────────────────────────────────────────────
+
+/**
+ * Generate a unique worker identity.
+ * Format: rtr-worker-{uuid}
+ * Used for lockedBy, logging, and diagnostics.
+ */
+export function generateWorkerId(): string {
+  return `rtr-worker-${randomUUID()}`;
+}
 
 // ── Handler Registry ───────────────────────────────────────────
 
@@ -61,6 +71,7 @@ const handlers = new Map<string, JobHandler>();
 /**
  * Register a handler for a job type.
  * This is the ONLY way to execute job types — no arbitrary handler execution.
+ * Throws if a handler is already registered for the same type.
  */
 export function registerJobHandler(type: string, handler: JobHandler): void {
   if (handlers.has(type)) {
@@ -76,15 +87,27 @@ export function getJobHandler(type: string): JobHandler | undefined {
   return handlers.get(type);
 }
 
+/**
+ * List all registered handler types (for diagnostics).
+ */
+export function getRegisteredHandlerTypes(): string[] {
+  return Array.from(handlers.keys());
+}
+
 // ── Worker Class ───────────────────────────────────────────────
 
 export class Worker {
+  private readonly workerId: string;
   private config: WorkerConfig;
   private state: WorkerState;
   private pollingTimer: ReturnType<typeof setTimeout> | null = null;
   private shutdownRequested = false;
 
-  constructor(config: Partial<WorkerConfig> = {}) {
+  constructor(
+    config: Partial<WorkerConfig> = {},
+    workerId?: string,
+  ) {
+    this.workerId = workerId ?? generateWorkerId();
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.state = {
       running: false,
@@ -96,12 +119,22 @@ export class Worker {
   }
 
   /**
+   * Get this worker's unique identity.
+   */
+  get id(): string {
+    return this.workerId;
+  }
+
+  /**
    * Start the worker loop.
    * Registers signal handlers for graceful shutdown.
    */
   async start(): Promise<void> {
     if (this.state.running) {
-      logger.warn('worker.start', { message: 'Worker is already running' });
+      logger.warn('worker.start', {
+        workerId: this.workerId,
+        event: 'already_running',
+      });
       return;
     }
 
@@ -109,13 +142,13 @@ export class Worker {
     this.shutdownRequested = false;
 
     logger.info('worker.started', {
+      workerId: this.workerId,
       concurrency: this.config.concurrency,
       pollingIntervalMs: this.config.pollingIntervalMs,
-      maxJobsPerCycle: this.config.maxJobsPerCycle,
       organizationId: this.config.organizationId,
     });
 
-    // Register signal handlers
+    // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => this.requestShutdown('SIGTERM'));
     process.on('SIGINT', () => this.requestShutdown('SIGINT'));
 
@@ -130,10 +163,14 @@ export class Worker {
   async requestShutdown(signal?: string): Promise<void> {
     if (this.shutdownRequested) return;
 
-    logger.info('worker.shutdown_requested', { signal });
+    logger.info('worker.shutdown_requested', {
+      workerId: this.workerId,
+      signal,
+      activeJobs: this.state.activeJobs,
+    });
     this.shutdownRequested = true;
 
-    // Stop the polling timer
+    // Stop the polling timer — no new poll cycles
     if (this.pollingTimer) {
       clearTimeout(this.pollingTimer);
       this.pollingTimer = null;
@@ -141,10 +178,6 @@ export class Worker {
 
     // Wait for active jobs to finish (with a timeout)
     if (this.state.activeJobs > 0) {
-      logger.info('worker.waiting_for_active_jobs', {
-        activeJobs: this.state.activeJobs,
-      });
-
       const maxWait = 30_000;
       const checkInterval = 500;
       let waited = 0;
@@ -156,6 +189,7 @@ export class Worker {
 
       if (this.state.activeJobs > 0) {
         logger.warn('worker.shutdown_timeout', {
+          workerId: this.workerId,
           activeJobs: this.state.activeJobs,
           waitedMs: waited,
         });
@@ -164,6 +198,7 @@ export class Worker {
 
     this.state.running = false;
     logger.info('worker.stopped', {
+      workerId: this.workerId,
       totalProcessed: this.state.totalProcessed,
       totalFailed: this.state.totalFailed,
       totalRecovered: this.state.totalRecovered,
@@ -184,7 +219,10 @@ export class Worker {
 
     this.pollingTimer = setTimeout(() => {
       this.poll().catch((error) => {
-        logger.error('worker.poll_error', serializeError(error));
+        logger.error('worker.poll_error', {
+          workerId: this.workerId,
+          ...serializeError(error),
+        });
       }).finally(() => {
         if (!this.shutdownRequested) {
           this.scheduleNextPoll();
@@ -201,7 +239,10 @@ export class Worker {
   private async poll(): Promise<void> {
     // Recover stale jobs first (if enabled)
     if (this.config.recoverStaleJobs) {
-      const recovered = await recoverStaleJobs(this.config.leaseDurationMs);
+      const recovered = await recoverStaleJobs(
+        this.workerId,
+        this.config.leaseDurationMs,
+      );
       if (recovered > 0) {
         this.state.totalRecovered += recovered;
       }
@@ -213,6 +254,7 @@ export class Worker {
       this.state.activeJobs < this.config.concurrency
     ) {
       const result = await claimJob(
+        this.workerId,
         this.config.leaseDurationMs,
         this.config.organizationId,
       );
@@ -221,8 +263,10 @@ export class Worker {
         break;
       }
 
+      // Fire-and-forget with error boundary
       this.processJob(result.job).catch((error) => {
         logger.error('worker.process_error', {
+          workerId: this.workerId,
           jobId: result.job!.id,
           ...serializeError(error),
         });
@@ -231,8 +275,6 @@ export class Worker {
   }
 
   private async processJob(job: ClaimedJob): Promise<void> {
-    const requestId = randomUUID();
-
     this.state.activeJobs++;
     const startTime = Date.now();
 
@@ -240,36 +282,49 @@ export class Worker {
       jobId: job.id,
       jobType: job.type,
       organizationId: job.organizationId,
+      workerId: this.workerId,
       attempt: job.attempt,
+      requestId: job.requestId,
     });
 
     try {
-      jobLogger.info('job.started');
+      jobLogger.info('job.started', { event: 'job.started' });
 
-      const handler = handlers.get(job.type);
-      if (!handler) {
-        const config = getJobTypeConfig(job.type);
-        throw new Error(
-          `No handler registered for job type '${job.type}'. ` +
-          (config
-            ? 'Job type is defined but handler is not registered.'
-            : 'Job type is not defined in the registry.'),
-        );
+      // Re-validate payload at execution time (treat DB payload as untrusted)
+      const payloadValidation = validateJobPayload(job.type, job.payload);
+      if (!payloadValidation.success) {
+        throw new Error(`[VALIDATION] ${payloadValidation.error}`);
       }
 
+      // Look up handler
+      const handler = handlers.get(job.type);
+      if (!handler) {
+        const typeConfig = getJobTypeConfig(job.type);
+        const msg = typeConfig
+          ? `No handler registered for job type '${job.type}'`
+          : `Unknown job type '${job.type}'`;
+        throw new Error(msg);
+      }
+
+      // Execute
       const result = await handler(job);
 
       const duration = Date.now() - startTime;
-      await completeJob(job.id, result);
+      await completeJob(job.id, this.workerId, result);
 
-      jobLogger.info('job.completed', { durationMs: duration });
+      jobLogger.info('job.completed', {
+        event: 'job.completed',
+        durationMs: duration,
+      });
+
       this.state.totalProcessed++;
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      await failJob(job.id, error, this.config.leaseDurationMs);
+      await failJob(job.id, this.workerId, error, this.config.leaseDurationMs);
 
       jobLogger.error('job.failed', {
+        event: 'job.failed',
         durationMs: duration,
         ...serializeError(error),
       });

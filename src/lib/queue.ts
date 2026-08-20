@@ -3,9 +3,11 @@
  *
  * PostgreSQL-backed job queue with:
  *   - Atomic job claiming (row-level locking via FOR UPDATE SKIP LOCKED)
- *   - Tenant-scoped idempotency
- *   - Lease-based stale job recovery
+ *   - Tenant-scoped idempotency (database-enforced unique constraint)
+ *   - Worker identity and ownership verification (lockedBy)
+ *   - Lease-based stale job recovery (atomic)
  *   - Bounded exponential backoff with jitter
+ *   - Request-to-job correlation (requestId)
  *   - Graceful degradation (works without Redis)
  *
  * Redis is NOT the durable store. PostgreSQL is the source of truth.
@@ -19,7 +21,6 @@ import { logger } from '@/lib/logger';
 import { QueueError, ConflictError, ValidationError } from '@/lib/errors';
 import {
   JOB_STATUS,
-  JOB_PRIORITY,
   validateJobPayload,
   getJobTypeConfig,
 } from '@/lib/job-types';
@@ -35,6 +36,7 @@ export interface EnqueueOptions {
   runAt?: Date;
   maxAttempts?: number;
   idempotencyKey?: string | null;
+  requestId?: string | null;
 }
 
 export interface QueueStats {
@@ -59,6 +61,53 @@ export interface ClaimedJob {
   attempt: number;
   maxAttempts: number;
   priority: number;
+  lockedBy: string | null;
+  requestId: string | null;
+}
+
+// ── Error Classification ────────────────────────────────────────
+
+/**
+ * Classify an error to determine retry behavior.
+ * Transient errors should be retried.
+ * Permanent, validation, and authorization errors should fail immediately.
+ */
+export function classifyError(error: unknown): 'transient' | 'permanent' {
+  if (error instanceof ValidationError) return 'permanent';
+  if (error instanceof QueueError) return 'permanent';
+
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  // Authorization / tenant violations — never retry
+  if (lower.includes('forbidden') || lower.includes('unauthorized') || lower.includes('tenant')) {
+    return 'permanent';
+  }
+
+  // Validation-like patterns — never retry
+  if (lower.includes('invalid payload') || lower.includes('unknown job type')) {
+    return 'permanent';
+  }
+
+  // Network / timeout / connection — retry
+  if (
+    lower.includes('econnrefused') ||
+    lower.includes('econnreset') ||
+    lower.includes('etimedout') ||
+    lower.includes('socket hang up') ||
+    lower.includes('network') ||
+    lower.includes('timeout') ||
+    lower.includes('5') ||
+    lower.includes('502') ||
+    lower.includes('503') ||
+    lower.includes('504') ||
+    lower.includes('429')
+  ) {
+    return 'transient';
+  }
+
+  // Default: treat as transient (retry)
+  return 'transient';
 }
 
 // ── Lease Configuration ────────────────────────────────────────
@@ -95,8 +144,10 @@ export function calculateLeaseExpiry(durationMs: number = DEFAULT_LEASE_DURATION
  * Enqueue a new background job.
  *
  * Validates the job type and payload before creating the job.
- * If an idempotencyKey is provided, it checks for existing jobs
- * within the same organization to prevent duplicates.
+ * Idempotency is enforced at TWO levels:
+ *   1. Application-level: fast-path check for existing active jobs (avoids DB errors)
+ *   2. Database-level: @@unique([organizationId, idempotencyKey]) constraint
+ *      catches concurrent enqueue race conditions.
  *
  * The organizationId MUST come from authenticated server context,
  * never from untrusted client payload.
@@ -111,6 +162,7 @@ export async function enqueue(options: EnqueueOptions): Promise<{ count: number;
     runAt,
     maxAttempts,
     idempotencyKey,
+    requestId,
   } = options;
 
   // 1. Validate job type exists
@@ -121,7 +173,7 @@ export async function enqueue(options: EnqueueOptions): Promise<{ count: number;
     ]);
   }
 
-  // 2. Validate payload
+  // 2. Validate payload BEFORE database write
   const validation = validateJobPayload(type, payload);
   if (!validation.success) {
     throw new ValidationError(validation.error, [
@@ -129,55 +181,86 @@ export async function enqueue(options: EnqueueOptions): Promise<{ count: number;
     ]);
   }
 
-  // 3. Idempotency check: same org + same key must not create duplicates
+  // 3. Application-level idempotency: fast path to avoid unnecessary DB errors.
+  //    The DB unique constraint is the real guarantee for concurrent enqueues.
   if (idempotencyKey) {
-    const existing = await findExistingJob(organizationId, idempotencyKey);
+    const existing = await findExistingActiveJob(organizationId, idempotencyKey);
     if (existing) {
       logger.info('job.enqueued', {
         jobId: existing.id,
         jobType: type,
         organizationId,
         idempotencyKey,
-        status: 'duplicate_skipped',
+        requestId,
+        event: 'duplicate_skipped',
       });
       return { count: 0, id: existing.id };
     }
   }
 
-  // 4. Create the job
-  const job = await db.backgroundJob.create({
-    data: {
-      type,
-      status: JOB_STATUS.PENDING,
-      payload: payload as Prisma.InputJsonValue,
-      organizationId: organizationId ?? null,
-      userId: userId ?? null,
-      priority: priority ?? typeConfig.defaultPriority,
-      runAt: runAt ?? null,
-      maxAttempts: maxAttempts ?? typeConfig.defaultMaxAttempts,
-      idempotencyKey: idempotencyKey ?? null,
-    },
-  });
+  // 4. Create the job. The DB unique constraint on (organizationId, idempotencyKey)
+  //    is the final guarantee — concurrent inserts with the same key will
+  //    result in a Prisma unique constraint violation (P2002), which we catch.
+  try {
+    const job = await db.backgroundJob.create({
+      data: {
+        type,
+        status: JOB_STATUS.PENDING,
+        payload: payload as Prisma.InputJsonValue,
+        organizationId: organizationId ?? null,
+        userId: userId ?? null,
+        priority: priority ?? typeConfig.defaultPriority,
+        runAt: runAt ?? null,
+        maxAttempts: maxAttempts ?? typeConfig.defaultMaxAttempts,
+        idempotencyKey: idempotencyKey ?? null,
+        requestId: requestId ?? null,
+      },
+    });
 
-  logger.info('job.enqueued', {
-    jobId: job.id,
-    jobType: type,
-    organizationId,
-    userId,
-    priority: job.priority,
-    maxAttempts: job.maxAttempts,
-    runAt: job.runAt,
-    idempotencyKey,
-  });
+    logger.info('job.enqueued', {
+      jobId: job.id,
+      jobType: type,
+      organizationId,
+      userId,
+      priority: job.priority,
+      maxAttempts: job.maxAttempts,
+      runAt: job.runAt,
+      idempotencyKey,
+      requestId,
+    });
 
-  return { count: 1, id: job.id };
+    return { count: 1, id: job.id };
+  } catch (error) {
+    // Catch unique constraint violation (P2002) — concurrent duplicate enqueue
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002' &&
+      idempotencyKey
+    ) {
+      // Find the existing job to return its ID
+      const existing = await findExistingActiveJob(organizationId, idempotencyKey);
+      const existingId = existing?.id ?? 'unknown';
+
+      logger.info('job.enqueued', {
+        jobType: type,
+        organizationId,
+        idempotencyKey,
+        requestId,
+        event: 'duplicate_concurrent',
+        existingJobId: existingId,
+      });
+
+      return { count: 0, id: existingId };
+    }
+    throw error;
+  }
 }
 
 /**
  * Find an existing non-terminal job with the same idempotency key.
  * Only considers jobs that are still active (pending/processing).
  */
-async function findExistingJob(
+async function findExistingActiveJob(
   organizationId: string | null,
   idempotencyKey: string,
 ): Promise<{ id: string; status: string } | null> {
@@ -212,7 +295,6 @@ export async function getJob(
 
 /**
  * Cancel a pending or processing job.
- * Processing jobs are only cancelled if their lease has expired.
  * Completed/failed jobs cannot be cancelled.
  */
 export async function cancelJob(
@@ -281,6 +363,7 @@ export async function retryJob(
       completedAt: null,
       failedAt: null,
       leasedUntil: null,
+      lockedBy: null,
     },
   });
 
@@ -306,30 +389,32 @@ export async function retryJob(
  *   2. Optionally filters by organization (for tenant-scoped workers)
  *   3. Orders by priority ASC, then createdAt ASC
  *   4. Locks the row exclusively, skipping already-locked rows
- *   5. Updates status to PROCESSING and sets lease
+ *   5. Updates status to PROCESSING, sets lease and worker identity
  *
- * This is a single atomic operation — no race condition possible.
+ * This is a single atomic UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)
+ * No race condition possible — the subquery with FOR UPDATE SKIP LOCKED
+ * ensures only one worker can lock and claim each row.
  */
 export async function claimJob(
+  workerId: string,
   leaseDurationMs: number = DEFAULT_LEASE_DURATION_MS,
   organizationId?: string | null,
 ): Promise<ClaimResult> {
   const now = new Date();
   const leasedUntil = calculateLeaseExpiry(leaseDurationMs);
 
-  // Build the WHERE clause
   const statusFilter = Prisma.sql`status = ${JOB_STATUS.PENDING}`;
   const runAtFilter = Prisma.sql`AND ("run_at" IS NULL OR "run_at" <= ${now})`;
   const orgFilter = organizationId
     ? Prisma.sql`AND "organization_id" = ${organizationId}`
     : Prisma.sql``;
 
-  // Use a raw query with FOR UPDATE SKIP LOCKED for atomic claiming
   const claimedJobs = await db.$queryRaw<Array<ClaimedJob>>`
     UPDATE "BackgroundJob"
     SET status = ${JOB_STATUS.PROCESSING},
         "started_at" = ${now},
         "leased_until" = ${leasedUntil},
+        "locked_by" = ${workerId},
         "attempt" = "attempt" + 1,
         "updated_at" = ${now}
     WHERE id IN (
@@ -339,7 +424,7 @@ export async function claimJob(
       LIMIT 1
       FOR UPDATE SKIP LOCKED
     )
-    RETURNING id, type, payload, "organization_id", "user_id", attempt, "max_attempts", priority
+    RETURNING id, type, payload, "organization_id", "user_id", attempt, "max_attempts", priority, "locked_by", "request_id"
   `;
 
   if (claimedJobs.length === 0) {
@@ -352,6 +437,7 @@ export async function claimJob(
     jobId: job.id,
     jobType: job.type,
     organizationId: job.organizationId,
+    workerId,
     attempt: job.attempt,
   });
 
@@ -362,26 +448,62 @@ export async function claimJob(
 
 /**
  * Mark a job as successfully completed.
+ *
+ * Ownership verification: only the worker that claimed the job (lockedBy)
+ * can complete it. A stale worker that lost its lease cannot overwrite
+ * a newer worker's state.
  */
 export async function completeJob(
   jobId: string,
+  workerId: string,
   result?: unknown,
 ): Promise<void> {
-  const job = await db.backgroundJob.update({
-    where: { id: jobId },
+  // Atomic: only update if this worker owns the job AND it's still PROCESSING
+  const updated = await db.backgroundJob.updateMany({
+    where: {
+      id: jobId,
+      status: JOB_STATUS.PROCESSING,
+      lockedBy: workerId,
+    },
     data: {
       status: JOB_STATUS.COMPLETED,
       completedAt: new Date(),
       leasedUntil: null,
-      result: result !== undefined ? (result as Prisma.InputJsonValue) : Prisma.JsonNull,
+      lockedBy: null,
+      result: result !== undefined
+        ? (result as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
     },
+  });
+
+  if (updated.count === 0) {
+    // Job was already completed by another worker, or recovered.
+    // Fetch current state for diagnostics.
+    const current = await db.backgroundJob.findUnique({
+      where: { id: jobId },
+      select: { status: true, lockedBy: true },
+    });
+    logger.warn('job.complete_skipped', {
+      jobId,
+      workerId,
+      currentStatus: current?.status,
+      currentLockedBy: current?.lockedBy,
+    });
+    return;
+  }
+
+  // Fetch for logging (need orgId)
+  const job = await db.backgroundJob.findUnique({
+    where: { id: jobId },
+    select: { type: true, organizationId: true, attempt: true },
   });
 
   logger.info('job.completed', {
     jobId,
-    jobType: job.type,
-    organizationId: job.organizationId,
-    attempt: job.attempt,
+    jobType: job?.type,
+    organizationId: job?.organizationId,
+    workerId,
+    attempt: job?.attempt,
   });
 }
 
@@ -390,9 +512,13 @@ export async function completeJob(
 /**
  * Mark a job as failed. If retries remain, schedule the next attempt.
  * If max attempts reached, mark as permanently FAILED.
+ *
+ * Ownership verification: only the worker that claimed the job (lockedBy)
+ * can fail it. A stale worker cannot overwrite a recovered job's state.
  */
 export async function failJob(
   jobId: string,
+  workerId: string,
   error: unknown,
   leaseDurationMs: number = DEFAULT_LEASE_DURATION_MS,
 ): Promise<void> {
@@ -402,8 +528,46 @@ export async function failJob(
     return;
   }
 
+  // Verify ownership — this worker must own the job
+  if (job.lockedBy !== workerId) {
+    logger.warn('job.fail_skipped_wrong_owner', {
+      jobId,
+      currentWorker: workerId,
+      actualOwner: job.lockedBy,
+    });
+    return;
+  }
+
+  const errorClassification = classifyError(error);
   const errorMessage = error instanceof Error ? error.message : String(error);
 
+  // Permanent errors → fail immediately regardless of attempt count
+  if (errorClassification === 'permanent') {
+    await db.backgroundJob.update({
+      where: { id: jobId },
+      data: {
+        status: JOB_STATUS.FAILED,
+        failedAt: new Date(),
+        lastError: truncateError(`[PERMANENT] ${errorMessage}`),
+        leasedUntil: null,
+        lockedBy: null,
+      },
+    });
+
+    logger.error('job.dead_lettered', {
+      jobId,
+      jobType: job.type,
+      organizationId: job.organizationId,
+      workerId,
+      attempt: job.attempt,
+      maxAttempts: job.maxAttempts,
+      reason: 'permanent_error',
+      error: truncateError(errorMessage),
+    });
+    return;
+  }
+
+  // Transient errors → retry if attempts remain
   if (job.attempt < job.maxAttempts) {
     const nextRetryAt = new Date(Date.now() + calculateRetryDelay(job.attempt));
 
@@ -415,6 +579,7 @@ export async function failJob(
         runAt: nextRetryAt,
         startedAt: null,
         leasedUntil: null,
+        lockedBy: null,
       },
     });
 
@@ -422,6 +587,7 @@ export async function failJob(
       jobId,
       jobType: job.type,
       organizationId: job.organizationId,
+      workerId,
       attempt: job.attempt,
       maxAttempts: job.maxAttempts,
       nextRetryAt: nextRetryAt.toISOString(),
@@ -435,6 +601,7 @@ export async function failJob(
         failedAt: new Date(),
         lastError: truncateError(errorMessage),
         leasedUntil: null,
+        lockedBy: null,
       },
     });
 
@@ -442,6 +609,7 @@ export async function failJob(
       jobId,
       jobType: job.type,
       organizationId: job.organizationId,
+      workerId,
       attempt: job.attempt,
       maxAttempts: job.maxAttempts,
       error: truncateError(errorMessage),
@@ -453,71 +621,64 @@ export async function failJob(
 
 /**
  * Recover jobs that have been PROCESSING too long (lease expired).
- * Transitions them back to PENDING with a retry scheduled.
+ *
+ * Uses raw SQL with WHERE clause for atomic recovery:
+ *   - Only PROCESSING jobs with expired leases are recovered
+ *   - attempt < max_attempts → back to PENDING
+ *   - attempt >= max_attempts → FAILED
+ *   - No two workers can recover the same job (single statement)
  */
 export async function recoverStaleJobs(
+  workerId: string,
   leaseDurationMs: number = DEFAULT_LEASE_DURATION_MS,
 ): Promise<number> {
   const now = new Date();
 
-  const staleJobs = await db.backgroundJob.findMany({
-    where: {
-      status: JOB_STATUS.PROCESSING,
-      leasedUntil: { lt: now },
-    },
-    select: { id: true, attempt: true, maxAttempts: true, type: true, organizationId: true },
-  });
+  // Recover retryable stale jobs: PROCESSING + lease expired + attempts remain
+  const retryableResult = await db.$executeRaw`
+    UPDATE "BackgroundJob"
+    SET status = ${JOB_STATUS.PENDING},
+        "last_error" = 'Lease expired: worker likely crashed',
+        "started_at" = NULL,
+        "leased_until" = NULL,
+        "locked_by" = NULL,
+        "updated_at" = ${now}
+    WHERE status = ${JOB_STATUS.PROCESSING}
+      AND "leased_until" < ${now}
+      AND attempt < "max_attempts"
+  `;
 
-  if (staleJobs.length === 0) return 0;
+  // Fail exhausted stale jobs: PROCESSING + lease expired + no retries left
+  const exhaustedResult = await db.$executeRaw`
+    UPDATE "BackgroundJob"
+    SET status = ${JOB_STATUS.FAILED},
+        "failed_at" = ${now},
+        "last_error" = 'Lease expired: max attempts exhausted',
+        "leased_until" = NULL,
+        "locked_by" = NULL,
+        "updated_at" = ${now}
+    WHERE status = ${JOB_STATUS.PROCESSING}
+      AND "leased_until" < ${now}
+      AND attempt >= "max_attempts"
+  `;
 
-  let recovered = 0;
-
-  for (const job of staleJobs) {
-    if (job.attempt >= job.maxAttempts) {
-      await db.backgroundJob.update({
-        where: { id: job.id },
-        data: {
-          status: JOB_STATUS.FAILED,
-          failedAt: now,
-          lastError: 'Lease expired: worker likely crashed',
-          leasedUntil: null,
-        },
-      });
-
-      logger.error('job.dead_lettered', {
-        jobId: job.id,
-        jobType: job.type,
-        organizationId: job.organizationId,
-        attempt: job.attempt,
-        reason: 'stale_lease',
-      });
-    } else {
-      const nextRetryAt = new Date(Date.now() + calculateRetryDelay(job.attempt));
-      await db.backgroundJob.update({
-        where: { id: job.id },
-        data: {
-          status: JOB_STATUS.PENDING,
-          lastError: 'Lease expired: worker likely crashed',
-          runAt: nextRetryAt,
-          startedAt: null,
-          leasedUntil: null,
-        },
-      });
-
-      logger.warn('job.retry_scheduled', {
-        jobId: job.id,
-        jobType: job.type,
-        organizationId: job.organizationId,
-        attempt: job.attempt,
-        reason: 'stale_lease',
-        nextRetryAt: nextRetryAt.toISOString(),
-      });
-
-      recovered++;
-    }
+  if (retryableResult > 0) {
+    logger.warn('job.recovered', {
+      workerId,
+      count: retryableResult,
+      reason: 'stale_lease',
+    });
   }
 
-  return recovered;
+  if (exhaustedResult > 0) {
+    logger.error('job.dead_lettered', {
+      workerId,
+      count: exhaustedResult,
+      reason: 'stale_lease_max_attempts',
+    });
+  }
+
+  return retryableResult;
 }
 
 // ── Queue Stats ────────────────────────────────────────────────
