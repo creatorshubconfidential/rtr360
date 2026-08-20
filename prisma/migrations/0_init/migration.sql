@@ -32,8 +32,8 @@ CREATE TABLE "Organization" (
     "vehicle_limit" INTEGER NOT NULL DEFAULT 0,
     "user_limit" INTEGER NOT NULL DEFAULT 0,
     "feature_flags" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -44,8 +44,8 @@ CREATE TABLE "Branch" (
     "emirate" TEXT,
     "phone" TEXT,
     "organization_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Branch_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -60,10 +60,10 @@ CREATE TABLE "User" (
     "role" TEXT NOT NULL DEFAULT 'viewer',
     "organization_id" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
-    "last_login_at" DATETIME,
+    "last_login_at" TIMESTAMP(3),
     "email_verified" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "User_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
@@ -77,7 +77,7 @@ CREATE TABLE "AuditLog" (
     "metadata" TEXT,
     "ip_address" TEXT,
     "organization_id" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "AuditLog_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "AuditLog_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -104,8 +104,8 @@ CREATE TABLE "Lead" (
     "assigned_to_id" TEXT,
     "organization_id" TEXT,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Lead_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Lead_assigned_to_id_fkey" FOREIGN KEY ("assigned_to_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -118,8 +118,8 @@ CREATE TABLE "Contact" (
     "phone" TEXT,
     "position" TEXT,
     "organization_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Contact_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -132,10 +132,10 @@ CREATE TABLE "Opportunity" (
     "lead_id" TEXT,
     "organization_id" TEXT NOT NULL,
     "assigned_to_id" TEXT,
-    "expected_close" DATETIME,
+    "expected_close" TIMESTAMP(3),
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Opportunity_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Opportunity_assigned_to_id_fkey" FOREIGN KEY ("assigned_to_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Opportunity_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "Lead" ("id") ON DELETE SET NULL ON UPDATE CASCADE
@@ -147,13 +147,13 @@ CREATE TABLE "Activity" (
     "type" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
-    "due_date" DATETIME,
+    "due_date" TIMESTAMP(3),
     "completed" BOOLEAN NOT NULL DEFAULT false,
     "user_id" TEXT,
     "lead_id" TEXT,
     "opportunity_id" TEXT,
     "organization_id" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Activity_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Activity_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "Lead" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Activity_opportunity_id_fkey" FOREIGN KEY ("opportunity_id") REFERENCES "Opportunity" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
@@ -178,11 +178,11 @@ CREATE TABLE "Vehicle" (
     "status" TEXT NOT NULL DEFAULT 'active',
     "mileage" REAL,
     "engine_hours" REAL,
-    "install_date" DATETIME,
-    "warranty_expiry" DATETIME,
+    "install_date" TIMESTAMP(3),
+    "warranty_expiry" TIMESTAMP(3),
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Vehicle_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Vehicle_branch_id_fkey" FOREIGN KEY ("branch_id") REFERENCES "Branch" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Vehicle_driver_id_fkey" FOREIGN KEY ("driver_id") REFERENCES "Driver" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
@@ -198,11 +198,11 @@ CREATE TABLE "Driver" (
     "email" TEXT,
     "license_number" TEXT,
     "license_type" TEXT,
-    "license_expiry" DATETIME,
+    "license_expiry" TIMESTAMP(3),
     "emirate" TEXT,
     "nationality" TEXT,
     "passport_number" TEXT,
-    "date_of_birth" DATETIME,
+    "date_of_birth" TIMESTAMP(3),
     "emergency_contact" TEXT,
     "emergency_phone" TEXT,
     "organization_id" TEXT NOT NULL,
@@ -212,8 +212,8 @@ CREATE TABLE "Driver" (
     "total_distance" REAL,
     "total_violations" INTEGER NOT NULL DEFAULT 0,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Driver_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -232,15 +232,15 @@ CREATE TABLE "Device" (
     "organization_id" TEXT,
     "warehouse" TEXT,
     "status" TEXT NOT NULL DEFAULT 'warehouse',
-    "purchase_date" DATETIME,
+    "purchase_date" TIMESTAMP(3),
     "purchase_cost" REAL,
-    "install_date" DATETIME,
-    "warranty_expiry" DATETIME,
-    "last_ping_at" DATETIME,
+    "install_date" TIMESTAMP(3),
+    "warranty_expiry" TIMESTAMP(3),
+    "last_ping_at" TIMESTAMP(3),
     "battery_level" INTEGER,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Device_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Device_sim_id_fkey" FOREIGN KEY ("sim_id") REFERENCES "SIM" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -252,10 +252,10 @@ CREATE TABLE "SIM" (
     "provider" TEXT,
     "data_plan" TEXT,
     "status" TEXT NOT NULL DEFAULT 'available',
-    "activated_at" DATETIME,
+    "activated_at" TIMESTAMP(3),
     "organization_id" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "SIM_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
@@ -272,8 +272,8 @@ CREATE TABLE "Technician" (
     "total_installed" INTEGER NOT NULL DEFAULT 0,
     "rating" REAL NOT NULL DEFAULT 0,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Technician_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -286,9 +286,9 @@ CREATE TABLE "Installation" (
     "device_id" TEXT NOT NULL,
     "technician_id" TEXT,
     "status" TEXT NOT NULL DEFAULT 'scheduled',
-    "scheduled_date" DATETIME,
+    "scheduled_date" TIMESTAMP(3),
     "scheduled_time" TEXT,
-    "completed_at" DATETIME,
+    "completed_at" TIMESTAMP(3),
     "emirate" TEXT,
     "location" TEXT,
     "latitude" REAL,
@@ -300,8 +300,8 @@ CREATE TABLE "Installation" (
     "antenna_mounted" BOOLEAN DEFAULT false,
     "signature" TEXT,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Installation_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Installation_technician_id_fkey" FOREIGN KEY ("technician_id") REFERENCES "Technician" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Installation_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "Vehicle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -314,8 +314,8 @@ CREATE TABLE "Trip" (
     "vehicle_id" TEXT NOT NULL,
     "organization_id" TEXT,
     "driverName" TEXT,
-    "start_time" DATETIME NOT NULL,
-    "end_time" DATETIME,
+    "start_time" TIMESTAMP(3) NOT NULL,
+    "end_time" TIMESTAMP(3),
     "distance" REAL,
     "duration" INTEGER,
     "max_speed" REAL,
@@ -325,7 +325,7 @@ CREATE TABLE "Trip" (
     "harsh_brakes" INTEGER,
     "harsh_accel" INTEGER,
     "status" TEXT NOT NULL DEFAULT 'in_progress',
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Trip_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "Vehicle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Trip_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -340,8 +340,8 @@ CREATE TABLE "Geofence" (
     "radius" REAL,
     "polygon_points" TEXT,
     "organization_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Geofence_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -354,7 +354,7 @@ CREATE TABLE "AlertRule" (
     "channels" TEXT DEFAULT 'in_app',
     "organization_id" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "AlertRule_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -370,8 +370,8 @@ CREATE TABLE "Alert" (
     "metadata" TEXT,
     "status" TEXT NOT NULL DEFAULT 'open',
     "organization_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "resolved_at" DATETIME,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolved_at" TIMESTAMP(3),
     CONSTRAINT "Alert_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Alert_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "Vehicle" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -384,13 +384,13 @@ CREATE TABLE "MaintenanceRecord" (
     "description" TEXT,
     "trigger_type" TEXT,
     "triggerValue" REAL,
-    "scheduled_date" DATETIME,
-    "completed_date" DATETIME,
+    "scheduled_date" TIMESTAMP(3),
+    "completed_date" TIMESTAMP(3),
     "cost" REAL,
     "status" TEXT NOT NULL DEFAULT 'upcoming',
     "organization_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "MaintenanceRecord_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MaintenanceRecord_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "Vehicle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -405,8 +405,8 @@ CREATE TABLE "Plan" (
     "vehicle_limit" INTEGER NOT NULL DEFAULT 0,
     "features" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -416,10 +416,10 @@ CREATE TABLE "Subscription" (
     "plan_id" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'active',
     "vehicle_count" INTEGER NOT NULL DEFAULT 0,
-    "starts_at" DATETIME NOT NULL,
-    "ends_at" DATETIME,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "starts_at" TIMESTAMP(3) NOT NULL,
+    "ends_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Subscription_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Subscription_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "Plan" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -434,10 +434,10 @@ CREATE TABLE "Invoice" (
     "tax" REAL NOT NULL DEFAULT 0,
     "total" REAL NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "due_date" DATETIME NOT NULL,
-    "paid_at" DATETIME,
+    "due_date" TIMESTAMP(3) NOT NULL,
+    "paid_at" TIMESTAMP(3),
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Invoice_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Invoice_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "Subscription" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -454,11 +454,11 @@ CREATE TABLE "Quotation" (
     "tax" REAL NOT NULL DEFAULT 0,
     "total" REAL NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'draft',
-    "valid_until" DATETIME,
+    "valid_until" TIMESTAMP(3),
     "notes" TEXT,
     "terms" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Quotation_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Quotation_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "Contact" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Quotation_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "Lead" ("id") ON DELETE SET NULL ON UPDATE CASCADE
@@ -486,9 +486,9 @@ CREATE TABLE "Ticket" (
     "status" TEXT NOT NULL DEFAULT 'open',
     "vehiclePlate" TEXT,
     "assigned_to_id" TEXT,
-    "resolved_at" DATETIME,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "resolved_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Ticket_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Ticket_assigned_to_id_fkey" FOREIGN KEY ("assigned_to_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -498,12 +498,12 @@ CREATE TABLE "Contract" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "organization_id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "start_date" DATETIME NOT NULL,
-    "end_date" DATETIME,
+    "start_date" TIMESTAMP(3) NOT NULL,
+    "end_date" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'active',
     "terms" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Contract_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -517,7 +517,7 @@ CREATE TABLE "Document" (
     "size" INTEGER,
     "organization_id" TEXT NOT NULL,
     "uploadedBy" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Document_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Document_uploadedBy_fkey" FOREIGN KEY ("uploadedBy") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -532,7 +532,7 @@ CREATE TABLE "Notification" (
     "body" TEXT,
     "read" BOOLEAN NOT NULL DEFAULT false,
     "metadata" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Notification_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Notification_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -542,8 +542,8 @@ CREATE TABLE "Session" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "token" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
-    "expires_at" DATETIME NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -564,10 +564,10 @@ CREATE TABLE "ApiKey" (
     "organization_id" TEXT,
     "user_id" TEXT,
     "permissions" TEXT NOT NULL DEFAULT 'read',
-    "expires_at" DATETIME,
-    "last_used_at" DATETIME,
+    "expires_at" TIMESTAMP(3),
+    "last_used_at" TIMESTAMP(3),
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ApiKey_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "ApiKey_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -579,8 +579,8 @@ CREATE TABLE "AIConversation" (
     "organization_id" TEXT,
     "type" TEXT NOT NULL DEFAULT 'fleet_assistant',
     "messages" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AIConversation_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "AIConversation_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );

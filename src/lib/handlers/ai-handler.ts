@@ -265,6 +265,10 @@ export async function handleAiJob(job: ClaimedJob): Promise<AiResult> {
       error: error instanceof Error ? error.message : String(error),
     });
 
+    try {
+      metrics.increment(METRIC_NAMES.AI_FAILURE, { task, organizationId: job.organizationId });
+    } catch { /* metrics must never break business logic */ }
+
     throw error;
   }
 }
