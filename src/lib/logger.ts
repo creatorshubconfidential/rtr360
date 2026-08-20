@@ -120,37 +120,50 @@ function formatOutput(entry: StructuredLog): string {
 
 // ── Logger ───────────────────────────────────────────────────────
 
-export const logger = {
-  debug(message: string, ctx?: LogContext): void {
-    if (process.env.NODE_ENV !== 'production') {
-      const entry = buildStructuredLog('debug', message, ctx);
-      console.debug(formatOutput(entry));
-    }
-  },
+interface LoggerInstance {
+  debug(message: string, ctx?: LogContext): void;
+  info(message: string, ctx?: LogContext): void;
+  warn(message: string, ctx?: LogContext): void;
+  error(message: string, ctx?: LogContext): void;
+  security(message: string, ctx?: LogContext): void;
+  child(boundCtx: LogContext): LoggerInstance;
+}
 
-  info(message: string, ctx?: LogContext): void {
-    const entry = buildStructuredLog('info', message, ctx);
-    console.info(formatOutput(entry));
-  },
+function createLogger(boundCtx?: LogContext): LoggerInstance {
+  return {
+    debug(message: string, ctx?: LogContext): void {
+      if (process.env.NODE_ENV !== 'production') {
+        const entry = buildStructuredLog('debug', message, boundCtx ? { ...boundCtx, ...ctx } : ctx);
+        console.debug(formatOutput(entry));
+      }
+    },
 
-  warn(message: string, ctx?: LogContext): void {
-    const entry = buildStructuredLog('warn', message, ctx);
-    console.warn(formatOutput(entry));
-  },
+    info(message: string, ctx?: LogContext): void {
+      const entry = buildStructuredLog('info', message, boundCtx ? { ...boundCtx, ...ctx } : ctx);
+      console.info(formatOutput(entry));
+    },
 
-  error(message: string, ctx?: LogContext): void {
-    const entry = buildStructuredLog('error', message, ctx);
-    console.error(formatOutput(entry));
-  },
+    warn(message: string, ctx?: LogContext): void {
+      const entry = buildStructuredLog('warn', message, boundCtx ? { ...boundCtx, ...ctx } : ctx);
+      console.warn(formatOutput(entry));
+    },
 
-  /**
-   * SECURITY level — for auth failures, tenant violations,
-   * suspicious IDOR attempts, authentication/setup/rate-limit abuse.
-   */
-  security(message: string, ctx?: LogContext): void {
-    const entry = buildStructuredLog('security', message, ctx);
-    console.error(formatOutput(entry));
-  },
-};
+    error(message: string, ctx?: LogContext): void {
+      const entry = buildStructuredLog('error', message, boundCtx ? { ...boundCtx, ...ctx } : ctx);
+      console.error(formatOutput(entry));
+    },
+
+    security(message: string, ctx?: LogContext): void {
+      const entry = buildStructuredLog('security', message, boundCtx ? { ...boundCtx, ...ctx } : ctx);
+      console.error(formatOutput(entry));
+    },
+
+    child(nestedCtx: LogContext): LoggerInstance {
+      return createLogger(boundCtx ? { ...boundCtx, ...nestedCtx } : nestedCtx);
+    },
+  };
+}
+
+export const logger = createLogger();
 
 export type { LogLevel, LogContext, StructuredLog };

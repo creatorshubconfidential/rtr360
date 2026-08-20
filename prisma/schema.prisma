@@ -894,10 +894,10 @@ model BackgroundJob {
   id             String    @id @default(cuid())
   type           String
   status         String    @default("pending")
-  priority       Int       @default(0)
+  priority       Int       @default(5)
   payload        Json?
   result         Json?
-  idempotencyKey String?   @unique @map("idempotency_key")
+  idempotencyKey String?   @map("idempotency_key")
   organizationId String?   @map("organization_id")
   userId         String?   @map("user_id")
   maxAttempts    Int       @default(3) @map("max_attempts")
@@ -907,16 +907,23 @@ model BackgroundJob {
   startedAt      DateTime? @map("started_at")
   completedAt    DateTime? @map("completed_at")
   failedAt       DateTime? @map("failed_at")
+  leasedUntil    DateTime? @map("leased_until")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization Organization? @relation(fields: [organizationId], references: [id])
-  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([type, status])
+  // Tenant-scoped idempotency: same key within same org = duplicate
+  @@unique([organizationId, idempotencyKey])
+  // Queue polling: claim ready jobs ordered by priority ASC then runAt ASC
   @@index([status, priority, runAt])
-  @@index([organizationId])
-  @@index([createdAt])
+  // Tenant isolation: scope reads by organization
+  @@index([organizationId, status])
+  // Scheduled jobs: find jobs whose runAt has passed
+  @@index([status, runAt])
+  // Stale lease recovery: find PROCESSING jobs with expired leases
+  @@index([status, leasedUntil])
 }
 
 // ----------------------

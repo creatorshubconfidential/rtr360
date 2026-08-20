@@ -15,6 +15,7 @@ export const ErrorCode = {
   VALIDATION: 'VALIDATION',
   RATE_LIMITED: 'RATE_LIMITED',
   CONFLICT: 'CONFLICT',
+  QUEUE_ERROR: 'QUEUE_ERROR',
   INTERNAL: 'INTERNAL',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
 } as const;
@@ -30,6 +31,7 @@ const ERROR_STATUS: Record<ErrorCodeType, number> = {
   [ErrorCode.VALIDATION]: 400,
   [ErrorCode.RATE_LIMITED]: 429,
   [ErrorCode.CONFLICT]: 409,
+  [ErrorCode.QUEUE_ERROR]: 500,
   [ErrorCode.INTERNAL]: 500,
   [ErrorCode.SERVICE_UNAVAILABLE]: 503,
 };
@@ -162,4 +164,107 @@ export function isOperationalError(error: unknown): boolean {
     );
   }
   return false;
+}
+
+// ── Queue-Specific Errors ────────────────────────────────────────
+
+export class ValidationError extends AppError {
+  public readonly details: ReadonlyArray<{ field: string; message: string }>;
+
+  constructor(
+    message: string,
+    details: ReadonlyArray<{ field: string; message: string }>,
+  ) {
+    super(message, ErrorCode.VALIDATION);
+    this.name = 'ValidationError';
+    this.details = details;
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(resource: string, id: string) {
+    super(`${resource} with id '${id}' not found`, ErrorCode.NOT_FOUND);
+    this.name = 'NotFoundError';
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message: string = 'Insufficient permissions') {
+    super(message, ErrorCode.FORBIDDEN);
+    this.name = 'ForbiddenError';
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, ErrorCode.CONFLICT);
+    this.name = 'ConflictError';
+  }
+}
+
+export class QueueError extends AppError {
+  constructor(message: string, code: ErrorCodeType = ErrorCode.QUEUE_ERROR) {
+    super(message, code);
+    this.name = 'QueueError';
+  }
+}
+
+// ── Object Redaction (for logging) ───────────────────────────────
+
+const SECRET_KEY_PATTERNS = [
+  /password/i,
+  /secret/i,
+  /token/i,
+  /authorization/i,
+  /api[_-]?key/i,
+  /database[_-]?url/i,
+  /redis/i,
+  /dsn/i,
+  /cookie/i,
+];
+
+/**
+ * Redact known secret patterns from an object before logging.
+ * Returns a shallow clone with matching keys replaced by '[REDACTED]'.
+ */
+export function redactSecrets(obj: Record<string, unknown>): Record<string, unknown> {
+  const redacted: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (SECRET_KEY_PATTERNS.some((pattern) => pattern.test(key))) {
+      redacted[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      redacted[key] = redactSecrets(value as Record<string, unknown>);
+    } else {
+      redacted[key] = value;
+    }
+  }
+  return redacted;
+}
+
+/**
+ * Serialize an error to a safe, JSON-serializable object.
+ * Never exposes stack traces in production.
+ */
+export function serializeError(error: unknown): Record<string, unknown> {
+  if (error instanceof AppError) {
+    return {
+      name: error.name,
+      code: error.code,
+      message: error.message,
+      statusCode: error.statusCode,
+      isOperational: error.isOperational,
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+    };
+  }
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+    };
+  }
+  return {
+    name: 'UnknownError',
+    message: String(error),
+  };
 }
