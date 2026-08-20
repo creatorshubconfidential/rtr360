@@ -15,7 +15,7 @@
  *   - Error classification (transient vs permanent)
  */
 
-import { claimJob, completeJob, failJob, recoverStaleJobs, type ClaimedJob } from '@/lib/queue';
+import { claimJob, completeJob, failJob, recoverStaleJobs, renewLease, type ClaimedJob } from '@/lib/queue';
 import { logger } from '@/lib/logger';
 import { getJobTypeConfig, validateJobPayload } from '@/lib/job-types';
 import { serializeError } from '@/lib/errors';
@@ -32,6 +32,8 @@ export interface WorkerConfig {
   pollingIntervalMs: number;
   /** Lease duration in milliseconds (default: 300000 = 5 min) */
   leaseDurationMs: number;
+  /** Heartbeat interval in milliseconds (default: 60000 = 1 min). 0 to disable. */
+  heartbeatIntervalMs: number;
   /** If set, only processes jobs for this organization */
   organizationId?: string;
   /** Enable stale job recovery on each cycle (default: true) */
@@ -44,12 +46,14 @@ export interface WorkerState {
   totalProcessed: number;
   totalFailed: number;
   totalRecovered: number;
+  heartbeatsCompleted: number;
 }
 
 const DEFAULT_CONFIG: WorkerConfig = {
   concurrency: 5,
   pollingIntervalMs: 2000,
   leaseDurationMs: 5 * 60 * 1000,
+  heartbeatIntervalMs: 60 * 1000,
   recoverStaleJobs: true,
 };
 
@@ -101,7 +105,10 @@ export class Worker {
   private config: WorkerConfig;
   private state: WorkerState;
   private pollingTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private shutdownRequested = false;
+  /** Track active job IDs for heartbeat renewal */
+  private activeJobIds: Set<string> = new Set();
 
   constructor(
     config: Partial<WorkerConfig> = {},
@@ -115,6 +122,7 @@ export class Worker {
       totalProcessed: 0,
       totalFailed: 0,
       totalRecovered: 0,
+      heartbeatsCompleted: 0,
     };
   }
 
@@ -145,12 +153,24 @@ export class Worker {
       workerId: this.workerId,
       concurrency: this.config.concurrency,
       pollingIntervalMs: this.config.pollingIntervalMs,
+      heartbeatIntervalMs: this.config.heartbeatIntervalMs,
       organizationId: this.config.organizationId,
     });
 
     // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => this.requestShutdown('SIGTERM'));
     process.on('SIGINT', () => this.requestShutdown('SIGINT'));
+
+    // Start heartbeat if configured
+    if (this.config.heartbeatIntervalMs > 0) {
+      this.heartbeatTimer = setInterval(
+        () => this.heartbeat(),
+        this.config.heartbeatIntervalMs,
+      );
+      if (typeof this.heartbeatTimer === 'object' && 'unref' in this.heartbeatTimer) {
+        this.heartbeatTimer.unref();
+      }
+    }
 
     // Start the poll loop
     this.scheduleNextPoll();
@@ -169,6 +189,12 @@ export class Worker {
       activeJobs: this.state.activeJobs,
     });
     this.shutdownRequested = true;
+
+    // Stop the heartbeat
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
 
     // Stop the polling timer — no new poll cycles
     if (this.pollingTimer) {
@@ -210,6 +236,34 @@ export class Worker {
    */
   getState(): Readonly<WorkerState> {
     return { ...this.state };
+  }
+
+  // ── Heartbeat ────────────────────────────────────────────
+
+  /**
+   * Renew leases on all active jobs.
+   * Only renews leases that this worker owns.
+   */
+  private async heartbeat(): Promise<void> {
+    if (this.activeJobIds.size === 0) return;
+
+    for (const jobId of this.activeJobIds) {
+      try {
+        const renewed = await renewLease(jobId, this.workerId, this.config.leaseDurationMs);
+        if (!renewed) {
+          // Job was recovered by another worker or completed
+          this.activeJobIds.delete(jobId);
+        }
+      } catch (error) {
+        logger.error('worker.heartbeat_failed', {
+          workerId: this.workerId,
+          jobId,
+          ...serializeError(error),
+        });
+      }
+    }
+
+    this.state.heartbeatsCompleted++;
   }
 
   // ── Private Methods ──────────────────────────────────────
@@ -276,6 +330,7 @@ export class Worker {
 
   private async processJob(job: ClaimedJob): Promise<void> {
     this.state.activeJobs++;
+    this.activeJobIds.add(job.id);
     const startTime = Date.now();
 
     const jobLogger = logger.child({
@@ -332,6 +387,7 @@ export class Worker {
       this.state.totalFailed++;
       this.state.totalProcessed++;
     } finally {
+      this.activeJobIds.delete(job.id);
       this.state.activeJobs--;
     }
   }

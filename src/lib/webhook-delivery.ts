@@ -13,6 +13,7 @@
  */
 
 import { createHmac, timingSafeEqual } from 'crypto';
+import dns from 'node:dns/promises';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
@@ -130,6 +131,139 @@ export function checkSsrf(url: string): string | null {
   return null; // URL is safe
 }
 
+// ── DNS Resolution-Based SSRF Check ───────────────────────────
+
+/**
+ * Check if an IPv4 address is private/internal.
+ * Covers: loopback, link-local, private ranges, multicast, reserved.
+ */
+function isPrivateIPv4(ip: string): boolean {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return false;
+
+  // 0.0.0.0/8 — Current network
+  if (parts[0] === 0) return true;
+  // 10.0.0.0/8 — Private
+  if (parts[0] === 10) return true;
+  // 100.64.0.0/10 — Carrier-grade NAT
+  if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) return true;
+  // 127.0.0.0/8 — Loopback
+  if (parts[0] === 127) return true;
+  // 169.254.0.0/16 — Link-local
+  if (parts[0] === 169 && parts[1] === 254) return true;
+  // 172.16.0.0/12 — Private
+  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+  // 192.0.0.0/24 — IETF Protocol Assignments
+  if (parts[0] === 192 && parts[1] === 0 && parts[2] === 0) return true;
+  // 192.0.2.0/24 — Documentation (TEST-NET-1)
+  if (parts[0] === 192 && parts[1] === 0 && parts[2] === 2) return true;
+  // 192.88.99.0/24 — IPv6 to IPv4 relay
+  if (parts[0] === 192 && parts[1] === 88 && parts[2] === 99) return true;
+  // 192.168.0.0/16 — Private
+  if (parts[0] === 192 && parts[1] === 168) return true;
+  // 198.18.0.0/15 — Benchmarking
+  if (parts[0] === 198 && (parts[1] === 18 || parts[1] === 19)) return true;
+  // 198.51.100.0/24 — Documentation (TEST-NET-2)
+  if (parts[0] === 198 && parts[1] === 51 && parts[2] === 100) return true;
+  // 203.0.113.0/24 — Documentation (TEST-NET-3)
+  if (parts[0] === 203 && parts[1] === 0 && parts[2] === 113) return true;
+  // 224.0.0.0/4 — Multicast
+  if (parts[0] >= 224 && parts[0] <= 239) return true;
+  // 240.0.0.0/4 — Reserved
+  if (parts[0] >= 240) return true;
+
+  return false;
+}
+
+/**
+ * Check if an IPv6 address is private/internal.
+ * Simplified check for common private ranges.
+ */
+function isPrivateIPv6(ip: string): boolean {
+  const lower = ip.toLowerCase();
+
+  // ::1 — Loopback
+  if (lower === '::1') return true;
+  // :: — Unspecified
+  if (lower === '::') return true;
+  // fe80::/10 — Link-local
+  if (lower.startsWith('fe80:') || lower.startsWith('fe80')) return true;
+  // fc00::/7 — Unique local (fc and fd)
+  if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
+  // ::ffff:0:0/96 — IPv4-mapped IPv6 (check the IPv4 part)
+  if (lower.startsWith('::ffff:')) {
+    const v4Part = lower.slice(7);
+    // Handle bracketed form ::ffff:127.0.0.1
+    const v4Clean = v4Part.replace(/^\[/, '').replace(/\]$/, '');
+    return isPrivateIPv4(v4Clean);
+  }
+
+  return false;
+}
+
+/**
+ * DNS rebinding protection via actual DNS resolution.
+ *
+ * Resolves the hostname to ALL IPv4 and IPv6 addresses.
+ * If ANY resolved address is private/internal, the URL is blocked.
+ * This closes the gap where hostname-level checks pass but DNS
+ * resolves to a private IP (DNS rebinding attack).
+ *
+ * LIMITATION: There is a TOCTOU race between resolution and connection.
+ * The fetch API does not allow pinning a specific IP address while
+ * preserving TLS SNI. A fully complete solution would require a
+ * custom HTTP client. This is documented as a known limitation.
+ *
+ * Returns null if all resolved addresses are public, or an error message.
+ */
+export async function resolveAndCheckDns(url: string): Promise<string | null> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return 'Invalid URL';
+  }
+
+  // Skip IP-literal URLs (already checked by checkSsrf)
+  const hostname = parsed.hostname.toLowerCase();
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.startsWith('[')) {
+    return null; // Pure IP — already validated by checkSsrf
+  }
+
+  const privateAddresses: string[] = [];
+
+  // Resolve IPv4 (A records)
+  try {
+    const v4Addresses = await dns.resolve4(hostname);
+    for (const addr of v4Addresses) {
+      if (isPrivateIPv4(addr)) {
+        privateAddresses.push(addr);
+      }
+    }
+  } catch {
+    // DNS resolution failure — transient, don't block on DNS errors
+    // checkSsrf already handled hostname patterns
+  }
+
+  // Resolve IPv6 (AAAA records)
+  try {
+    const v6Addresses = await dns.resolve6(hostname);
+    for (const addr of v6Addresses) {
+      if (isPrivateIPv6(addr)) {
+        privateAddresses.push(addr);
+      }
+    }
+  } catch {
+    // DNS resolution failure — transient
+  }
+
+  if (privateAddresses.length > 0) {
+    return `DNS resolved to private address(es): ${privateAddresses.join(', ')} (possible DNS rebinding)`;
+  }
+
+  return null;
+}
+
 // ── Signature Generation ───────────────────────────────────────
 
 /**
@@ -187,7 +321,7 @@ export async function deliverWebhook(params: DeliveryParams): Promise<WebhookDel
   const { endpointId, eventId, url, secret, payload, organizationId, requestId } = params;
   const startTime = Date.now();
 
-  // 1. SSRF protection
+  // 1. SSRF protection (hostname-level checks)
   const ssrfError = checkSsrf(url);
   if (ssrfError) {
     logger.security('webhook.ssrf_blocked', {
@@ -205,6 +339,25 @@ export async function deliverWebhook(params: DeliveryParams): Promise<WebhookDel
     });
 
     throw new Error(`[PERMANENT] SSRF blocked: ${ssrfError}`);
+  }
+
+  // 1b. DNS resolution check (anti-rebinding)
+  const dnsError = await resolveAndCheckDns(url);
+  if (dnsError) {
+    logger.security('webhook.dns_rebinding_blocked', {
+      endpointId,
+      eventId,
+      reason: dnsError,
+      organizationId,
+      requestId,
+    });
+
+    await updateDeliveryRecord(endpointId, eventId, {
+      status: 'failed',
+      lastError: `DNS rebinding blocked: ${dnsError}`,
+    });
+
+    throw new Error(`[PERMANENT] DNS rebinding blocked: ${dnsError}`);
   }
 
   // 2. Serialize and sign payload

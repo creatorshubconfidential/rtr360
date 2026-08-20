@@ -29,6 +29,13 @@ interface EnvConfig {
   sentryDsn: string;
   openaiApiKey: string;
   sessionSecret: string;
+  emailProvider: string;
+  emailSmtpHost: string;
+  emailSmtpPort: string;
+  emailSmtpUser: string;
+  emailSmtpPass: string;
+  emailFromAddress: string;
+  emailFromName: string;
 }
 
 // ── Internal ──────────────────────────────────────────────────────
@@ -88,6 +95,13 @@ function validateEnv(): EnvStatus {
   checkOptional('SENTRY_DSN', process.env.SENTRY_DSN);
   checkOptional('OPENAI_API_KEY', process.env.OPENAI_API_KEY);
   checkOptional('SESSION_SECRET', process.env.SESSION_SECRET);
+  checkOptional('EMAIL_PROVIDER', process.env.EMAIL_PROVIDER);
+  checkOptional('EMAIL_SMTP_HOST', process.env.EMAIL_SMTP_HOST);
+  checkOptional('EMAIL_SMTP_PORT', process.env.EMAIL_SMTP_PORT);
+  checkOptional('EMAIL_SMTP_USER', process.env.EMAIL_SMTP_USER);
+  checkOptional('EMAIL_SMTP_PASS', process.env.EMAIL_SMTP_PASS);
+  checkOptional('EMAIL_FROM_ADDRESS', process.env.EMAIL_FROM_ADDRESS);
+  checkOptional('EMAIL_FROM_NAME', process.env.EMAIL_FROM_NAME);
 
   // Relationship validation: Redis URL requires token
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -133,6 +147,13 @@ function buildConfig(): EnvConfig {
     sentryDsn: optional(process.env.SENTRY_DSN),
     openaiApiKey: optional(process.env.OPENAI_API_KEY),
     sessionSecret: optional(process.env.SESSION_SECRET),
+    emailProvider: optional(process.env.EMAIL_PROVIDER),
+    emailSmtpHost: optional(process.env.EMAIL_SMTP_HOST),
+    emailSmtpPort: optional(process.env.EMAIL_SMTP_PORT),
+    emailSmtpUser: optional(process.env.EMAIL_SMTP_USER),
+    emailSmtpPass: optional(process.env.EMAIL_SMTP_PASS),
+    emailFromAddress: optional(process.env.EMAIL_FROM_ADDRESS),
+    emailFromName: optional(process.env.EMAIL_FROM_NAME),
   });
 }
 

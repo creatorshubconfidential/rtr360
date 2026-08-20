@@ -444,6 +444,47 @@ export async function claimJob(
   return { claimed: true, job };
 }
 
+// ── Lease Renewal ─────────────────────────────────────────────
+
+/**
+ * Renew the lease on a processing job.
+ * Only the worker that currently owns the job (lockedBy) can renew.
+ * Completed or non-PROCESSING jobs cannot be renewed.
+ * Returns true if the lease was extended, false if the job is no longer
+ * owned by this worker (e.g., recovered by another worker).
+ */
+export async function renewLease(
+  jobId: string,
+  workerId: string,
+  leaseDurationMs: number = DEFAULT_LEASE_DURATION_MS,
+): Promise<boolean> {
+  const leasedUntil = calculateLeaseExpiry(leaseDurationMs);
+  const updated = await db.backgroundJob.updateMany({
+    where: {
+      id: jobId,
+      status: JOB_STATUS.PROCESSING,
+      lockedBy: workerId,
+    },
+    data: { leasedUntil },
+  });
+
+  if (updated.count === 0) {
+    const current = await db.backgroundJob.findUnique({
+      where: { id: jobId },
+      select: { status: true, lockedBy: true },
+    });
+    logger.warn('job.lease_renewal_skipped', {
+      jobId,
+      workerId,
+      currentStatus: current?.status,
+      currentLockedBy: current?.lockedBy,
+    });
+    return false;
+  }
+
+  return true;
+}
+
 // ── Complete Job ───────────────────────────────────────────────
 
 /**

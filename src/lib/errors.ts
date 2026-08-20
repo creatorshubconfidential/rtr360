@@ -221,6 +221,8 @@ const SECRET_KEY_PATTERNS = [
   /redis/i,
   /dsn/i,
   /cookie/i,
+  /smtp[_-]?pass/i,
+  /email[_-]?pass/i,
 ];
 
 /**

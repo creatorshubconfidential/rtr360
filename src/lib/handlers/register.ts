@@ -11,6 +11,8 @@ import { handleEmailJob } from '@/lib/handlers/email-handler';
 import { handleNotificationJob } from '@/lib/handlers/notification-handler';
 import { handleMaintenanceJob } from '@/lib/handlers/maintenance-handler';
 import { handleWebhookJob } from '@/lib/handlers/webhook-handler';
+import { handleReportJob } from '@/lib/handlers/report-handler';
+import { handleAiJob } from '@/lib/handlers/ai-handler';
 
 /**
  * Register all production job handlers.
@@ -23,6 +25,8 @@ export function registerAllHandlers(): void {
     { type: 'notification', handler: handleNotificationJob },
     { type: 'maintenance', handler: handleMaintenanceJob },
     { type: 'webhook', handler: handleWebhookJob },
+    { type: 'report', handler: handleReportJob },
+    { type: 'ai', handler: handleAiJob },
   ];
 
   for (const { type, handler } of handlers) {
