@@ -50,6 +50,9 @@ export const SETTINGS_MANAGE = 'settings.manage';
 export const ADMIN_MANAGE = 'admin.manage';
 export const AI_USE = 'ai.use';
 
+// --- Queue ---
+export const JOBS_MANAGE = 'jobs.manage';
+
 // ============================================================
 // ROLE → PERMISSION MAP
 // ============================================================
@@ -71,6 +74,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     INVOICES_MANAGE, QUOTATIONS_MANAGE, SUBSCRIPTIONS_MANAGE,
     MAINTENANCE_MANAGE, INSTALLATIONS_MANAGE, TECHNICIANS_MANAGE,
     TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    JOBS_MANAGE,
     AI_USE,
   ],
 
@@ -82,6 +86,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     INVOICES_MANAGE, QUOTATIONS_MANAGE, SUBSCRIPTIONS_MANAGE,
     MAINTENANCE_MANAGE, INSTALLATIONS_MANAGE, TECHNICIANS_MANAGE,
     TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    JOBS_MANAGE,
     AI_USE,
   ],
 

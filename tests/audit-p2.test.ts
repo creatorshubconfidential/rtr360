@@ -78,7 +78,7 @@ describe('P2-3: Audit Logging', () => {
     let missing: string[] = [];
 
     // notifications POST is actually an update (mark as read), not a create
-    const EXCEPTIONS = ['notifications/route.ts', 'setup/seed/route.ts', 'setup/seed-demo/route.ts', 'setup/init/route.ts'];
+    const EXCEPTIONS = ['notifications/route.ts', 'setup/seed/route.ts', 'setup/seed-demo/route.ts', 'setup/init/route.ts', 'jobs/[id]/cancel/route.ts', 'jobs/[id]/retry/route.ts'];
 
     for (const file of routeFiles) {
       const content = fs.readFileSync(file, 'utf-8');

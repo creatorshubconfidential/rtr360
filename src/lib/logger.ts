@@ -59,6 +59,9 @@ const SENSITIVE_KEYS = new Set([
   'openaiApiKey',
   'sessionSecret',
   'connectionString',
+  'webhookSecret',
+  'signingSecret',
+  'emailSmtpPass',
 ]);
 
 function redactContext(ctx: LogContext): LogContext {
