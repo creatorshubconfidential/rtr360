@@ -3,7 +3,7 @@
 
 -- Trip: additional operational fields
 DO $$ BEGIN
-  ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "driver_name" TEXT;
+  ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "driverName" TEXT;
   ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "organization_id" TEXT;
   ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "start_time" TIMESTAMPTZ;
   ALTER TABLE "Trip" ADD COLUMN IF NOT EXISTS "end_time" TIMESTAMPTZ;
@@ -21,7 +21,7 @@ END $$;
 
 -- Device: extended tracking fields
 DO $$ BEGIN
-  ALTER TABLE "Device" ADD COLUMN IF NOT EXISTS "phone_number" TEXT;
+  ALTER TABLE "Device" ADD COLUMN IF NOT EXISTS "phoneNumber" TEXT;
   ALTER TABLE "Device" ADD COLUMN IF NOT EXISTS "serial_number" TEXT;
   ALTER TABLE "Device" ADD COLUMN IF NOT EXISTS "device_type" TEXT;
   ALTER TABLE "Device" ADD COLUMN IF NOT EXISTS "protocol" TEXT;
@@ -61,7 +61,7 @@ END $$;
 -- MaintenanceRecord: trigger-based scheduling
 DO $$ BEGIN
   ALTER TABLE "MaintenanceRecord" ADD COLUMN IF NOT EXISTS "trigger_type" TEXT;
-  ALTER TABLE "MaintenanceRecord" ADD COLUMN IF NOT EXISTS "trigger_value" DOUBLE PRECISION;
+  ALTER TABLE "MaintenanceRecord" ADD COLUMN IF NOT EXISTS "triggerValue" REAL;
   ALTER TABLE "MaintenanceRecord" ADD COLUMN IF NOT EXISTS "completed_date" TIMESTAMPTZ;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
