@@ -33,3 +33,31 @@ Stage Summary:
 ### Remaining (deferred from original plan):
 - Set OPENAI_API_KEY in Vercel env vars (needs user's API key)
 - Real GPS hardware integration (1-2 weeks effort)
+
+---
+Task ID: P2-2
+Agent: Main Agent
+Task: Harden durable background job queue engine
+
+Work Log:
+- Phase 0: Full repository audit of schema, migration, queue.ts, worker.ts, job-types.ts, redis.ts, errors.ts, logger.ts, env.ts, request-id.ts, all tests
+- Identified 6 critical issues in existing queue implementation
+- Schema: Added lockedBy (worker identity) + requestId (correlation) fields
+- Migration: Extended 20260820 migration with 2 new columns
+- queue.ts: Rewrote with atomic idempotency (P2002 catch), lockedBy in claim, ownership verification on complete/fail, error classification (transient vs permanent), atomic stale recovery via $executeRaw
+- worker.ts: Added generateWorkerId (rtr-worker-{uuid}), worker identity throughout, payload re-validation at execution, getRegisteredHandlerTypes
+- tests: Expanded from 82 to 116 tests — error classification, worker identity, ownership verification, concurrent idempotency, bounded concurrency, graceful shutdown, permanent error no-retry
+- All gates: 669 tests pass, 0 new TS errors, 0 lint errors, P1 no regressions
+- Committed 9123b59, pushed to main
+
+Stage Summary:
+- Schema: 2 new fields (lockedBy, requestId) on BackgroundJob
+- queue.ts: +363/-232 lines, 6 critical fixes
+- worker.ts: +117 lines, worker identity + safety
+- Tests: 116/116 pass (34 new), 0 any, 0 type suppressions
+- Build: pre-existing pdfkit failure only (NOT from P2-2)
+- Git: 9123b59 pushed to main
+
+### Remaining (deferred from original plan):
+- Set OPENAI_API_KEY in Vercel env vars (needs user's API key)
+- Real GPS hardware integration (1-2 weeks effort)

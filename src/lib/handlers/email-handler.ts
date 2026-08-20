@@ -13,6 +13,7 @@ import { logger } from '@/lib/logger';
 import type { ClaimedJob } from '@/lib/queue';
 import type { EmailPayload } from '@/lib/job-types';
 import { ValidationError } from '@/lib/errors';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 
 // ── Provider Interface ──────────────────────────────────────────
 
@@ -125,6 +126,10 @@ export async function handleEmailJob(job: ClaimedJob): Promise<EmailSendResult> 
     durationMs,
     requestId: job.requestId,
   });
+
+  try {
+    metrics.increment(METRIC_NAMES.EMAIL_SUCCESS, { organizationId: job.organizationId, provider: result.provider });
+  } catch { /* metrics must never break business logic */ }
 
   return result;
 }

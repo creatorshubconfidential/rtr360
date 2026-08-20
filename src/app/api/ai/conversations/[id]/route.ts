@@ -37,10 +37,20 @@ export async function GET(
       );
     }
 
+    // messages is now Json type — handle both string (legacy) and array/object formats
+    const rawMessages = conversation.messages;
     let messages;
-    try {
-      messages = JSON.parse(conversation.messages);
-    } catch {
+    if (Array.isArray(rawMessages)) {
+      messages = rawMessages;
+    } else if (typeof rawMessages === 'string') {
+      try {
+        messages = JSON.parse(rawMessages);
+      } catch {
+        messages = [];
+      }
+    } else if (rawMessages && typeof rawMessages === 'object') {
+      messages = rawMessages;
+    } else {
       messages = [];
     }
 

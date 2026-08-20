@@ -127,10 +127,12 @@ export const METRIC_NAMES = {
   AI_SUCCESS: 'ai_success',
   AI_FAILURE: 'ai_failure',
   AI_TIMEOUT: 'ai_timeout',
+  AI_DURATION_MS: 'ai_duration_ms',
 
   // Report
   REPORT_SUCCESS: 'report_success',
   REPORT_FAILURE: 'report_failure',
+  REPORT_DURATION_MS: 'report_duration_ms',
 
   // Worker
   WORKER_HEARTBEAT: 'worker_heartbeat',

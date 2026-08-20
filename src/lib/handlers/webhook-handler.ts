@@ -14,6 +14,8 @@ import { logger } from '@/lib/logger';
 import type { ClaimedJob } from '@/lib/queue';
 import { ValidationError, AppError, ErrorCode } from '@/lib/errors';
 import { deliverWebhook, type WebhookDeliveryResult } from '@/lib/webhook-delivery';
+import { decryptSecret } from '@/lib/crypto';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 
 /**
  * Webhook job handler.
@@ -97,12 +99,30 @@ export async function handleWebhookJob(job: ClaimedJob): Promise<WebhookDelivery
     },
   });
 
+  // Decrypt the webhook secret (supports both encrypted v1: and plaintext for migration)
+  let secret: string;
+  try {
+    secret = decryptSecret(endpoint.secret);
+  } catch (error) {
+    logger.error('webhook.secret_decryption_failed', {
+      jobId: job.id,
+      endpointId,
+      organizationId: job.organizationId,
+      error: error instanceof Error ? error.message : String(error),
+      requestId: job.requestId,
+    });
+    throw new AppError(
+      'Failed to decrypt webhook secret — ENCRYPTION_MASTER_KEY may be misconfigured',
+      ErrorCode.INTERNAL,
+    );
+  }
+
   // Deliver
   const result = await deliverWebhook({
     endpointId,
     eventId,
     url: endpoint.url,
-    secret: endpoint.secret,
+    secret,
     payload: webhookPayload,
     organizationId: job.organizationId!,
     requestId: job.requestId,
@@ -118,6 +138,11 @@ export async function handleWebhookJob(job: ClaimedJob): Promise<WebhookDelivery
     organizationId: job.organizationId,
     requestId: job.requestId,
   });
+
+  try {
+    metrics.increment(METRIC_NAMES.WEBHOOK_SUCCESS, { organizationId: job.organizationId, eventType });
+    metrics.timing(METRIC_NAMES.WEBHOOK_LATENCY, result.durationMs, { eventType });
+  } catch { /* metrics must never break business logic */ }
 
   return result;
 }

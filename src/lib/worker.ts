@@ -17,6 +17,7 @@
 
 import { claimJob, completeJob, failJob, recoverStaleJobs, renewLease, type ClaimedJob } from '@/lib/queue';
 import { logger } from '@/lib/logger';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 import { getJobTypeConfig, validateJobPayload } from '@/lib/job-types';
 import { serializeError } from '@/lib/errors';
 import { randomUUID } from 'crypto';
@@ -157,6 +158,10 @@ export class Worker {
       organizationId: this.config.organizationId,
     });
 
+    try {
+      metrics.increment(METRIC_NAMES.WORKER_HEARTBEAT);
+    } catch { /* metrics must never break business logic */ }
+
     // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => this.requestShutdown('SIGTERM'));
     process.on('SIGINT', () => this.requestShutdown('SIGINT'));
@@ -260,10 +265,18 @@ export class Worker {
           jobId,
           ...serializeError(error),
         });
+
+        try {
+          metrics.increment(METRIC_NAMES.WORKER_LEASE_RENEWAL_FAILED, { workerId: this.workerId, jobId });
+        } catch { /* metrics must never break business logic */ }
       }
     }
 
     this.state.heartbeatsCompleted++;
+
+    try {
+      metrics.increment(METRIC_NAMES.WORKER_HEARTBEAT, { workerId: this.workerId });
+    } catch { /* metrics must never break business logic */ }
   }
 
   // ── Private Methods ──────────────────────────────────────
@@ -372,6 +385,10 @@ export class Worker {
         durationMs: duration,
       });
 
+      try {
+        metrics.timing(METRIC_NAMES.JOB_DURATION_MS, duration, { jobType: job.type, organizationId: job.organizationId });
+      } catch { /* metrics must never break business logic */ }
+
       this.state.totalProcessed++;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -386,6 +403,10 @@ export class Worker {
 
       this.state.totalFailed++;
       this.state.totalProcessed++;
+
+      try {
+        metrics.increment(METRIC_NAMES.JOBS_FAILED, { jobType: job.type, organizationId: job.organizationId });
+      } catch { /* metrics must never break business logic */ }
     } finally {
       this.activeJobIds.delete(job.id);
       this.state.activeJobs--;

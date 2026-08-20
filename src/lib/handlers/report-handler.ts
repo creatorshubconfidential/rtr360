@@ -20,6 +20,7 @@ import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import type { ClaimedJob } from '@/lib/queue';
 import { ValidationError } from '@/lib/errors';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 
 // ── Report Types (static allowlist) ─────────────────────────────
 
@@ -317,6 +318,11 @@ export async function handleReportJob(job: ClaimedJob): Promise<ReportResult> {
     organizationId: job.organizationId,
     requestId: job.requestId,
   });
+
+  try {
+    metrics.increment(METRIC_NAMES.REPORT_SUCCESS, { reportType, organizationId: job.organizationId });
+    metrics.timing(METRIC_NAMES.REPORT_DURATION_MS, durationMs, { reportType, organizationId: job.organizationId });
+  } catch { /* metrics must never break business logic */ }
 
   return {
     reportType,

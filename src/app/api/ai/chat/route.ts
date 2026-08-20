@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 
 import { requirePermission, AI_USE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
@@ -652,18 +653,25 @@ export async function POST(request: Request) {
         );
       }
 
-      try {
-        messages = JSON.parse(conversation.messages) as ChatMessage[];
-      } catch {
-        messages = [];
-      }
+        const rawMsgs = conversation.messages;
+        if (Array.isArray(rawMsgs)) {
+          messages = rawMsgs as unknown as ChatMessage[];
+        } else if (typeof rawMsgs === 'string') {
+          try {
+            messages = JSON.parse(rawMsgs) as ChatMessage[];
+          } catch {
+            messages = [];
+          }
+        } else {
+          messages = [];
+        }
     } else {
       conversation = await db.aIConversation.create({
         data: {
           userId: user.id,
           organizationId: user.organizationId,
           type: 'fleet_assistant',
-          messages: '[]',
+          messages: [],
         },
       });
           await logAudit({ user, action: 'create', entity: 'AIConversation', entityId: conversation?.id, ipAddress: getClientIp(request) });
@@ -682,7 +690,7 @@ export async function POST(request: Request) {
     // Save updated conversation
     await db.aIConversation.update({
       where: { id: conversation.id },
-      data: { messages: JSON.stringify(messages) },
+      data: { messages: messages as unknown as Prisma.InputJsonValue },
     });
 
     return NextResponse.json({
@@ -724,13 +732,15 @@ export async function GET(request: Request) {
     });
 
     // Parse first user message as title, and message count
-    const enriched = conversations.map((c: {id:string;type:string;createdAt:Date;updatedAt:Date;messages:string}) => {
+    const enriched = conversations.map((c: {id:string;type:string;createdAt:Date;updatedAt:Date;messages:unknown}) => {
       let parsed: ChatMessage[] = [];
-      try {
-        parsed = JSON.parse(c.messages) as ChatMessage[];
-      } catch {
-        // ignore
-      }
+        if (Array.isArray(c.messages)) {
+          parsed = c.messages as ChatMessage[];
+        } else if (typeof c.messages === 'string') {
+          try { parsed = JSON.parse(c.messages) as ChatMessage[]; } catch { parsed = []; }
+        } else {
+          parsed = [];
+        }
 
       const firstUserMsg = parsed.find((m) => m.role === 'user');
       const title = firstUserMsg

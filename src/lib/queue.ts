@@ -19,6 +19,7 @@ import { Prisma } from '@prisma/client';
 import type { BackgroundJob } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { QueueError, ConflictError, ValidationError } from '@/lib/errors';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 import {
   JOB_STATUS,
   validateJobPayload,
@@ -228,6 +229,10 @@ export async function enqueue(options: EnqueueOptions): Promise<{ count: number;
       idempotencyKey,
       requestId,
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.JOBS_ENQUEUED, { jobType: type, organizationId });
+    } catch { /* metrics must never break business logic */ }
 
     return { count: 1, id: job.id };
   } catch (error) {
@@ -441,6 +446,10 @@ export async function claimJob(
     attempt: job.attempt,
   });
 
+  try {
+    metrics.increment(METRIC_NAMES.JOBS_CLAIMED, { jobType: job.type, organizationId: job.organizationId, workerId });
+  } catch { /* metrics must never break business logic */ }
+
   return { claimed: true, job };
 }
 
@@ -546,6 +555,10 @@ export async function completeJob(
     workerId,
     attempt: job?.attempt,
   });
+
+  try {
+    metrics.increment(METRIC_NAMES.JOBS_COMPLETED, { jobType: job?.type, organizationId: job?.organizationId, workerId });
+  } catch { /* metrics must never break business logic */ }
 }
 
 // ── Fail Job ───────────────────────────────────────────────────
@@ -605,6 +618,10 @@ export async function failJob(
       reason: 'permanent_error',
       error: truncateError(errorMessage),
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.JOBS_FAILED, { jobType: job.type, organizationId: job.organizationId, workerId });
+    } catch { /* metrics must never break business logic */ }
     return;
   }
 
@@ -634,6 +651,10 @@ export async function failJob(
       nextRetryAt: nextRetryAt.toISOString(),
       error: truncateError(errorMessage),
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.JOBS_RETRIED, { jobType: job.type, organizationId: job.organizationId, workerId });
+    } catch { /* metrics must never break business logic */ }
   } else {
     await db.backgroundJob.update({
       where: { id: jobId },
@@ -655,6 +676,10 @@ export async function failJob(
       maxAttempts: job.maxAttempts,
       error: truncateError(errorMessage),
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.JOBS_DEAD_LETTERED, { jobType: job.type, organizationId: job.organizationId, workerId });
+    } catch { /* metrics must never break business logic */ }
   }
 }
 
@@ -717,6 +742,10 @@ export async function recoverStaleJobs(
       count: exhaustedResult,
       reason: 'stale_lease_max_attempts',
     });
+  }
+
+  if (retryableResult > 0 || exhaustedResult > 0) {
+    logger.info('job.recovered_count', { workerId, retryable: retryableResult, exhausted: exhaustedResult });
   }
 
   return retryableResult;

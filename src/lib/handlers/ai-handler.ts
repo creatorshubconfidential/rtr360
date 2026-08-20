@@ -18,6 +18,7 @@ import { env } from '@/lib/env';
 import { db } from '@/lib/db';
 import type { ClaimedJob } from '@/lib/queue';
 import { ValidationError } from '@/lib/errors';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 
 // ── Allowed AI Tasks (static allowlist) ────────────────────────
 
@@ -238,6 +239,11 @@ export async function handleAiJob(job: ClaimedJob): Promise<AiResult> {
       durationMs,
       requestId: job.requestId,
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.AI_SUCCESS, { task, organizationId: job.organizationId });
+      metrics.timing(METRIC_NAMES.AI_DURATION_MS, durationMs, { task, organizationId: job.organizationId });
+    } catch { /* metrics must never break business logic */ }
 
     return {
       task,

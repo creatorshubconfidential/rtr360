@@ -860,7 +860,7 @@ model AIConversation {
   userId         String?  @map("user_id")
   organizationId String?  @map("organization_id")
   type           String   @default("fleet_assistant")
-  messages       String
+  messages       Json
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

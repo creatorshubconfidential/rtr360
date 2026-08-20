@@ -36,6 +36,7 @@ interface EnvConfig {
   emailSmtpPass: string;
   emailFromAddress: string;
   emailFromName: string;
+  encryptionMasterKey: string;
 }
 
 // ── Internal ──────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ function validateEnv(): EnvStatus {
   checkOptional('EMAIL_SMTP_PASS', process.env.EMAIL_SMTP_PASS);
   checkOptional('EMAIL_FROM_ADDRESS', process.env.EMAIL_FROM_ADDRESS);
   checkOptional('EMAIL_FROM_NAME', process.env.EMAIL_FROM_NAME);
+  checkOptional('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
 
   // Relationship validation: Redis URL requires token
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -154,6 +156,7 @@ function buildConfig(): EnvConfig {
     emailSmtpPass: optional(process.env.EMAIL_SMTP_PASS),
     emailFromAddress: optional(process.env.EMAIL_FROM_ADDRESS),
     emailFromName: optional(process.env.EMAIL_FROM_NAME),
+    encryptionMasterKey: optional(process.env.ENCRYPTION_MASTER_KEY),
   });
 }
 

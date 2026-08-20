@@ -16,6 +16,8 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import dns from 'node:dns/promises';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { decryptSecret } from '@/lib/crypto';
+import { metrics, METRIC_NAMES } from '@/lib/metrics';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -338,6 +340,10 @@ export async function deliverWebhook(params: DeliveryParams): Promise<WebhookDel
       lastError: `SSRF blocked: ${ssrfError}`,
     });
 
+    try {
+      metrics.increment(METRIC_NAMES.WEBHOOK_DNS_BLOCKED, { organizationId });
+    } catch { /* metrics must never break business logic */ }
+
     throw new Error(`[PERMANENT] SSRF blocked: ${ssrfError}`);
   }
 
@@ -356,6 +362,10 @@ export async function deliverWebhook(params: DeliveryParams): Promise<WebhookDel
       status: 'failed',
       lastError: `DNS rebinding blocked: ${dnsError}`,
     });
+
+    try {
+      metrics.increment(METRIC_NAMES.WEBHOOK_DNS_BLOCKED, { organizationId });
+    } catch { /* metrics must never break business logic */ }
 
     throw new Error(`[PERMANENT] DNS rebinding blocked: ${dnsError}`);
   }
@@ -444,6 +454,16 @@ export async function deliverWebhook(params: DeliveryParams): Promise<WebhookDel
     requestId,
   });
 
+  // 6. Emit metrics
+  try {
+    if (deliveryStatus === 'delivered') {
+      metrics.increment(METRIC_NAMES.WEBHOOK_SUCCESS, { organizationId });
+      metrics.timing(METRIC_NAMES.WEBHOOK_LATENCY, durationMs, { organizationId });
+    } else {
+      metrics.increment(METRIC_NAMES.WEBHOOK_FAILURE, { organizationId, statusCode: statusCode ?? 0 });
+    }
+  } catch { /* metrics must never break business logic */ }
+
   return { status: deliveryStatus, statusCode, durationMs };
 }
 
@@ -491,11 +511,12 @@ export async function retryFailedDeliveries(
     if (!endpoint || !endpoint.active) continue;
 
     try {
+      const secret = decryptSecret(endpoint.secret);
       await deliverWebhook({
         endpointId: delivery.endpointId,
         eventId: delivery.eventId,
         url: endpoint.url,
-        secret: endpoint.secret,
+        secret,
         payload: delivery.payload as Record<string, unknown>,
         organizationId: delivery.organizationId,
       });

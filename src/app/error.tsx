@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +12,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
+
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error('[RTR360] Uncaught error:', error);
@@ -42,7 +45,7 @@ export default function Error({
         <div className="flex gap-3">
           <Button
             variant="outline"
-            onClick={() => (window.location.href = '/')}
+            onClick={() => router.push('/')}
           >
             Go to Dashboard
           </Button>

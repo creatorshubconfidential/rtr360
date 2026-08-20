@@ -22,7 +22,7 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   if (response.status === 401 && typeof window !== 'undefined') {
     // Avoid redirect loop on login page itself
     if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/?tab=login';
+      window.location.replace('/?tab=login');
     }
   }
 

@@ -11,6 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rtr360_test
+          POSTGRES_PASSWORD: rtr360_test_pass
+          POSTGRES_DB: rtr360_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,16 +36,40 @@ jobs:
 
       - run: npm ci
 
+      - name: Prisma Validate
+        run: npx prisma validate
+        env:
+          DATABASE_URL: 'postgresql://rtr360_test:rtr360_test_pass@localhost:5432/rtr360_test'
+
+      - name: Prisma Generate
+        run: npx prisma generate
+        env:
+          DATABASE_URL: 'postgresql://rtr360_test:rtr360_test_pass@localhost:5432/rtr360_test'
+
+      - name: Prisma Migrate Deploy
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: 'postgresql://rtr360_test:rtr360_test_pass@localhost:5432/rtr360_test'
+
       - name: Lint
         run: npm run lint
 
       - name: TypeCheck
         run: npx tsc --noEmit
 
-      - name: Test
+      - name: Unit Tests
         run: npm test
+
+      - name: Integration Tests
+        run: npm test -- --run tests/integration
+        env:
+          RTR360_TEST_DATABASE_URL: 'postgresql://rtr360_test:rtr360_test_pass@localhost:5432/rtr360_test'
+        continue-on-error: true
+
+      - name: NPM Audit
+        run: npm audit --audit-level=high
 
       - name: Build
         run: npm run build
         env:
-          DATABASE_URL: 'file:./ci-test.db'
+          DATABASE_URL: 'postgresql://rtr360_test:rtr360_test_pass@localhost:5432/rtr360_test'
