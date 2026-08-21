@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { requirePermission, AI_USE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
 
@@ -82,6 +83,10 @@ export async function DELETE(
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
+
+    // RBAC: AI_USE required for deletion
+    const permErr = requirePermission(user, AI_USE);
+    if (permErr) return permErr;
 
     const { id } = await params;
 
