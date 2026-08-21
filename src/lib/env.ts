@@ -91,11 +91,12 @@ function validateEnv(): EnvStatus {
 
   checkRequired('DATABASE_URL', process.env.DATABASE_URL);
   checkRequired('SETUP_INIT_KEY', process.env.SETUP_INIT_KEY);
+  checkRequired('SESSION_SECRET', process.env.SESSION_SECRET);
+  checkRequired('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
   checkOptional('UPSTASH_REDIS_REST_URL', process.env.UPSTASH_REDIS_REST_URL);
   checkOptional('UPSTASH_REDIS_REST_TOKEN', process.env.UPSTASH_REDIS_REST_TOKEN);
   checkOptional('SENTRY_DSN', process.env.SENTRY_DSN);
   checkOptional('OPENAI_API_KEY', process.env.OPENAI_API_KEY);
-  checkOptional('SESSION_SECRET', process.env.SESSION_SECRET);
   checkOptional('EMAIL_PROVIDER', process.env.EMAIL_PROVIDER);
   checkOptional('EMAIL_SMTP_HOST', process.env.EMAIL_SMTP_HOST);
   checkOptional('EMAIL_SMTP_PORT', process.env.EMAIL_SMTP_PORT);
