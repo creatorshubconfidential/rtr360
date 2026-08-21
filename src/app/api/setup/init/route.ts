@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { db } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
@@ -37,7 +38,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    if (body.key !== INIT_KEY) {
+    // Timing-safe comparison to prevent side-channel key brute-forcing
+    const keyBuf = Buffer.from(String(body.key ?? ''));
+    const initBuf = Buffer.from(INIT_KEY);
+    if (keyBuf.length !== initBuf.length || !timingSafeEqual(keyBuf, initBuf)) {
       return NextResponse.json({ error: 'Invalid setup key' }, { status: 403 });
     }
 
@@ -51,7 +55,13 @@ export async function POST(request: Request) {
       });
     }
 
-    const SEED_PASSWORD = process.env.SEED_PASSWORD || 'Rtr360@2024';
+    const SEED_PASSWORD = process.env.SEED_PASSWORD;
+    if (!SEED_PASSWORD) {
+      return NextResponse.json(
+        { error: 'SEED_PASSWORD environment variable is required for initialization' },
+        { status: 500 },
+      );
+    }
     const steps: string[] = [];
 
     // ── Clean slate ──
@@ -322,7 +332,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'Database initialized successfully!',
-      password: SEED_PASSWORD,
       loginEmail: 'admin@rtr.ae',
       steps,
     });
@@ -335,11 +344,10 @@ export async function POST(request: Request) {
   }
 }
 
-// Also support GET for easy browser testing
+// GET: return generic info without leaking configuration state
 export async function GET() {
   return NextResponse.json({
     message: 'RTR 360 Database Init Endpoint',
     instructions: 'Send POST with { "key": "<your SETUP_INIT_KEY>" } to initialize the database.',
-    configured: !!INIT_KEY,
   });
 }
