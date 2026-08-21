@@ -576,37 +576,34 @@ export async function failJob(
   error: unknown,
   leaseDurationMs: number = DEFAULT_LEASE_DURATION_MS,
 ): Promise<void> {
+  // Atomic ownership verification: read job first (needed for metrics/logging)
   const job = await db.backgroundJob.findUnique({ where: { id: jobId } });
   if (!job) {
     logger.error('job.fail_error', { jobId, error: 'Job not found' });
     return;
   }
 
-  // Verify ownership — this worker must own the job
-  if (job.lockedBy !== workerId) {
-    logger.warn('job.fail_skipped_wrong_owner', {
-      jobId,
-      currentWorker: workerId,
-      actualOwner: job.lockedBy,
-    });
-    return;
-  }
-
   const errorClassification = classifyError(error);
   const errorMessage = error instanceof Error ? error.message : String(error);
 
+  // Build base update data (common to all paths)
+  const baseData = {
+    lastError: truncateError(errorClassification === 'permanent' ? `[PERMANENT] ${errorMessage}` : errorMessage),
+    leasedUntil: null,
+    lockedBy: null,
+  };
+
   // Permanent errors → fail immediately regardless of attempt count
   if (errorClassification === 'permanent') {
-    await db.backgroundJob.update({
-      where: { id: jobId },
-      data: {
-        status: JOB_STATUS.FAILED,
-        failedAt: new Date(),
-        lastError: truncateError(`[PERMANENT] ${errorMessage}`),
-        leasedUntil: null,
-        lockedBy: null,
-      },
+    const result = await db.backgroundJob.updateMany({
+      where: { id: jobId, status: JOB_STATUS.PROCESSING, lockedBy: workerId },
+      data: { ...baseData, status: JOB_STATUS.FAILED, failedAt: new Date() },
     });
+
+    if (result.count === 0) {
+      logger.warn('job.fail_skipped_wrong_owner', { jobId, workerId, reason: 'atomic_guard' });
+      return;
+    }
 
     logger.error('job.dead_lettered', {
       jobId,
@@ -629,17 +626,20 @@ export async function failJob(
   if (job.attempt < job.maxAttempts) {
     const nextRetryAt = new Date(Date.now() + calculateRetryDelay(job.attempt));
 
-    await db.backgroundJob.update({
-      where: { id: jobId },
+    const retryResult = await db.backgroundJob.updateMany({
+      where: { id: jobId, status: JOB_STATUS.PROCESSING, lockedBy: workerId },
       data: {
+        ...baseData,
         status: JOB_STATUS.PENDING,
-        lastError: truncateError(errorMessage),
         runAt: nextRetryAt,
         startedAt: null,
-        leasedUntil: null,
-        lockedBy: null,
       },
     });
+
+    if (retryResult.count === 0) {
+      logger.warn('job.retry_skipped_wrong_owner', { jobId, workerId, reason: 'atomic_guard' });
+      return;
+    }
 
     logger.warn('job.retry_scheduled', {
       jobId,
@@ -656,16 +656,15 @@ export async function failJob(
       metrics.increment(METRIC_NAMES.JOBS_RETRIED, { jobType: job.type, organizationId: job.organizationId, workerId });
     } catch { /* metrics must never break business logic */ }
   } else {
-    await db.backgroundJob.update({
-      where: { id: jobId },
-      data: {
-        status: JOB_STATUS.FAILED,
-        failedAt: new Date(),
-        lastError: truncateError(errorMessage),
-        leasedUntil: null,
-        lockedBy: null,
-      },
+    const exhaustResult = await db.backgroundJob.updateMany({
+      where: { id: jobId, status: JOB_STATUS.PROCESSING, lockedBy: workerId },
+      data: { ...baseData, status: JOB_STATUS.FAILED, failedAt: new Date() },
     });
+
+    if (exhaustResult.count === 0) {
+      logger.warn('job.exhaust_skipped_wrong_owner', { jobId, workerId, reason: 'atomic_guard' });
+      return;
+    }
 
     logger.error('job.dead_lettered', {
       jobId,
