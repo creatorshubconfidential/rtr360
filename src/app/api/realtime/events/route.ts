@@ -60,22 +60,9 @@ export async function GET(request: Request) {
 
           sendEvent(alertData);
 
-          // Persist alert to database (silently swallow errors to keep SSE alive)
-          try {
-            await db.alert.create({
-              data: {
-                type: alertData.type,
-                severity: alertData.severity,
-                vehicleId: vehicle.id,
-                vehiclePlate: vehicle.plateNumber,
-                message: alertData.message,
-                organizationId: vehicle.organizationId,
-                metadata: JSON.stringify({ source: 'realtime_sse' }),
-              },
-            });
-          } catch {
-            // DB write failed — don't break the SSE stream
-          }
+          // NOTE: Simulated events are NOT persisted to the database.
+          // In production, replace this with a real event source (e.g. GPS device feed,
+          // Supabase Realtime, or a dedicated event pipeline).
         } catch {
           // Keep connection alive
         }
