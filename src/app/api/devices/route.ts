@@ -23,16 +23,22 @@ export async function GET(request: Request) {
     const warehouse = searchParams.get('warehouse');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
 
     // Tenant: super_admin sees all, org users see their own + unassigned (warehouse)
-    if (user.role !== 'super_admin') {
-      if (user.organizationId) {
-        where.OR = [
-          { organizationId: user.organizationId },
-          { organizationId: null, status: 'warehouse' },
-        ];
-      }
+    const tenantFilter =
+      user.role === 'super_admin'
+        ? []
+        : user.organizationId
+          ? [
+              { organizationId: user.organizationId },
+              { organizationId: null, status: 'warehouse' },
+            ]
+          : [];
+
+    if (tenantFilter.length > 0) {
+      where.OR = [...tenantFilter];
     }
 
     if (status && VALID_STATUSES.includes(status)) {
@@ -48,12 +54,22 @@ export async function GET(request: Request) {
     }
 
     if (search) {
-      where.OR = [
+      const searchOr = [
         { imei: { contains: search } },
         { serialNumber: { contains: search } },
         { model: { contains: search } },
         { phoneNumber: { contains: search } },
       ];
+      if (tenantFilter.length > 0) {
+        // Merge tenant + search: AND of two OR clauses to prevent OR overwrite
+        where.AND = [
+          { OR: tenantFilter },
+          { OR: searchOr },
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     const [devices, total] = await Promise.all([
