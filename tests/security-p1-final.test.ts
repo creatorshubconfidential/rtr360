@@ -120,10 +120,36 @@ describe('P1 FINAL — Setup Endpoint Security', () => {
     expect(content).toContain('SETUP_INIT_KEY not configured');
   });
 
-  it('wrong key returns 403', () => {
+  it('wrong key returns 403 with timing-safe comparison', () => {
     const content = fs.readFileSync(path.join(API_DIR, 'setup/init/route.ts'), 'utf-8');
-    expect(content).toContain('body.key !== INIT_KEY');
+    expect(content).toContain('timingSafeEqual');
     expect(content).toContain('Invalid setup key');
+  });
+
+  it('no hardcoded fallback password', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'setup/init/route.ts'), 'utf-8');
+    expect(content).not.toContain("Rtr360@2024");
+    expect(content).toContain('SEED_PASSWORD environment variable is required');
+  });
+
+  it('password not returned in init response', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'setup/init/route.ts'), 'utf-8');
+    // password: SEED_PASSWORD must NOT appear in the response object
+    const responseBlock = content.split('return NextResponse.json({')[1];
+    if (responseBlock) {
+      const firstReturn = responseBlock.split('});')[0];
+      expect(firstReturn).not.toContain('password:');
+    }
+  });
+
+  it('GET endpoint does not leak configuration state', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'setup/init/route.ts'), 'utf-8');
+    // The GET handler must NOT contain 'configured:'
+    const getBlock = content.split('export async function GET')[1];
+    if (getBlock) {
+      const funcBody = getBlock.split('}')[0];
+      expect(funcBody).not.toContain('configured:');
+    }
   });
 });
 
