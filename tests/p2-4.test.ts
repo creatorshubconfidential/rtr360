@@ -282,9 +282,8 @@ describe('P2-4: All 6 Job Types Have Handlers', () => {
 
 describe('P2-4: No Unsafe TypeScript', () => {
   it('no new files contain @ts-ignore or @ts-expect-error', async () => {
-    const { execSync } = await import('child_process');
     const { readFileSync } = await import('fs');
-    const { join } = await import('path');
+    const { resolve } = await import('path');
 
     // Check new P2-4 files only
     const p2_4_files = [
@@ -296,7 +295,7 @@ describe('P2-4: No Unsafe TypeScript', () => {
     ];
 
     for (const file of p2_4_files) {
-      const content = readFileSync(join('/home/z/my-project/rtr360-v2', file), 'utf-8');
+      const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
       expect(content).not.toContain('@ts-ignore');
       expect(content).not.toContain('@ts-expect-error');
     }
@@ -304,7 +303,7 @@ describe('P2-4: No Unsafe TypeScript', () => {
 
   it('no eval or new Function in P2-4 handlers', async () => {
     const { readFileSync } = await import('fs');
-    const { join } = await import('path');
+    const { resolve } = await import('path');
 
     const handler_files = [
       'src/lib/handlers/report-handler.ts',
@@ -313,7 +312,7 @@ describe('P2-4: No Unsafe TypeScript', () => {
     ];
 
     for (const file of handler_files) {
-      const content = readFileSync(join('/home/z/my-project/rtr360-v2', file), 'utf-8');
+      const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
       expect(content).not.toContain('eval(');
       expect(content).not.toContain('new Function(');
       expect(content).not.toContain('dynamic import');
@@ -330,8 +329,9 @@ describe('P2-4: AI Tenant Isolation', () => {
     // The AI handler checks for organizationId and throws ValidationError
     // We test this pattern through the handler code
     const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
     const content = readFileSync(
-      '/home/z/my-project/rtr360-v2/src/lib/handlers/ai-handler.ts',
+      resolve(__dirname, '..', 'src/lib/handlers/ai-handler.ts'),
       'utf-8',
     );
     // Must check for organizationId
@@ -346,8 +346,9 @@ describe('P2-4: AI Tenant Isolation', () => {
 
   it('ai handler blocks eval/function patterns in input', async () => {
     const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
     const content = readFileSync(
-      '/home/z/my-project/rtr360-v2/src/lib/handlers/ai-handler.ts',
+      resolve(__dirname, '..', 'src/lib/handlers/ai-handler.ts'),
       'utf-8',
     );
     const forbiddenPatterns = ['eval', 'function(', 'new function', 'require(', 'import(', 'process.env', 'child_process'];
