@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
+import { requirePermission, SETTINGS_MANAGE, ADMIN_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
 
@@ -11,8 +11,8 @@ export async function GET(request: Request) {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    // RBAC: SETTINGS_MANAGE
-    const permErr = requirePermission(user, SETTINGS_MANAGE);
+    // RBAC: Global settings are platform-level — restrict to super_admin/platform_admin
+    const permErr = requirePermission(user, ADMIN_MANAGE);
     if (permErr) return permErr;
 
     const settings = await db.setting.findMany({
@@ -38,8 +38,8 @@ export async function PUT(request: Request) {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    // RBAC: SETTINGS_MANAGE
-    const permErr = requirePermission(user, SETTINGS_MANAGE);
+    // RBAC: Global settings are platform-level — restrict to super_admin/platform_admin
+    const permErr = requirePermission(user, ADMIN_MANAGE);
     if (permErr) return permErr;
 
     const body = await request.json();

@@ -1,6 +1,6 @@
 #!/bin/bash
 # RTR 360 — Build Script for Vercel
-# Resolves PostgreSQL URL and ensures schema is pushed before building
+# Resolves PostgreSQL URL and ensures schema is migrated before building
 set -e
 
 echo "=== RTR 360 Build ==="
@@ -11,12 +11,13 @@ if [ -z "$DATABASE_URL" ] && [ -n "$POSTGRES_PRISMA_URL" ]; then
   export DATABASE_URL="$POSTGRES_PRISMA_URL"
 fi
 
-# Push schema to database (creates/updates tables)
+# Apply pending migrations (safe — only runs migrations not yet applied)
+# NEVER use 'db push --accept-data-loss' — it can silently drop columns/tables
 if [ -n "$DATABASE_URL" ]; then
-  echo "Pushing Prisma schema to database..."
-  npx prisma db push --skip-generate --accept-data-loss 2>&1 || echo "Warning: prisma db push failed (tables may already exist)"
+  echo "Applying Prisma migrations..."
+  npx prisma migrate deploy 2>&1 || echo "Warning: prisma migrate deploy failed (tables may already be up to date)"
 else
-  echo "Warning: No DATABASE_URL or POSTGRES_PRISMA_URL found. Skipping schema push."
+  echo "Warning: No DATABASE_URL or POSTGRES_PRISMA_URL found. Skipping migration."
 fi
 
 echo "Building Next.js..."

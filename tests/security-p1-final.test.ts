@@ -233,4 +233,59 @@ describe('P1 FINAL — CI Configuration', () => {
     const ci = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/ci.yml'), 'utf-8');
     expect(ci).toContain('npm run build');
   });
+
+  it('no db:push or db:reset script in package.json', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf-8'));
+    expect(pkg.scripts?.['db:push']).toBeUndefined();
+    expect(pkg.scripts?.['db:reset']).toBeUndefined();
+  });
+
+  it('build.sh does not use db push --accept-data-loss', () => {
+    const buildSh = fs.readFileSync(path.resolve(__dirname, '../scripts/build.sh'), 'utf-8');
+    // Must use migrate deploy (safe), not db push (destructive)
+    expect(buildSh).toContain('prisma migrate deploy');
+    // Must NOT execute db push (even in comments, keep it clean)
+    const lines = buildSh.split('\n');
+    const execLines = lines.filter(l => !l.trim().startsWith('#'));
+    for (const line of execLines) {
+      expect(line).not.toContain('db push');
+      expect(line).not.toContain('accept-data-loss');
+    }
+  });
+
+  it('.gitignore covers *.key and *.credentials', () => {
+    const gitignore = fs.readFileSync(path.resolve(__dirname, '../.gitignore'), 'utf-8');
+    expect(gitignore).toContain('*.key');
+    expect(gitignore).toContain('*.credentials');
+  });
+});
+
+describe('P2-8 FINAL — New IDOR Fixes', () => {
+  it('devices/[id] PATCH validates simId against organization', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'devices/[id]/route.ts'), 'utf-8');
+    expect(content).toContain('sIM.findUnique');
+    expect(content).toContain('sim.organizationId');
+    expect(content).toContain('user.organizationId');
+  });
+
+  it('activities POST validates opportunityId against organization', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'activities/route.ts'), 'utf-8');
+    const postBlock = content.split('export async function POST')[1];
+    expect(postBlock).toContain('opportunity');
+    expect(postBlock).toContain('findUnique');
+    expect(postBlock).toContain('organizationId');
+  });
+
+  it('activities GET validates opportunityId against organization', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'activities/route.ts'), 'utf-8');
+    const getBlock = content.split('export async function GET')[1].split('export async function POST')[0];
+    expect(getBlock).toContain('opportunity');
+    expect(getBlock).toContain('findUnique');
+  });
+
+  it('settings uses ADMIN_MANAGE (not SETTINGS_MANAGE) for platform-level access', () => {
+    const content = fs.readFileSync(path.join(API_DIR, 'settings/route.ts'), 'utf-8');
+    expect(content).toContain('requirePermission(user, ADMIN_MANAGE)');
+    expect(content).not.toContain('requirePermission(user, SETTINGS_MANAGE)');
+  });
 });

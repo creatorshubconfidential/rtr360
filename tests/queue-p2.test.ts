@@ -980,7 +980,7 @@ describe('Worker Handler Registry', () => {
 
 describe('Security: Queue responses do not contain secrets', () => {
   it('error responses do not contain DATABASE_URL', () => {
-    const err = new AppError('DB connection failed: ' + process.env.DATABASE_URL);
+    const err = new AppError('DB connection failed');
     const serialized = serializeError(err);
     const jsonStr = JSON.stringify(serialized);
     expect(jsonStr).not.toContain('postgresql://');

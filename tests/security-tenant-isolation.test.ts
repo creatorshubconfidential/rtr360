@@ -221,18 +221,18 @@ describe('P1-7: AI conversation ownership', () => {
 });
 
 // ============================================================
-// P1-8: Settings — RBAC
+// P1-8: Settings — RBAC (upgraded to ADMIN_MANAGE — platform-level)
 // ============================================================
 describe('P1-8: Settings RBAC', () => {
   const code = src('app/api/settings/route.ts');
 
-  it('GET requires SETTINGS_MANAGE permission', () => {
-    expect(code).toContain('requirePermission(user, SETTINGS_MANAGE)');
+  it('GET requires ADMIN_MANAGE permission (platform-level)', () => {
+    expect(code).toContain('requirePermission(user, ADMIN_MANAGE)');
   });
 
-  it('PUT requires SETTINGS_MANAGE permission', () => {
+  it('PUT requires ADMIN_MANAGE permission (platform-level)', () => {
     // Should appear at least twice (GET + PUT)
-    const matches = code.match(/requirePermission\(user,\s*SETTINGS_MANAGE\)/g);
+    const matches = code.match(/requirePermission\(user,\s*ADMIN_MANAGE\)/g);
     expect(matches?.length).toBeGreaterThanOrEqual(2);
   });
 });

@@ -49,6 +49,11 @@ db/
 .DS_Store
 Thumbs.db
 *.pem
+*.key
+*.credentials
+*.p12
+*.pfx
+*.jks
 
 # AI tool artifacts (not project source)
 .claude

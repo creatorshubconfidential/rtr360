@@ -8,10 +8,8 @@
     "start": "NODE_ENV=production node .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate",
     "test": "vitest run",
     "test:watch": "vitest"

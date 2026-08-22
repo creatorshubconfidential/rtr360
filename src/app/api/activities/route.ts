@@ -24,11 +24,20 @@ export async function GET(request: Request) {
     if (leadId) where.leadId = leadId;
     if (opportunityId) where.opportunityId = opportunityId;
 
-    // Verify lead/opportunity belongs to user's org
+    // Verify lead belongs to user's org
     if (leadId) {
       const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
       if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
       if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+    }
+
+    // Verify opportunity belongs to user's org
+    if (opportunityId) {
+      const opp = await db.opportunity.findUnique({ where: { id: opportunityId }, select: { organizationId: true } });
+      if (!opp) return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
+      if (user.role !== 'super_admin' && opp.organizationId !== user.organizationId) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }
@@ -79,6 +88,15 @@ export async function POST(request: Request) {
       const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
       if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
       if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+    }
+
+    // Verify opportunity belongs to user's org if provided
+    if (opportunityId) {
+      const opp = await db.opportunity.findUnique({ where: { id: opportunityId }, select: { organizationId: true } });
+      if (!opp) return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
+      if (user.role !== 'super_admin' && opp.organizationId !== user.organizationId) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }

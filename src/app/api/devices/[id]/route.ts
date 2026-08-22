@@ -42,7 +42,17 @@ export async function PATCH(
     if (manufacturer !== undefined) updateData.manufacturer = manufacturer?.trim() || null;
     if (deviceType) updateData.deviceType = deviceType;
     if (protocol !== undefined) updateData.protocol = protocol?.trim() || null;
-    if (simId !== undefined) updateData.simId = simId || null;
+    if (simId !== undefined) {
+      if (simId) {
+        // IDOR: verify SIM belongs to same organization
+        const sim = await db.sIM.findUnique({ where: { id: simId }, select: { organizationId: true } });
+        if (!sim) return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
+        if (user.role !== 'super_admin' && sim.organizationId !== user.organizationId) {
+          return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
+        }
+      }
+      updateData.simId = simId || null;
+    }
     if (warehouse !== undefined) updateData.warehouse = warehouse?.trim() || null;
     if (notes !== undefined) updateData.notes = notes?.trim() || null;
     if (firmware !== undefined) updateData.firmware = firmware?.trim() || null;
