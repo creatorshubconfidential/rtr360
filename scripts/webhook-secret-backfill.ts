@@ -5,7 +5,8 @@
  * Run once against production after ENCRYPTION_MASTER_KEY is configured.
  *
  * Usage:
- *   npx tsx scripts/webhook-secret-backfill.ts
+ *   npx tsx scripts/webhook-secret-backfill.ts              # Execute
+ *   npx tsx scripts/webhook-secret-backfill.ts --dry-run       # Preview only
  *
  * Safety:
  *   - Skips secrets already starting with "v1:" (already encrypted)
@@ -13,15 +14,18 @@
  *   - Verifies decrypt(encrypt(secret)) == secret
  *   - Rollback-safe: original values are replaced in-place
  *   - Production-safe: can be re-run multiple times
+ *   - --dry-run mode: reports counts without modifying database
  */
 
 import { PrismaClient } from '@prisma/client';
 import { encryptSecret, decryptSecret, isEncrypted, isEncryptionAvailable } from '../src/lib/crypto';
 
+const DRY_RUN = process.argv.includes('--dry-run');
 const db = new PrismaClient();
 
 async function main() {
   console.log('=== Webhook Secret Encryption Backfill ===');
+  if (DRY_RUN) console.log('*** DRY-RUN MODE — no database changes will be made ***');
   console.log();
 
   // Pre-flight checks
@@ -43,10 +47,26 @@ async function main() {
     },
   });
 
-  console.log(`Found ${plaintextEndpoints.length} endpoint(s) with plaintext secrets.`);
+  // Count total endpoints (for reporting)
+  const totalEndpoints = await db.webhookEndpoint.count();
+  const alreadyEncrypted = totalEndpoints - plaintextEndpoints.length;
+
+  console.log(`Total endpoints: ${totalEndpoints}`);
+  console.log(`Already encrypted: ${alreadyEncrypted}`);
+  console.log(`Needs encryption: ${plaintextEndpoints.length}`);
+  console.log();
 
   if (plaintextEndpoints.length === 0) {
     console.log('All secrets are already encrypted. Nothing to do.');
+    return;
+  }
+
+  if (DRY_RUN) {
+    console.log('=== DRY-RUN COMPLETE — no changes made ===');
+    console.log(`Would encrypt: ${plaintextEndpoints.length} endpoint(s)`);
+    for (const ep of plaintextEndpoints) {
+      console.log(`  [${ep.id}] org=${ep.organizationId}`);
+    }
     return;
   }
 
