@@ -94,7 +94,21 @@ export async function PATCH(
     if (status && VALID_STATUSES.includes(status)) updateData.status = status;
     if (priority && ['low', 'medium', 'high', 'urgent'].includes(priority)) updateData.priority = priority;
     if (notes !== undefined) updateData.notes = notes?.trim() || null;
-    if (assignedToId !== undefined) updateData.assignedToId = assignedToId || null;
+    if (assignedToId !== undefined) {
+      if (assignedToId) {
+        // Validate assignee belongs to same org (prevent cross-tenant FK assignment)
+        const assignee = await db.user.findFirst({
+          where: user.role !== 'super_admin' && user.organizationId
+            ? { id: assignedToId, organizationId: user.organizationId }
+            : { id: assignedToId },
+          select: { id: true },
+        });
+        if (!assignee) {
+          return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
+        }
+      }
+      updateData.assignedToId = assignedToId || null;
+    }
 
     const updated = await db.lead.update({
       where: { id },

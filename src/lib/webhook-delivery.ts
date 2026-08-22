@@ -130,6 +130,18 @@ export function checkSsrf(url: string): string | null {
     return 'Connections to Kubernetes internal services are not allowed';
   }
 
+  // Catch-all: Block IP-literal hostnames via comprehensive private IP checks.
+  // This closes the gap where resolveAndCheckDns skips IP literals (line ~237).
+  // Must be LAST so that specific error messages above take priority.
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    if (isPrivateIPv4(hostname)) {
+      return 'Connections to private/reserved IP addresses are not allowed';
+    }
+  }
+  if (hostname.includes(':') && isPrivateIPv6(hostname)) {
+    return 'Connections to private/reserved IPv6 addresses are not allowed';
+  }
+
   return null; // URL is safe
 }
 
