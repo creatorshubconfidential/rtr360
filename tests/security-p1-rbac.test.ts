@@ -41,6 +41,8 @@ const USERS_MANAGE = 'users.manage';
 const SETTINGS_MANAGE = 'settings.manage';
 const ADMIN_MANAGE = 'admin.manage';
 const AI_USE = 'ai.use';
+const REPORTS_READ = 'reports.read';
+const JOBS_MANAGE = 'jobs.manage';
 
 // ─── Mirror the role-permission map ───
 
@@ -54,6 +56,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     INVOICES_MANAGE, QUOTATIONS_MANAGE, SUBSCRIPTIONS_MANAGE,
     MAINTENANCE_MANAGE, INSTALLATIONS_MANAGE, TECHNICIANS_MANAGE,
     TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    JOBS_MANAGE, REPORTS_READ,
     AI_USE,
   ],
   org_owner: [
@@ -64,6 +67,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     INVOICES_MANAGE, QUOTATIONS_MANAGE, SUBSCRIPTIONS_MANAGE,
     MAINTENANCE_MANAGE, INSTALLATIONS_MANAGE, TECHNICIANS_MANAGE,
     TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    JOBS_MANAGE, REPORTS_READ,
     AI_USE,
   ],
   operations_manager: [
@@ -71,17 +75,20 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     GEOFENCES_MANAGE, ALERT_RULES_MANAGE, TICKETS_MANAGE,
     MAINTENANCE_MANAGE, INSTALLATIONS_MANAGE, TECHNICIANS_MANAGE,
     TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    REPORTS_READ,
     AI_USE,
   ],
   sales_manager: [
     LEADS_MANAGE, CONTACTS_MANAGE, QUOTATIONS_MANAGE,
     CONTRACTS_MANAGE, ACTIVITIES_MANAGE,
+    REPORTS_READ,
     AI_USE,
   ],
   fleet_manager: [
     VEHICLES_MANAGE, DRIVERS_MANAGE, DEVICES_MANAGE,
     GEOFENCES_MANAGE, ALERT_RULES_MANAGE,
     MAINTENANCE_MANAGE, TRIPS_MANAGE, ACTIVITIES_MANAGE,
+    REPORTS_READ,
     AI_USE,
   ],
   dispatcher: [
@@ -123,7 +130,7 @@ const ALL_MANAGE_PERMISSIONS = [
   INVOICES_MANAGE, SUBSCRIPTIONS_MANAGE,
   TICKETS_MANAGE, ALERT_RULES_MANAGE,
   USERS_MANAGE, SETTINGS_MANAGE, ADMIN_MANAGE,
-  AI_USE,
+  AI_USE, REPORTS_READ, JOBS_MANAGE,
 ];
 
 describe('P1-1: RBAC Permission System', () => {
@@ -289,6 +296,22 @@ describe('P1-1: RBAC Permission System', () => {
     it('operations_manager cannot access settings', () => {
       const opsUser = makeUser('operations_manager');
       expect(wouldDeny(opsUser.role, SETTINGS_MANAGE)).toBe(true);
+    });
+    it('viewer cannot read reports (GET /api/reports)', () => {
+      const viewerUser = makeUser('viewer');
+      expect(wouldDeny(viewerUser.role, REPORTS_READ)).toBe(true);
+    });
+    it('dispatcher cannot read reports (GET /api/reports)', () => {
+      const dispatcherUser = makeUser('dispatcher');
+      expect(wouldDeny(dispatcherUser.role, REPORTS_READ)).toBe(true);
+    });
+    it('fleet_manager CAN read reports (GET /api/reports)', () => {
+      const fleetUser = makeUser('fleet_manager');
+      expect(wouldDeny(fleetUser.role, REPORTS_READ)).toBe(false);
+    });
+    it('org_owner CAN read reports (GET /api/reports)', () => {
+      const ownerUser = makeUser('org_owner');
+      expect(wouldDeny(ownerUser.role, REPORTS_READ)).toBe(false);
     });
   });
 

@@ -551,13 +551,13 @@ export default function PipelineView() {
                 {selectedLead.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="w-4 h-4 text-slate-400" />
-                    <a href={`tel:${selectedLead.phone}`} className="text-emerald-600 hover:underline">{selectedLead.phone}</a>
+                    <a href={`tel:${selectedLead.phone.replace(/[\s()\-\\"']/g, '')}`} className="text-emerald-600 hover:underline">{selectedLead.phone}</a>
                   </div>
                 )}
                 {selectedLead.email && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-slate-400">✉</span>
-                    <a href={`mailto:${selectedLead.email}`} className="text-emerald-600 hover:underline">{selectedLead.email}</a>
+                    <a href={`mailto:${selectedLead.email.replace(/[\s()\\"']/g, '')}`} className="text-emerald-600 hover:underline">{selectedLead.email}</a>
                   </div>
                 )}
                 {selectedLead.emirate && (

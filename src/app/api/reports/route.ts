@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { requirePermission, REPORTS_READ } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
+
+    // SECURITY: RBAC — only roles with reports.read permission can access dashboard reports
+    const permErr = requirePermission(user, REPORTS_READ);
+    if (permErr) return permErr;
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '6months';

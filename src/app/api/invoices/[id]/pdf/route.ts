@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+
+// SECURITY: Strip characters that could cause HTTP header injection in Content-Disposition
+function sanitizeFilename(name: string): string {
+  return name.replace(/[\r\n"\\]/g, '').trim();
+}
 
 // ── Color palette ──────────────────────────────────────────────
 const COLORS = {
@@ -28,6 +34,10 @@ export async function GET(
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
+
+    // SECURITY: RBAC — only roles with invoices.manage can download invoice PDFs
+    const permErr = requirePermission(user, INVOICES_MANAGE);
+    if (permErr) return permErr;
 
     const { id } = await params;
     const invoice = await db.invoice.findFirst({
@@ -245,7 +255,7 @@ export async function GET(
     return new NextResponse(new Uint8Array(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
+        'Content-Disposition': `inline; filename="${sanitizeFilename(invoice.invoiceNumber)}.pdf"`,
         'Content-Length': String(pdfBytes.length),
       },
     });
