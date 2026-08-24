@@ -108,9 +108,9 @@ describeIf('PostgreSQL Queue Integration', () => {
     const totalClaimed = claimA.length + claimB.length;
     expect(totalClaimed).toBe(1);
 
-    // Verify the winner
+    // Verify the winner (either worker can win with FOR UPDATE SKIP LOCKED)
     const winner = claimA.length === 1 ? claimA[0] : claimB[0];
-    expect(winner.locked_by).toBe(workerA); // First one wins (usually)
+    expect([workerA, workerB]).toContain(winner.locked_by);
   });
 
   it('idempotency: same org + same key = one job', async () => {
