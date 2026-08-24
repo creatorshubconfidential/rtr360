@@ -23,19 +23,19 @@ DECLARE
   rec RECORD;
 BEGIN
   FOR tbl, col IN VALUES
-    ('"Opportunity"', 'value'),
-    ('"Device"', 'purchase_cost'),
-    ('"Plan"', 'price_monthly'),
-    ('"Plan"', 'price_annual'),
-    ('"Invoice"', 'amount'),
-    ('"Invoice"', 'tax'),
-    ('"Invoice"', 'total'),
-    ('"Quotation"', 'subtotal'),
-    ('"Quotation"', 'tax_rate'),
-    ('"Quotation"', 'tax'),
-    ('"Quotation"', 'total'),
-    ('"QuotationItem"', 'unit_price'),
-    ('"MaintenanceRecord"', 'cost')
+    ('Opportunity', 'value'),
+    ('Device', 'purchase_cost'),
+    ('Plan', 'price_monthly'),
+    ('Plan', 'price_annual'),
+    ('Invoice', 'amount'),
+    ('Invoice', 'tax'),
+    ('Invoice', 'total'),
+    ('Quotation', 'subtotal'),
+    ('Quotation', 'tax_rate'),
+    ('Quotation', 'tax'),
+    ('Quotation', 'total'),
+    ('QuotationItem', 'unit_price'),
+    ('MaintenanceRecord', 'cost')
   LOOP
     EXECUTE format('SELECT COUNT(*) FROM %I WHERE %I IS NOT NULL AND NOT (%I::text ~ ''^[-+]?[0-9]*\.?[0-9]+$'')', tbl, col, col)
     INTO cnt;
