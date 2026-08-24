@@ -39,7 +39,7 @@ function generateId(): string {
 }
 
 async function cleanup(prisma: any, orgId: string) {
-  await prisma.backgroundJob.deleteMany({ where: { organizationId } });
+  await prisma.backgroundJob.deleteMany({ where: { organizationId: orgId } });
   await prisma.organization.deleteMany({ where: { id: orgId } });
 }
 
