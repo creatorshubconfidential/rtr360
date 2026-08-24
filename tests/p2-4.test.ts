@@ -198,6 +198,20 @@ describe('P2-4: SSRF Protection', () => {
     expect(checkSsrf('ftp://example.com/file')).toContain('not allowed');
     expect(checkSsrf('gopher://internal/resource')).toContain('not allowed');
   });
+
+  it('blocks IPv4-mapped IPv6 addresses', async () => {
+    const { checkSsrf } = await import('@/lib/webhook-delivery');
+    expect(checkSsrf('http://[::ffff:127.0.0.1]/hook')).toContain('IPv4-mapped');
+    expect(checkSsrf('http://[::ffff:10.0.0.1]/hook')).toContain('IPv4-mapped');
+    expect(checkSsrf('http://[::ffff:192.168.1.1]/hook')).toContain('IPv4-mapped');
+  });
+
+  it('blocks IPv4-mapped IPv6 without brackets (invalid URL)', async () => {
+    const { checkSsrf } = await import('@/lib/webhook-delivery');
+    // Without brackets, the URL parser rejects it as invalid before SSRF check
+    const result = checkSsrf('http://::ffff:127.0.0.1/hook');
+    expect(result).not.toBeNull(); // blocked either way
+  });
 });
 
 // ============================================================

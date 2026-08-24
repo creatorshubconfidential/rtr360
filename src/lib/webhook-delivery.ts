@@ -86,6 +86,11 @@ export function checkSsrf(url: string): string | null {
     return 'Connections to IPv6 loopback are not allowed';
   }
 
+  // Block IPv4-mapped IPv6 addresses (e.g., ::ffff:127.0.0.1)
+  if (/^::ffff:/i.test(hostname)) {
+    return 'Connections to IPv4-mapped IPv6 addresses are not allowed';
+  }
+
   // Block AWS/GCP/Azure metadata endpoints
   if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal' ||
       hostname.endsWith('.metadata.azure.com')) {
