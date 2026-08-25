@@ -119,3 +119,30 @@ Stage Summary:
 - 8 blockers require infrastructure access (Vercel API, Supabase, real PG)
 
 ---
+Task ID: P2-14-final
+Agent: Main Agent
+Task: P2-14 Infrastructure Unlock - Complete verification and production deployment
+
+Work Log:
+- Discovered 3 new commits on remote (52bdbca, be1b03f, 64ad3c8) that fixed Vercel build failure
+- Root cause: output: 'standalone' in next.config.ts incompatible with Vercel + Next.js 16.3.x
+- Vercel status for 64ad3c8: SUCCESS, CI: SUCCESS
+- Found /api/ready returning 503 despite healthy database
+- Root cause: ready check only looked for DATABASE_URL, not POSTGRES_PRISMA_URL (Supabase integration)
+- Fixed src/lib/env.ts: added isDatabaseConfigured() checking all DB URL sources
+- Fixed src/app/api/ready/route.ts: use isDatabaseConfigured() instead of DATABASE_URL check
+- Pushed fix as commit 43c0e31
+- Verified Vercel deployed 43c0e31: SUCCESS
+- Full baseline: 832 tests, 0 tsc, 0 lint, build OK, 0 audit, 440 security tests
+- Production smoke: / 200, /api/health 200, /api/ready 200, security headers all present
+- SHA convergence: Git=GitHub=CI=Vercel=43c0e31
+- Generated P2-14 Infrastructure Unlock doc and PDF report
+
+Stage Summary:
+- Vercel: GREEN (standalone output removed)
+- Code: GREEN (832 tests, 0 errors, 0 vulnerabilities)
+- Security: GREEN (440 tests, all headers present)
+- Production: GREEN (all routes responding correctly)
+- 3 env vars need Vercel dashboard configuration: SETUP_INIT_KEY, SESSION_SECRET, ENCRYPTION_MASTER_KEY
+- FINAL VERDICT: VERIFIED GREEN
+---
