@@ -89,7 +89,18 @@ function validateEnv(): EnvStatus {
     optionalVars[name] = { present: Boolean(value) };
   };
 
-  checkRequired('DATABASE_URL', process.env.DATABASE_URL);
+  // DATABASE_URL is required OR any Supabase-provided Postgres URL
+  // (Vercel Supabase integration sets POSTGRES_PRISMA_URL automatically)
+  const hasDatabaseUrl = Boolean(
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL
+  );
+  requiredVars['DATABASE_URL'] = { present: hasDatabaseUrl };
+  if (!hasDatabaseUrl && isProduction()) {
+    errors.push('DATABASE_URL (or POSTGRES_PRISMA_URL) is required in production');
+  }
   checkRequired('SETUP_INIT_KEY', process.env.SETUP_INIT_KEY);
   checkRequired('SESSION_SECRET', process.env.SESSION_SECRET);
   checkRequired('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
@@ -135,6 +146,17 @@ function isRedisConfigured(): boolean {
   );
 }
 
+// ── Database URL helper ───────────────────────────────────────
+// Matches the resolution logic in db.ts resolveDatabaseUrl().
+function isDatabaseConfigured(): boolean {
+  return Boolean(
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL
+  );
+}
+
 // ── Frozen config object ─────────────────────────────────────────
 
 function buildConfig(): EnvConfig {
@@ -163,5 +185,5 @@ function buildConfig(): EnvConfig {
 
 export const env = buildConfig();
 
-export { validateEnv, getEnvStatus, isRedisConfigured, isProduction, isTest };
+export { validateEnv, getEnvStatus, isRedisConfigured, isProduction, isTest, isDatabaseConfigured };
 export type { EnvConfig, EnvStatus };

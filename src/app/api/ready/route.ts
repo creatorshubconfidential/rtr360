@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { isRedisConfigured, isProduction } from '@/lib/env';
+import { isRedisConfigured, isProduction, isDatabaseConfigured } from '@/lib/env';
 
 /**
  * Readiness: critical dependencies are usable.
@@ -38,10 +38,10 @@ export async function GET() {
     }
   }
 
-  // In production, check required env vars
+  // In production, check that a database URL source is configured
+  // (DATABASE_URL, POSTGRES_PRISMA_URL, or other Supabase-provided URLs)
   if (isProduction()) {
-    const hasDbUrl = Boolean(process.env.DATABASE_URL);
-    if (!hasDbUrl) {
+    if (!isDatabaseConfigured()) {
       checks.env_database_url = { status: 'missing', critical: true };
       ready = false;
     }
