@@ -83,8 +83,16 @@ export async function GET(request: Request) {
         controller.enqueue(encoder.encode(`: heartbeat\n\n`));
       }, 30000);
 
+      // Auto-close after 55s to prevent Vercel 300s serverless timeout
+      // SSE clients should reconnect automatically
+      const maxDuration = setTimeout(() => {
+        controller.enqueue(encoder.encode(`event: close\ndata: {\"reason": "max_duration"}\n\n`));
+        controller.close();
+      }, 55000);
+
       request.signal.addEventListener('abort', () => {
         clearTimeout(timer);
+        clearTimeout(maxDuration);
         clearInterval(heartbeat);
         controller.close();
       });

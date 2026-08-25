@@ -109,8 +109,16 @@ export async function GET(request: Request) {
       }
 
       // Clean up on close
+      // Auto-close after 55s to prevent Vercel 300s serverless timeout
+      const maxDuration = setTimeout(() => {
+        clearInterval(interval);
+        controller.enqueue(encoder.encode(`event: close\ndata: {\"reason\": \"max_duration\"}\n\n`));
+        controller.close();
+      }, 55000);
+
       request.signal.addEventListener('abort', () => {
         clearInterval(interval);
+        clearTimeout(maxDuration);
         controller.close();
       });
     },

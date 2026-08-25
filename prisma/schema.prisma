@@ -373,7 +373,7 @@ model Device {
   manufacturer   String?
   deviceType     String?   @map("device_type")
   protocol       String?
-  phoneNumber    String?
+  phoneNumber    String?   @map("phone_number")
   firmware       String?
   simId          String?   @map("sim_id")
   organizationId String?   @map("organization_id")
@@ -491,7 +491,7 @@ model Trip {
   id             String    @id @default(cuid())
   vehicleId      String    @map("vehicle_id")
   organizationId String?   @map("organization_id")
-  driverName     String?
+  driverName     String?   @map("driver_name")
   startTime      DateTime  @map("start_time")
   endTime        DateTime? @map("end_time")
   distance       Float?
@@ -562,8 +562,8 @@ model Alert {
   type           String
   severity       String    @default("medium")
   vehicleId      String?   @map("vehicle_id")
-  driverName     String?
-  vehiclePlate   String?
+  driverName     String?   @map("driver_name")
+  vehiclePlate   String?   @map("vehicle_plate")
   message        String
   metadata       String?
   status         String    @default("open")
@@ -591,7 +591,7 @@ model MaintenanceRecord {
   type           String
   description    String?
   triggerType    String?   @map("trigger_type")
-  triggerValue   Float?
+  triggerValue   Float?   @map("trigger_value")
   scheduledDate  DateTime? @map("scheduled_date")
   completedDate  DateTime? @map("completed_date")
   cost           Decimal?
@@ -721,7 +721,7 @@ model Ticket {
   description    String?
   priority       String    @default("medium")
   status         String    @default("open")
-  vehiclePlate   String?
+  vehiclePlate   String?   @map("vehicle_plate")
   assignedToId   String?   @map("assigned_to_id")
   resolvedAt     DateTime? @map("resolved_at")
   createdAt      DateTime  @default(now()) @map("created_at")
@@ -768,7 +768,7 @@ model Document {
   mimeType       String?  @map("mime_type")
   size           Int?
   organizationId String   @map("organization_id")
-  uploadedBy     String?
+  uploadedBy     String?   @map("uploaded_by")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
