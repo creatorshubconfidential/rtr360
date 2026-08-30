@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { createSseLifecycle } from '@/lib/realtime/sse-lifecycle';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,13 +26,11 @@ export async function GET(request: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      let interval: ReturnType<typeof setInterval>;
+      const lifecycle = createSseLifecycle(controller, encoder, request.signal);
       let tick = 0;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sendEvent = (data: any) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-      };
+      const sendEvent = (data: any) => lifecycle.send(`data: ${JSON.stringify(data)}\n\n`);
 
       // Initial full state
       try {
@@ -42,6 +41,8 @@ export async function GET(request: Request) {
             device: { select: { imei: true, status: true, lastPingAt: true } },
           },
         });
+
+        if (lifecycle.isClosed()) return;
 
         const vehicleStates = vehicles.map((v, i) => {
           const loc = UAE_LOCATIONS[i % UAE_LOCATIONS.length];
@@ -64,63 +65,67 @@ export async function GET(request: Request) {
 
         sendEvent({ type: 'init', vehicles: vehicleStates, total: vehicleStates.length });
 
-        // Stream updates every 3 seconds
-        interval = setInterval(async () => {
-          tick++;
-          try {
-            // Update positions with small random movements
-            const updates = vehicleStates.map((vs) => {
-              if (vs.status === 'idle') return null;
-              // Simulate movement
-              const headingRad = (vs.heading * Math.PI) / 180;
-              const speedKmPerTick = (vs.speed / 3600) * 3; // km per 3s tick
-              const latDelta = (speedKmPerTick / 111.32) * Math.cos(headingRad);
-              const lngDelta = (speedKmPerTick / (111.32 * Math.cos((vs.lat * Math.PI) / 180))) * Math.sin(headingRad);
+        // Async recursive scheduling avoids overlapping setInterval callbacks.
+        const scheduleNext = () => {
+          if (lifecycle.isClosed()) return;
 
-              vs.lat = Math.round((vs.lat + latDelta + (Math.random() - 0.5) * 0.001) * 10000) / 10000;
-              vs.lng = Math.round((vs.lng + lngDelta + (Math.random() - 0.5) * 0.001) * 10000) / 10000;
-              vs.speed = Math.max(0, Math.min(120, vs.speed + Math.round((Math.random() - 0.5) * 10)));
-              vs.heading = (vs.heading + Math.round((Math.random() - 0.5) * 20) + 360) % 360;
-              vs.fuel = Math.max(10, vs.fuel - (Math.random() > 0.8 ? 1 : 0));
-              vs.timestamp = new Date().toISOString();
+          lifecycle.setTimeout(async () => {
+            if (lifecycle.isClosed()) return;
+            tick++;
 
-              // Occasionally toggle status
-              if (Math.random() > 0.95) vs.status = vs.status === 'moving' ? 'idle' : 'moving';
+            try {
+              const updates = vehicleStates.map((vs) => {
+                if (vs.status === 'idle') return null;
+                const headingRad = (vs.heading * Math.PI) / 180;
+                const speedKmPerTick = (vs.speed / 3600) * 3;
+                const latDelta = (speedKmPerTick / 111.32) * Math.cos(headingRad);
+                const lngDelta = (speedKmPerTick / (111.32 * Math.cos((vs.lat * Math.PI) / 180))) * Math.sin(headingRad);
 
-              return { ...vs };
-            }).filter(Boolean);
+                vs.lat = Math.round((vs.lat + latDelta + (Math.random() - 0.5) * 0.001) * 10000) / 10000;
+                vs.lng = Math.round((vs.lng + lngDelta + (Math.random() - 0.5) * 0.001) * 10000) / 10000;
+                vs.speed = Math.max(0, Math.min(120, vs.speed + Math.round((Math.random() - 0.5) * 10)));
+                vs.heading = (vs.heading + Math.round((Math.random() - 0.5) * 20) + 360) % 360;
+                vs.fuel = Math.max(10, vs.fuel - (Math.random() > 0.8 ? 1 : 0));
+                vs.timestamp = new Date().toISOString();
 
-            // Every 10th tick, send fresh vehicle count from DB
-            if (tick % 10 === 0) {
-              const freshCount = await db.vehicle.count({ where: { ...orgFilter, status: 'active' } });
-              sendEvent({ type: 'stats', activeVehicles: freshCount, tick });
+                if (Math.random() > 0.95) vs.status = vs.status === 'moving' ? 'idle' : 'moving';
+                return { ...vs };
+              }).filter(Boolean);
+
+              // DB query may complete after the client disconnects.
+              if (lifecycle.isClosed()) return;
+
+              if (tick % 10 === 0) {
+                const freshCount = await db.vehicle.count({ where: { ...orgFilter, status: 'active' } });
+                if (lifecycle.isClosed()) return;
+                sendEvent({ type: 'stats', activeVehicles: freshCount, tick });
+              }
+
+              if (!lifecycle.isClosed()) sendEvent({ type: 'update', vehicles: updates, tick });
+            } catch {
+              // DB error — keep streaming with simulated data, unless closed.
+              if (!lifecycle.isClosed()) sendEvent({ type: 'heartbeat', tick });
             }
 
-            sendEvent({ type: 'update', vehicles: updates, tick });
-          } catch (err) {
-            // DB error — keep streaming with simulated data
-            sendEvent({ type: 'heartbeat', tick });
-          }
-        }, 3000);
-      } catch (err) {
-        sendEvent({ type: 'error', message: 'Failed to load vehicles' });
-        controller.close();
+            if (!lifecycle.isClosed()) scheduleNext();
+          }, 3000);
+        };
+
+        scheduleNext();
+      } catch {
+        if (!lifecycle.isClosed()) {
+          sendEvent({ type: 'error', message: 'Failed to load vehicles' });
+          lifecycle.close();
+        }
         return;
       }
 
-      // Clean up on close
-      // Auto-close after 55s to prevent Vercel 300s serverless timeout
-      const maxDuration = setTimeout(() => {
-        clearInterval(interval);
-        controller.enqueue(encoder.encode(`event: close\ndata: {\"reason\": \"max_duration\"}\n\n`));
-        controller.close();
+      // Auto-close after 55s to prevent Vercel serverless timeout.
+      lifecycle.setTimeout(() => {
+        if (lifecycle.isClosed()) return;
+        sendEvent({ type: 'close', reason: 'max_duration' });
+        lifecycle.close();
       }, 55000);
-
-      request.signal.addEventListener('abort', () => {
-        clearInterval(interval);
-        clearTimeout(maxDuration);
-        controller.close();
-      });
     },
   });
 
