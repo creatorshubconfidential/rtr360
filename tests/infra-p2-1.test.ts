@@ -73,6 +73,34 @@ describe('env validation', () => {
     expect(status.valid).toBe(true);
   });
 
+
+  it('does not require SESSION_SECRET for current opaque server-side sessions', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgresql://localhost/db';
+    process.env.ENCRYPTION_MASTER_KEY = Buffer.alloc(32).toString('base64');
+    delete process.env.SESSION_SECRET;
+    delete process.env.SETUP_INIT_KEY;
+
+    const { getEnvStatus } = await import('@/lib/env');
+    const status = getEnvStatus();
+
+    expect(status.required.SESSION_SECRET).toBeUndefined();
+    expect(status.required.SETUP_INIT_KEY).toBeUndefined();
+    expect(status.valid).toBe(true);
+  });
+
+  it('still requires ENCRYPTION_MASTER_KEY in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgresql://localhost/db';
+    delete process.env.ENCRYPTION_MASTER_KEY;
+
+    const { getEnvStatus } = await import('@/lib/env');
+    const status = getEnvStatus();
+
+    expect(status.valid).toBe(false);
+    expect(status.errors).toContain('ENCRYPTION_MASTER_KEY is required in production');
+  });
+
   it('never exposes secret values', async () => {
     process.env.UPSTASH_REDIS_REST_TOKEN = 'super-secret-token-12345';
     process.env.DATABASE_URL = 'postgresql://user:pass@host/db';
