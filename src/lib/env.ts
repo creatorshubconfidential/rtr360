@@ -101,9 +101,19 @@ function validateEnv(): EnvStatus {
   if (!hasDatabaseUrl && isProduction()) {
     errors.push('DATABASE_URL (or POSTGRES_PRISMA_URL) is required in production');
   }
-  checkRequired('SETUP_INIT_KEY', process.env.SETUP_INIT_KEY);
-  checkRequired('SESSION_SECRET', process.env.SESSION_SECRET);
+  // Webhook secrets are encrypted at rest in production, so the master key
+  // remains a production security requirement.
   checkRequired('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
+
+  // These values are not process-wide runtime dependencies:
+  // - SETUP_INIT_KEY protects only the one-time setup endpoint. If absent,
+  //   that endpoint fails closed and the rest of the application can operate.
+  // - SESSION_SECRET is reserved for a future signed-session implementation;
+  //   current sessions use high-entropy opaque tokens stored server-side.
+  // Treating either as globally required would cause false production health
+  // degradation without improving request safety.
+  checkOptional('SETUP_INIT_KEY', process.env.SETUP_INIT_KEY);
+  checkOptional('SESSION_SECRET', process.env.SESSION_SECRET);
   checkOptional('UPSTASH_REDIS_REST_URL', process.env.UPSTASH_REDIS_REST_URL);
   checkOptional('UPSTASH_REDIS_REST_TOKEN', process.env.UPSTASH_REDIS_REST_TOKEN);
   checkOptional('SENTRY_DSN', process.env.SENTRY_DSN);
