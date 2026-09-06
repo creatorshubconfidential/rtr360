@@ -463,7 +463,7 @@ const ID_CASES: IdCase[] = [
   { name: 'drivers', module: 'drivers/[id]', model: 'driver', fixture: baseRec({ name: 'D', phone: '+971500000001' }) },
   { name: 'tickets', module: 'tickets/[id]', model: 'ticket', fixture: baseRec({ subject: 'S', priority: 'medium' }), patchBody: { subject: 'S2' } },
   { name: 'users', module: 'users/[id]', model: 'user', fixture: baseRec({ email: 'b@x.io', name: 'Ub', role: 'viewer' }), patchBody: { name: 'Ub2' } },
-  { name: 'invoices', module: 'invoices/[id]', model: 'invoice', fixture: baseRec({ invoiceNumber: 'INV-1', total: 100 }), patchBody: { status: 'paid' } },
+  { name: 'invoices', module: 'invoices/[id]', model: 'invoice', fixture: baseRec({ invoiceNumber: 'INV-1', total: 100, status: 'pending' }), patchBody: { notes: 'IDOR probe' } },
   { name: 'leads', module: 'leads/[id]', model: 'lead', fixture: baseRec({ name: 'L', phone: '+971500000002' }), patchBody: { status: 'contacted' } },
   { name: 'maintenance', module: 'maintenance/[id]', model: 'maintenanceRecord', fixture: baseRec({ type: 'oil_change' }), patchBody: { status: 'scheduled' } },
   { name: 'quotations', module: 'quotations/[id]', model: 'quotation', fixture: baseRec({ quoteNumber: 'Q-1', total: 200 }), patchBody: { status: 'draft' } },

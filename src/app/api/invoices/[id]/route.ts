@@ -85,6 +85,22 @@ export async function PATCH(
           { status: 400 }
         );
       }
+      // P1 billing: state machine — terminal/irreversible states protected.
+      // 'paid' is immutable (payment reversal requires a credit-note flow);
+      // 'cancelled' is terminal; overdue can still be paid or cancelled.
+      const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        pending: ['paid', 'overdue', 'cancelled'],
+        overdue: ['paid', 'cancelled'],
+        paid: [],
+        cancelled: [],
+      };
+      const allowed = ALLOWED_TRANSITIONS[invoice.status] ?? [];
+      if (!allowed.includes(status)) {
+        return NextResponse.json(
+          { error: `Cannot transition invoice from '${invoice.status}' to '${status}'` },
+          { status: 409 }
+        );
+      }
       updateData.status = status;
       // Auto-set paidAt when marking as paid
       if (status === 'paid') {

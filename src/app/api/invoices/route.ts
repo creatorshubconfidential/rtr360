@@ -110,32 +110,55 @@ export async function POST(request: Request) {
       today.getFullYear().toString() +
       (today.getMonth() + 1).toString().padStart(2, '0') +
       today.getDate().toString().padStart(2, '0');
-    const count = await db.invoice.count({
-      where: { createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) } },
-    });
-    const invoiceNumber = `INV-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+    // P1 billing: numbering retry under concurrency. invoiceNumber is UNIQUE
+    // in the schema; two concurrent creates computing count+1 would race.
+    // On a unique violation we re-count and retry (bounded).
+    let invoice: Awaited<ReturnType<typeof createInvoice>> | null = null;
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const count = await db.invoice.count({
+        where: { createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) } },
+      });
+      const invoiceNumber = `INV-${dateStr}-${(count + 1 + attempt).toString().padStart(3, '0')}`;
+      try {
+        invoice = await createInvoice(invoiceNumber);
+        break;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/Unique constraint|P2002/i.test(msg)) {
+          lastError = e; // concurrent create won the number — re-count and retry
+          continue;
+        }
+        throw e;
+      }
+    }
+    if (!invoice) {
+      throw lastError ?? new Error('Invoice numbering failed after retries');
+    }
 
-    const invoice = await db.invoice.create({
-      data: {
-        invoiceNumber,
-        organizationId: orgId,
-        subscriptionId: subscriptionId || null,
-        amount: numAmount,
-        tax: numTax,
-        total,
-        status: 'pending',
-        dueDate: new Date(dueDate),
-        notes: notes?.trim() || null,
-      },
-      include: {
-        subscription: {
-          include: {
-            plan: { select: { id: true, name: true } },
-          },
+    async function createInvoice(invoiceNumber: string) {
+      return db.invoice.create({
+        data: {
+          invoiceNumber,
+          organizationId: orgId,
+          subscriptionId: subscriptionId || null,
+          amount: numAmount,
+          tax: numTax,
+          total,
+          status: 'pending',
+          dueDate: new Date(dueDate),
+          notes: notes?.trim() || null,
         },
-        organization: { select: { id: true, name: true } },
-      },
-    });
+        include: {
+          subscription: {
+            include: {
+              plan: { select: { id: true, name: true } },
+            },
+          },
+          organization: { select: { id: true, name: true } },
+        },
+      });
+    }
         await logAudit({ user, action: 'create', entity: 'Invoice', entityId: invoice?.id, ipAddress: getClientIp(request) });
 
     return NextResponse.json({ invoice }, { status: 201 });
