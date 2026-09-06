@@ -105,7 +105,7 @@ describe('P0-⑤ webhook secret backfill (behavioral)', () => {
 
 describe('P0-⑤ secrets exposure inventory (behavioral)', () => {
   it('ApiKey raw keys have zero route exposure (structural: no route imports ApiKey writes)', async () => {
-    // Verified behaviorally in P0-② (no ApiKey routes exist); here we assert
+    // P0-⑥ ships hashed-only storage (routes store SHA-256, never raw); here we assert
     // the crypto boundary remains un-bypassed: decryptSecret never returns
     // v1: content without the key.
     const { decryptSecret } = await import('@/lib/crypto');

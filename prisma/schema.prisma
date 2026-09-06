@@ -830,6 +830,8 @@ model Setting {
 // API KEYS (Phase 9)
 // ----------------------
 
+// P0-⑥: `key` stores a SHA-256 HASH of the raw key (raw shown once at
+// creation/rotation, never persisted). Auth via src/lib/api-keys.ts.
 model ApiKey {
   id             String    @id @default(cuid())
   name           String
