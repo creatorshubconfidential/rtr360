@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+import { isTenantAccessible } from '@/lib/tenant';
 import { requirePermission, JOBS_MANAGE } from '@/lib/permissions';
 import { getJob } from '@/lib/queue';
 import { logger } from '@/lib/logger';
@@ -39,7 +40,7 @@ export async function GET(
     }
 
     // For non-super_admin, verify the job belongs to their org
-    if (user.role !== 'super_admin' && job.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, job.organizationId)) {
       logger.security('job.cross_tenant_access_attempt', {
         jobId: id,
         userId: user.id,

@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
 export async function GET(
@@ -34,7 +35,7 @@ export async function GET(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && subscription.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, subscription.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -70,7 +71,7 @@ export async function PATCH(
     }
 
     // Verify ownership
-    if (user.role !== 'super_admin' && subscription.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, subscription.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 

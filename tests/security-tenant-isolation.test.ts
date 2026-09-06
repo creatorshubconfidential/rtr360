@@ -67,7 +67,10 @@ describe('P0-2: PATCH /api/users/[id] privilege escalation', () => {
   });
 
   it('prevents cross-org user updates', () => {
-    expect(code).toMatch(/user\.role\s*!==\s*['"]super_admin['"].*organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, existing.organizationId)') ||
+        /user\.role\s*!==\s*['"]super_admin['"].*organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('prevents non-super_admin from modifying super_admin users', () => {
@@ -86,18 +89,27 @@ describe('P0-3: Invoice PDF cross-tenant IDOR', () => {
   });
 
   it('checks tenant isolation (organizationId match)', () => {
-    // Must verify invoice belongs to user's org
-    expect(code).toMatch(/invoice\.organizationId\s*!==\s*user\.organizationId/);
+    // Must verify invoice belongs to user's org (helper or inline)
+    expect(
+      code.includes('isTenantAccessible(user, invoice.organizationId)') ||
+        /invoice\.organizationId\s*!==\s*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('returns 404 (not 403) for cross-tenant access to avoid information leakage', () => {
     // Should return 404 to not reveal resource existence
     expect(code).toContain('status: 404');
-    expect(code).toMatch(/organizationId.*user\.organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, invoice.organizationId)') ||
+        /organizationId.*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('allows super_admin to bypass tenant check', () => {
-    expect(code).toContain("user.role !== 'super_admin'");
+    expect(
+      code.includes('isTenantAccessible(') ||
+        code.includes("user.role !== 'super_admin'")
+    ).toBe(true);
   });
 });
 
@@ -114,21 +126,29 @@ describe('P1-4: Revenue forecast tenant leak', () => {
   it('scopes invoice queries to user organization', () => {
     // orgFilterStrict must be applied to invoice queries
     expect(code).toContain('orgFilterStrict');
-    expect(code).toMatch(/orgFilterStrict.*organizationId/);
+    expect(
+      /orgFilterStrict.*organizationId/.test(code) ||
+        /orgFilterStrict\s*=\s*getTenantFilter\(user\)/.test(code)
+    ).toBe(true);
   });
 
   it('does not expose other organizations\' subscription data', () => {
     // orgFilter is defined with organizationId scoping
     expect(code).toContain('orgFilter');
-    // orgFilter uses organizationId for non-super_admin
-    expect(code).toMatch(/organizationId:\s*user\.organizationId/);
+    // orgFilter uses organizationId for non-super_admin (or the authoritative helper)
+    expect(
+      /organizationId:\s*user\.organizationId/.test(code) ||
+        /orgFilter\s*=\s*getTenantFilter\(user\)/.test(code)
+    ).toBe(true);
     // orgFilter is applied to subscription queries
     expect(code).toMatch(/where:.*\.{3}orgFilter/);
   });
 
   it('super_admin gets unscoped data (no orgFilter applied for super_admin)', () => {
-    // orgFilter is empty object {} for super_admin
-    expect(code).toMatch(/super_admin.*\?\s*\{\}/);
+    // orgFilter is empty object {} for super_admin (inline or via getTenantFilter)
+    expect(
+      /super_admin.*\?\s*\{\}/.test(code) || code.includes('getTenantFilter(user)')
+    ).toBe(true);
   });
 });
 
@@ -143,15 +163,24 @@ describe('P1-5: Maintenance ownership', () => {
   });
 
   it('POST verifies vehicle belongs to user\'s organization before create', () => {
-    expect(listCode).toMatch(/vehicle\.organizationId\s*!==\s*user\.organizationId/);
+    expect(
+      listCode.includes('isTenantAccessible(user, vehicle.organizationId)') ||
+        /vehicle\.organizationId\s*!==\s*user\.organizationId/.test(listCode)
+    ).toBe(true);
   });
 
   it('POST sets organizationId from session, not from client', () => {
-    expect(listCode).toContain('organizationId: user.organizationId!');
+    expect(
+      listCode.includes("organizationId: user.organizationId ?? '__none__'") ||
+        listCode.includes('organizationId: user.organizationId!')
+    ).toBe(true);
   });
 
   it('GET list scopes by organizationId for non-super_admin', () => {
-    expect(listCode).toMatch(/user\.role\s*!==\s*['"]super_admin['"].*organizationId/);
+    expect(
+      listCode.includes('getTenantFilter(') ||
+        /user\.role\s*!==\s*['"]super_admin['"].*organizationId/.test(listCode)
+    ).toBe(true);
   });
 
   it('has rate limiting on write methods', () => {
@@ -170,19 +199,31 @@ describe('P1-6: Installation ownership', () => {
   });
 
   it('POST verifies vehicle belongs to user\'s organization', () => {
-    expect(code).toMatch(/vehicle\.organizationId\s*!==\s*user\.organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, vehicle.organizationId)') ||
+        /vehicle\.organizationId\s*!==\s*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('POST verifies device belongs to user\'s organization', () => {
-    expect(code).toMatch(/device\.organizationId.*user\.organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, device.organizationId)') ||
+        /device\.organizationId.*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('POST sets organizationId from session, not from client', () => {
-    expect(code).toContain('organizationId: user.organizationId!');
+    expect(
+      code.includes("organizationId: user.organizationId ?? '__none__'") ||
+        code.includes('organizationId: user.organizationId!')
+    ).toBe(true);
   });
 
   it('GET list scopes by organizationId for non-super_admin', () => {
-    expect(code).toMatch(/user\.role\s*!==\s*['"]super_admin['"].*organizationId/);
+    expect(
+      code.includes('getTenantFilter(') ||
+        /user\.role\s*!==\s*['"]super_admin['"].*organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('has rate limiting', () => {
@@ -201,7 +242,10 @@ describe('P1-7: AI conversation ownership', () => {
   });
 
   it('GET checks conversation belongs to user\'s organization', () => {
-    expect(code).toMatch(/conversation\.organizationId\s*!==\s*user\.organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, conversation.organizationId)') ||
+        /conversation\.organizationId\s*!==\s*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('GET returns 404 for cross-tenant access', () => {
@@ -212,11 +256,15 @@ describe('P1-7: AI conversation ownership', () => {
   it('DELETE checks conversation belongs to user\'s organization', () => {
     // The file should have at least 2 org checks (GET + DELETE)
     const matches = code.match(/conversation\.organizationId/g);
-    expect(matches?.length).toBeGreaterThanOrEqual(2);
+    const helperUses = code.match(/isTenantAccessible\(user, conversation\.organizationId\)/g) ?? [];
+    expect((matches?.length ?? 0) + helperUses.length).toBeGreaterThanOrEqual(2);
   });
 
   it('allows super_admin to bypass tenant check', () => {
-    expect(code).toContain("user.role !== 'super_admin'");
+    expect(
+      code.includes('isTenantAccessible(') ||
+        code.includes("user.role !== 'super_admin'")
+    ).toBe(true);
   });
 });
 
@@ -252,7 +300,10 @@ describe('P1-9: PATCH /api/quotations/[id] RBAC enforcement', () => {
   });
 
   it('has tenant isolation on PATCH (org check)', () => {
-    expect(code).toMatch(/quotation\.organizationId\s*!==\s*user\.organizationId/);
+    expect(
+      code.includes('isTenantAccessible(user, quotation.organizationId)') ||
+        /quotation\.organizationId\s*!==\s*user\.organizationId/.test(code)
+    ).toBe(true);
   });
 
   it('has rate limiting on PATCH', () => {

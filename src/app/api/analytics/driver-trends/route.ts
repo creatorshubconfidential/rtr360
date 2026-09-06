@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { getTenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
+    const orgFilter = getTenantFilter(user);
 
     // 1. Driver full data with trip aggregation
     const drivers = await db.driver.findMany({
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     const driverTrips = await db.trip.groupBy({
       by: ['driverName'],
       where: {
-        ...(user.role === 'super_admin' ? {} : { organizationId: user.organizationId! }),
+        ...getTenantFilter(user),
         driverName: { not: null },
       },
       _count: true,

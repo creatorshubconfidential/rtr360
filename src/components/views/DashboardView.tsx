@@ -219,15 +219,15 @@ export default function DashboardView() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Generate mock sparkline data from stats (7-day trend simulation)
+  // Honest snapshot series (current real values; no fabricated history).
+  // When real daily history becomes available, replace with actual trend data.
   const sparkData = useMemo(() => {
     if (!stats) return { vehicles: [], trips: [], alerts: [] };
-    const rand = (base: number, variance: number) =>
-      Array.from({ length: 7 }, () => Math.max(0, base + Math.round((Math.random() - 0.5) * variance)));
+    const snapshot = (value: number) => Array.from({ length: 7 }, () => Math.max(0, value));
     return {
-      vehicles: rand(stats.activeVehicles, Math.max(1, stats.activeVehicles * 0.15)),
-      trips: rand(stats.todayTrips * 3, Math.max(1, stats.todayTrips * 2)),
-      alerts: rand(stats.openAlerts, Math.max(1, stats.openAlerts * 0.3)),
+      vehicles: snapshot(stats.activeVehicles),
+      trips: snapshot(stats.todayTrips),
+      alerts: snapshot(stats.openAlerts),
     };
   }, [stats]);
 

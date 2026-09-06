@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter, isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 const VALID_TYPES = [
   'oil_change', 'tire_rotation', 'brake_service', 'engine_service',
@@ -25,12 +26,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation: super_admin sees all, org users see only their own
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -139,7 +135,7 @@ export async function POST(request: Request) {
     if (vehicleId) {
       const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId } });
       if (!vehicle) return NextResponse.json({ error: 'Vehicle not found' }, { status: 400 });
-      if (user.role !== 'super_admin' && vehicle.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, vehicle.organizationId)) {
         return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
       }
     }
@@ -155,7 +151,7 @@ export async function POST(request: Request) {
         completedDate: completedDate ? new Date(completedDate) : null,
         cost: cost ?? null,
         status: status || 'upcoming',
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: {
         vehicle: {

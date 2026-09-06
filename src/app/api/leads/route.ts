@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 
 // Valid lead statuses for pipeline
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost', 'closed'];
@@ -23,12 +24,7 @@ export async function GET(request: Request) {
     const search = searchParams.get('search')?.trim();
     const source = searchParams.get('source');
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation: org users only see their org's leads
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -127,10 +123,9 @@ export async function POST(request: Request) {
       assignedToId: user.id,
     };
 
-    // If user belongs to an org, assign the lead to that org
-    if (user.organizationId) {
-      leadData.organizationId = user.organizationId;
-    }
+    // Tenant boundary: bind lead to caller's org; org-less callers get the
+    // impossible org — never a NULL-org orphan, never a client-chosen org.
+    leadData.organizationId = user.organizationId ?? '__none__';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lead = await db.lead.create({ data: leadData as any });

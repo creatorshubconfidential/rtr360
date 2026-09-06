@@ -28,6 +28,20 @@ export function getStrictTenantFilter(
 }
 
 /**
+ * Tenant filter scoped through a nested relation (e.g. trips filtered by
+ * vehicle.organizationId). Super admins bypass the filter (return empty).
+ * Orgless non-super_admin users get an impossible filter — fail closed.
+ */
+export function getRelationTenantFilter(
+  user: UserSession,
+  relation: string
+): Record<string, unknown> {
+  if (user.role === 'super_admin') return {};
+  const orgId = user.organizationId ?? '__none__';
+  return { [relation]: { organizationId: orgId } };
+}
+
+/**
  * Checks if a resource belongs to the user's organization.
  * Returns true if access is allowed, false otherwise.
  */

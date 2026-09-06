@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+import { getTenantFilter } from '@/lib/tenant';
 import { requirePermission, JOBS_MANAGE } from '@/lib/permissions';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -32,14 +33,11 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
     const type = searchParams.get('type');
 
-    // Build tenant-scoped where clause
+    // Build tenant-scoped where clause (fail closed for orgless non-super_admin)
     const where: Prisma.BackgroundJobWhereInput = {
       status: JOB_STATUS.FAILED,
     };
-
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    Object.assign(where, getTenantFilter(user));
 
     if (type) {
       where.type = type;

@@ -210,9 +210,11 @@ describe('IDOR: Cross-tenant access prevention on single-resource routes', () =>
 
       it('checks tenant isolation for non-super_admin', () => {
         const hasOrgCheck =
-          code.includes('organizationId') &&
-          code.includes('user.organizationId') &&
-          code.includes("user.role !== 'super_admin'");
+          code.includes('isTenantAccessible(') ||
+          (code.includes('organizationId') &&
+            code.includes('user.organizationId') &&
+            (code.includes("user.role !== 'super_admin'") ||
+              code.includes("user.role === 'super_admin'")));
         expect(hasOrgCheck).toBe(true);
       });
 
@@ -271,12 +273,18 @@ describe('Billing: Invoice and subscription endpoints', () => {
 
   it('GET /api/invoices/:id checks tenant isolation', () => {
     expect(invoiceDetail).toContain('organizationId');
-    expect(invoiceDetail).toContain("user.role !== 'super_admin'");
+    expect(
+      invoiceDetail.includes('isTenantAccessible(') ||
+        invoiceDetail.includes("user.role !== 'super_admin'")
+    ).toBe(true);
   });
 
   it('GET /api/invoices/:id/pdf checks tenant isolation', () => {
-    expect(invoicePdf).toContain('invoice.organizationId');
-    expect(invoicePdf).toContain('user.organizationId');
+    expect(
+      invoicePdf.includes('isTenantAccessible(user, invoice.organizationId)') ||
+        (invoicePdf.includes('invoice.organizationId') &&
+          invoicePdf.includes('user.organizationId'))
+    ).toBe(true);
     expect(invoicePdf).toContain('status: 404');
   });
 
@@ -310,7 +318,10 @@ describe('AI: Chat endpoint security', () => {
 
   it('GET /api/ai/conversations/:id checks tenant isolation', () => {
     expect(convCode).toContain('conversation.organizationId');
-    expect(convCode).toContain('user.organizationId');
+    expect(
+      convCode.includes('isTenantAccessible(user, conversation.organizationId)') ||
+        convCode.includes('user.organizationId')
+    ).toBe(true);
   });
 });
 

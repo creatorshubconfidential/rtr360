@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter, isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['scheduled', 'in_progress', 'testing', 'completed', 'failed', 'cancelled'];
 
 // Generate installation number: INST-YYYYMM-NNN
@@ -37,11 +38,7 @@ export async function GET(request: Request) {
     const technicianId = searchParams.get('technicianId');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -151,19 +148,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Device is already installed on another vehicle' }, { status: 400 });
     }
 
-    if (user.role !== 'super_admin' && vehicle.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, vehicle.organizationId)) {
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
-    if (device.organizationId && user.role !== 'super_admin' && device.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, device.organizationId)) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
     // Validate technician if provided (cross-tenant FK protection)
     if (technicianId) {
       const tech = await db.technician.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: technicianId, organizationId: user.organizationId }
-          : { id: technicianId },
+        where: user.role === 'super_admin'
+          ? { id: technicianId }
+          : { id: technicianId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!tech) {
         return NextResponse.json({ error: 'Technician not found' }, { status: 404 });
@@ -175,7 +172,7 @@ export async function POST(request: Request) {
     const installation = await db.installation.create({
       data: {
         installationNumber,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
         vehicleId,
         deviceId,
         technicianId: technicianId || null,

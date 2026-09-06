@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['pending', 'paid', 'overdue', 'cancelled'];
 
 export async function GET(
@@ -35,7 +36,7 @@ export async function GET(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && invoice.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, invoice.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -71,7 +72,7 @@ export async function PATCH(
     }
 
     // Verify ownership
-    if (user.role !== 'super_admin' && invoice.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, invoice.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -82,6 +83,22 @@ export async function PATCH(
         return NextResponse.json(
           { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
           { status: 400 }
+        );
+      }
+      // P1 billing: state machine — terminal/irreversible states protected.
+      // 'paid' is immutable (payment reversal requires a credit-note flow);
+      // 'cancelled' is terminal; overdue can still be paid or cancelled.
+      const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        pending: ['paid', 'overdue', 'cancelled'],
+        overdue: ['paid', 'cancelled'],
+        paid: [],
+        cancelled: [],
+      };
+      const allowed = ALLOWED_TRANSITIONS[invoice.status] ?? [];
+      if (!allowed.includes(status)) {
+        return NextResponse.json(
+          { error: `Cannot transition invoice from '${invoice.status}' to '${status}'` },
+          { status: 409 }
         );
       }
       updateData.status = status;

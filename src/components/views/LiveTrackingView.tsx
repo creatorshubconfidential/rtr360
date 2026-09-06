@@ -22,37 +22,12 @@ interface VehiclePosition {
   model: string | null;
   driver: { id: string; name: string; phone: string | null } | null;
   device: { id: string; imei: string; status: string } | null;
-  status: string;
-  lat: number;
-  lng: number;
-  speed: number;
-  heading: number;
-  lastUpdate: string;
-}
-
-const UAE_LOCATIONS = [
-  { lat: 25.2048, lng: 55.2708 },
-  { lat: 25.2769, lng: 55.2962 },
-  { lat: 25.1972, lng: 55.2744 },
-  { lat: 25.2285, lng: 55.2872 },
-  { lat: 25.1118, lng: 55.1391 },
-  { lat: 24.4539, lng: 54.3773 },
-  { lat: 25.3519, lng: 55.4210 },
-  { lat: 25.5255, lng: 55.5313 },
-];
-
-function generatePositions(vehicles: any[]): VehiclePosition[] {
-  return vehicles.map((v, i) => {
-    const loc = UAE_LOCATIONS[i % UAE_LOCATIONS.length];
-    return {
-      ...v,
-      lat: loc.lat + (Math.random() - 0.5) * 0.05,
-      lng: loc.lng + (Math.random() - 0.5) * 0.05,
-      speed: Math.round(Math.random() * 120),
-      heading: Math.round(Math.random() * 360),
-      lastUpdate: new Date(Date.now() - Math.random() * 300000).toISOString(),
-    };
-  });
+  status: string; // 'moving' | 'idle' | 'no_data'
+  lat: number | null;
+  lng: number | null;
+  speed: number | null;
+  heading: number | null;
+  lastUpdate: string | null;
 }
 
 
@@ -79,7 +54,8 @@ export default function LiveTrackingView() {
       const data = await res.json();
       if (res.ok) {
         setVehicles(data.vehicles);
-        setPositions(generatePositions(data.vehicles));
+        // Positions come ONLY from the SSE stream (real telemetry).
+        // Never generate fake coordinates client-side.
       }
     } catch {}
   }, []);
@@ -137,13 +113,15 @@ export default function LiveTrackingView() {
       
       const filtered = positions.filter(p => {
         if (statusFilter === 'all') return true;
-        if (statusFilter === 'moving') return p.speed > 5;
-        if (statusFilter === 'idle') return p.speed <= 5;
-        return p.status === statusFilter;
+        if (statusFilter === 'moving') return p.status === 'moving';
+        if (statusFilter === 'idle') return p.status === 'idle';
+        return p.status === statusFilter; // includes 'no_data'
       });
       
       filtered.forEach(pos => {
-        const color = pos.speed > 5 ? '#2563eb' : '#8b5cf6';
+        // Vehicles without fresh telemetry have no real coordinates — skip markers.
+        if (pos.lat === null || pos.lng === null) return;
+        const color = pos.status === 'moving' ? '#2563eb' : '#8b5cf6';
         const icon = L.divIcon({
           html: `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 6l1.5 3h-3L12 6zM7 12l3-1.5v3L7 12zm10 0l-3 1.5v-3L17 12zm-5 5l-1.5-3h3L12 17z"/></svg></div>`,
           className: 'custom-marker',
@@ -160,7 +138,7 @@ export default function LiveTrackingView() {
             <hr style="margin:6px 0;border-color:#e2e8f0"/>
             <div style="font-size:12px;display:grid;grid-template-columns:auto 1fr;gap:2px 8px">
               <span style="color:#94a3b8">Driver:</span><span style="font-weight:500">${pos.driver?.name || 'Unassigned'}</span>
-              <span style="color:#94a3b8">Speed:</span><span style="font-weight:700;color:${pos.speed > 100 ? '#dc2626' : '#059669'}">${pos.speed} km/h</span>
+              <span style="color:#94a3b8">Speed:</span><span style="font-weight:700;color:${(pos.speed ?? 0) > 100 ? '#dc2626' : '#059669'}">${pos.speed ?? '—'} km/h</span>
               <span style="color:#94a3b8">IMEI:</span><span style="font-family:monospace;font-size:11px">${pos.device?.imei || 'N/A'}</span>
             </div>
           </div>
@@ -175,6 +153,7 @@ export default function LiveTrackingView() {
   // Pan to selected vehicle
   useEffect(() => {
     if (!mapRef.current || !selectedVehicle) return;
+    if (selectedVehicle.lat === null || selectedVehicle.lng === null) return;
     mapRef.current.setView([selectedVehicle.lat, selectedVehicle.lng], 14, { animate: true });
   }, [selectedVehicle]);
 
@@ -200,13 +179,13 @@ export default function LiveTrackingView() {
             make: v.make,
             model: v.model,
             driver: v.driver ? { id: '', name: v.driver, phone: null } : null,
-            device: v.imei ? { id: '', imei: v.imei, status: 'installed' } : null,
-            status: v.status,
-            lat: v.lat,
-            lng: v.lng,
-            speed: v.speed,
-            heading: v.heading,
-            lastUpdate: v.timestamp,
+            device: null,
+            status: v.status, // 'moving' | 'idle' | 'no_data' (real telemetry state)
+            lat: v.lat ?? null,
+            lng: v.lng ?? null,
+            speed: v.speed ?? null,
+            heading: v.heading ?? null,
+            lastUpdate: v.lastUpdate ?? null,
           }));
           setPositions(serverPositions);
           setSseConnected(true);
@@ -234,20 +213,9 @@ export default function LiveTrackingView() {
 
     es.onopen = () => setSseConnected(true);
     es.onerror = () => {
+      // Never fabricate positions on connection loss — show the stale/real
+      // last-known state and the disconnected badge until SSE recovers.
       setSseConnected(false);
-      // Fallback to polling if SSE fails
-      if (positionsRef.current.length > 0) {
-        const fallbackInterval = setInterval(() => {
-          setPositions(prev => prev.map(p => ({
-            ...p,
-            lat: p.lat + (Math.random() - 0.5) * 0.002,
-            lng: p.lng + (Math.random() - 0.5) * 0.002,
-            speed: Math.max(0, Math.min(140, p.speed + Math.round((Math.random() - 0.5) * 10))),
-            lastUpdate: new Date().toISOString(),
-          })));
-        }, 3000);
-        return () => clearInterval(fallbackInterval);
-      }
     };
 
     return () => {
@@ -259,14 +227,16 @@ export default function LiveTrackingView() {
 
   const filteredPositions = positions.filter(p => {
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'moving') return p.speed > 5;
-    if (statusFilter === 'idle') return p.speed <= 5;
+    if (statusFilter === 'moving') return p.status === 'moving';
+    if (statusFilter === 'idle') return p.status === 'idle';
     return p.status === statusFilter;
   });
 
-  const movingCount = positions.filter(p => p.speed > 5).length;
-  const idleCount = positions.filter(p => p.speed <= 5).length;
-  const avgSpeed = positions.length > 0 ? Math.round(positions.reduce((s, p) => s + p.speed, 0) / positions.length) : 0;
+  const movingCount = positions.filter(p => p.status === 'moving').length;
+  const idleCount = positions.filter(p => p.status === 'idle').length;
+  const withSpeed = positions.filter(p => p.speed !== null);
+  const avgSpeed = withSpeed.length > 0 ? Math.round(withSpeed.reduce((s, p) => s + (p.speed ?? 0), 0) / withSpeed.length) : 0;
+  const noDataCount = positions.filter(p => p.status === 'no_data').length;
 
   if (loading) {
     return (
@@ -344,11 +314,11 @@ export default function LiveTrackingView() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${pos.speed > 5 ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${pos.status === 'moving' ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
                     <span className="font-semibold text-sm">{pos.plateNumber}</span>
                   </div>
-                  <span className={`text-xs font-bold ${pos.speed > 100 ? 'text-red-600' : pos.speed > 5 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    {pos.speed} km/h
+                  <span className={`text-xs font-bold ${(pos.speed ?? 0) > 100 ? 'text-red-600' : pos.status === 'moving' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {pos.speed ?? '—'} km/h
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500">
@@ -356,7 +326,11 @@ export default function LiveTrackingView() {
                   <span>{[pos.make, pos.model].filter(Boolean).join(' ')}</span>
                 </div>
                 <div className="mt-1 text-[10px] text-slate-400">
-                  Updated {new Date(pos.lastUpdate).toLocaleTimeString('en-AE')}
+                  {pos.status === 'no_data'
+                    ? 'Awaiting telemetry'
+                    : pos.lastUpdate
+                      ? `Updated ${new Date(pos.lastUpdate).toLocaleTimeString('en-AE')}`
+                      : 'No telemetry'}
                 </div>
               </div>
             ))}
@@ -373,15 +347,15 @@ export default function LiveTrackingView() {
                 <h3 className="font-bold text-lg">{selectedVehicle.plateNumber}</h3>
                 <p className="text-sm text-slate-500">{[selectedVehicle.make, selectedVehicle.model].filter(Boolean).join(' ')}</p>
               </div>
-              <Badge className={`${selectedVehicle.speed > 5 ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'} border-0`}>
-                {selectedVehicle.speed > 5 ? 'Moving' : 'Idle'}
+              <Badge className={`${selectedVehicle.status === 'moving' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'} border-0`}>
+                {selectedVehicle.status === 'moving' ? 'Moving' : selectedVehicle.status === 'idle' ? 'Idle' : 'No data'}
               </Badge>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div><p className="text-xs text-slate-400">Speed</p><p className={`text-xl font-bold ${selectedVehicle.speed > 100 ? 'text-red-600' : 'text-emerald-600'}`}>{selectedVehicle.speed}<span className="text-xs font-normal ml-1">km/h</span></p></div>
+              <div><p className="text-xs text-slate-400">Speed</p><p className={`text-xl font-bold ${(selectedVehicle.speed ?? 0) > 100 ? 'text-red-600' : 'text-emerald-600'}`}>{selectedVehicle.speed ?? '—'}<span className="text-xs font-normal ml-1">km/h</span></p></div>
               <div><p className="text-xs text-slate-400">Driver</p><p className="text-sm font-medium mt-1">{selectedVehicle.driver?.name || '—'}</p></div>
               <div><p className="text-xs text-slate-400">Device</p><p className="text-sm font-mono mt-1">{selectedVehicle.device?.imei || '—'}</p></div>
-              <div><p className="text-xs text-slate-400">Last Update</p><p className="text-sm font-medium mt-1">{new Date(selectedVehicle.lastUpdate).toLocaleTimeString('en-AE')}</p></div>
+              <div><p className="text-xs text-slate-400">Last Update</p><p className="text-sm font-medium mt-1">{selectedVehicle.lastUpdate ? new Date(selectedVehicle.lastUpdate).toLocaleTimeString('en-AE') : '—'}</p></div>
             </div>
           </CardContent>
         </Card>

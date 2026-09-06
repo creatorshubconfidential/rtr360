@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, ALERT_RULES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 const VALID_TYPES = ['overspeed', 'geofence_enter', 'geofence_exit', 'sos', 'idle', 'fuel_drop', 'tamper', 'power_off', 'low_battery', 'harsh_braking', 'harsh_acceleration'];
 const VALID_CHANNELS = ['in_app', 'email', 'sms', 'whatsapp'];
 
@@ -20,10 +21,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type');
     const active = searchParams.get('active');
 
-    const where: Record<string, unknown> = {};
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
     if (type) where.type = type;
     if (active !== null && active !== undefined) where.active = active === 'true';
 
@@ -90,7 +88,7 @@ export async function POST(request: Request) {
         conditions: parsedConditions,
         channels: parsedChannels,
         active: active !== false,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

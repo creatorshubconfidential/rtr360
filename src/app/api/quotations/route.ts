@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter, isTenantAccessible } from '@/lib/tenant';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -27,12 +28,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -112,7 +108,7 @@ export async function POST(request: Request) {
     if (leadId) {
       const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
       if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, lead.organizationId)) {
         return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
       }
       if (lead.organizationId) orgId = lead.organizationId;

@@ -6,6 +6,7 @@ import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth'
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 // Role hierarchy: higher index = more powerful. A user can only assign roles <= their own level.
@@ -35,10 +36,7 @@ export async function GET(request: Request) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
 
-    const where: Record<string, unknown> = {};
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
     if (role) where.role = role;
     if (status) where.status = status;
     if (search) {

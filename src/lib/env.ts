@@ -7,8 +7,6 @@
  * Distinguishes development / test / production environments.
  */
 
-// ── Types ────────────────────────────────────────────────────────
-
 interface EnvStatus {
   valid: boolean;
   environment: string;
@@ -39,8 +37,6 @@ interface EnvConfig {
   encryptionMasterKey: string;
 }
 
-// ── Internal ──────────────────────────────────────────────────────
-
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
 function isProduction(): boolean {
@@ -51,46 +47,27 @@ function isTest(): boolean {
   return NODE_ENV === 'test';
 }
 
-function required(name: string, value: string | undefined): string {
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
 function optional(value: string | undefined): string {
   return value ?? '';
 }
-
-function redact(value: string): string {
-  if (value.length === 0) return '[not set]';
-  if (value.length <= 8) return '****';
-  return value.slice(0, 4) + '****' + value.slice(-4);
-}
-
-// ── Validation ────────────────────────────────────────────────────
 
 function validateEnv(): EnvStatus {
   const errors: string[] = [];
   const requiredVars: Record<string, { present: boolean }> = {};
   const optionalVars: Record<string, { present: boolean }> = {};
 
-  // REQUIRED in production, relaxed in dev/test
   const checkRequired = (name: string, value: string | undefined) => {
     const present = Boolean(value);
     requiredVars[name] = { present };
-    if (!present && isProduction()) {
-      errors.push(`${name} is required in production`);
-    }
+    if (!present && isProduction()) errors.push(`${name} is required in production`);
   };
 
-  // OPTIONAL
   const checkOptional = (name: string, value: string | undefined) => {
     optionalVars[name] = { present: Boolean(value) };
   };
 
-  // DATABASE_URL is required OR any Supabase-provided Postgres URL
-  // (Vercel Supabase integration sets POSTGRES_PRISMA_URL automatically)
+  // DATABASE_URL is required OR any Supabase-provided Postgres URL.
+  // Vercel's Supabase integration commonly exposes POSTGRES_PRISMA_URL.
   const hasDatabaseUrl = Boolean(
     process.env.DATABASE_URL ||
     process.env.POSTGRES_PRISMA_URL ||
@@ -101,17 +78,13 @@ function validateEnv(): EnvStatus {
   if (!hasDatabaseUrl && isProduction()) {
     errors.push('DATABASE_URL (or POSTGRES_PRISMA_URL) is required in production');
   }
-  // Webhook secrets are encrypted at rest in production, so the master key
-  // remains a production security requirement.
+
+  // Webhook secrets are encrypted at rest in production.
   checkRequired('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
 
-  // These values are not process-wide runtime dependencies:
-  // - SETUP_INIT_KEY protects only the one-time setup endpoint. If absent,
-  //   that endpoint fails closed and the rest of the application can operate.
-  // - SESSION_SECRET is reserved for a future signed-session implementation;
-  //   current sessions use high-entropy opaque tokens stored server-side.
-  // Treating either as globally required would cause false production health
-  // degradation without improving request safety.
+  // SETUP_INIT_KEY only protects the one-time setup endpoint; that endpoint
+  // fails closed when it is absent. SESSION_SECRET is reserved for a future
+  // signed-session implementation; current sessions use opaque DB tokens.
   checkOptional('SETUP_INIT_KEY', process.env.SETUP_INIT_KEY);
   checkOptional('SESSION_SECRET', process.env.SESSION_SECRET);
   checkOptional('UPSTASH_REDIS_REST_URL', process.env.UPSTASH_REDIS_REST_URL);
@@ -125,9 +98,7 @@ function validateEnv(): EnvStatus {
   checkOptional('EMAIL_SMTP_PASS', process.env.EMAIL_SMTP_PASS);
   checkOptional('EMAIL_FROM_ADDRESS', process.env.EMAIL_FROM_ADDRESS);
   checkOptional('EMAIL_FROM_NAME', process.env.EMAIL_FROM_NAME);
-  checkOptional('ENCRYPTION_MASTER_KEY', process.env.ENCRYPTION_MASTER_KEY);
 
-  // Relationship validation: Redis URL requires token
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (redisUrl && !redisToken) {
@@ -151,13 +122,9 @@ function getEnvStatus(): EnvStatus {
 }
 
 function isRedisConfigured(): boolean {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  );
+  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
-// ── Database URL helper ───────────────────────────────────────
-// Matches the resolution logic in db.ts resolveDatabaseUrl().
 function isDatabaseConfigured(): boolean {
   return Boolean(
     process.env.DATABASE_URL ||
@@ -167,7 +134,17 @@ function isDatabaseConfigured(): boolean {
   );
 }
 
-// ── Frozen config object ─────────────────────────────────────────
+function resolveDatabaseUrl(): string {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
+    return databaseUrl;
+  }
+  return process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL ||
+    databaseUrl ||
+    '';
+}
 
 function buildConfig(): EnvConfig {
   return Object.freeze({
@@ -175,7 +152,7 @@ function buildConfig(): EnvConfig {
     isProduction: isProduction(),
     isDevelopment: !isProduction() && !isTest(),
     isTest: isTest(),
-    databaseUrl: optional(process.env.DATABASE_URL),
+    databaseUrl: resolveDatabaseUrl(),
     setupInitKey: optional(process.env.SETUP_INIT_KEY),
     redisUrl: optional(process.env.UPSTASH_REDIS_REST_URL),
     redisToken: optional(process.env.UPSTASH_REDIS_REST_TOKEN),

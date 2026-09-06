@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const where: any = {};
 
     // Tenant: super_admin sees all, org users see their own + unassigned (warehouse)
+    // Orgless non-super_admin users fail closed (impossible filter)
     const tenantFilter =
       user.role === 'super_admin'
         ? []
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
               { organizationId: user.organizationId },
               { organizationId: null, status: 'warehouse' },
             ]
-          : [];
+          : [{ organizationId: '__none__' }];
 
     if (tenantFilter.length > 0) {
       where.OR = [...tenantFilter];
@@ -146,9 +147,9 @@ export async function POST(request: Request) {
     // Validate simId belongs to user's org (cross-tenant FK protection)
     if (simId) {
       const sim = await db.sIM.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: simId, organizationId: user.organizationId }
-          : { id: simId },
+        where: user.role === 'super_admin'
+          ? { id: simId }
+          : { id: simId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!sim) return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
     }

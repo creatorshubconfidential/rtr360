@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, VEHICLES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 export async function GET(request: Request) {
@@ -20,12 +21,7 @@ export async function GET(request: Request) {
     const vehicleType = searchParams.get('vehicleType');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation: org users only see their org's vehicles
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -120,9 +116,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Cannot assign branch without organization' }, { status: 403 });
       }
       const branch = await db.branch.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: branchId, organizationId: user.organizationId }
-          : { id: branchId },
+        where: user.role === 'super_admin'
+          ? { id: branchId }
+          : { id: branchId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 400 });
     }

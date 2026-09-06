@@ -3,7 +3,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, ACTIVITIES_MANAGE } from '@/lib/permissions';
-import { getTenantFilter } from '@/lib/tenant';
+import { getTenantFilter, isTenantAccessible } from '@/lib/tenant';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
 
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     if (leadId) {
       const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
       if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, lead.organizationId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     if (opportunityId) {
       const opp = await db.opportunity.findUnique({ where: { id: opportunityId }, select: { organizationId: true } });
       if (!opp) return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
-      if (user.role !== 'super_admin' && opp.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, opp.organizationId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     if (leadId) {
       const lead = await db.lead.findUnique({ where: { id: leadId }, select: { organizationId: true } });
       if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-      if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, lead.organizationId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     if (opportunityId) {
       const opp = await db.opportunity.findUnique({ where: { id: opportunityId }, select: { organizationId: true } });
       if (!opp) return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
-      if (user.role !== 'super_admin' && opp.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, opp.organizationId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
     }

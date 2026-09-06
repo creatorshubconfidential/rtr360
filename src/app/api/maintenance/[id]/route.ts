@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, MAINTENANCE_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['upcoming', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 
 export async function PATCH(
@@ -41,7 +42,7 @@ export async function PATCH(
     }
 
     // Verify ownership (tenant isolation)
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -105,7 +106,7 @@ export async function DELETE(
     }
 
     // Verify ownership (tenant isolation)
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

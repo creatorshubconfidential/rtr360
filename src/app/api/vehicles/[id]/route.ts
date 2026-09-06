@@ -10,10 +10,11 @@ const VALID_STATUSES = ['active', 'inactive', 'maintenance', 'decommissioned'];
 
 // Helper to check tenant access to a vehicle
 async function getVehicleWithAccess(vehicleId: string, user: { id: string; role: string; organizationId: string | null }) {
-  const where: Record<string, unknown> = { id: vehicleId };
-  if (user.role !== 'super_admin' && user.organizationId) {
-    where.organizationId = user.organizationId;
-  }
+  // Fail closed: orgless non-super_admin users get an impossible filter
+  const where: Record<string, unknown> =
+    user.role === 'super_admin'
+      ? { id: vehicleId }
+      : { id: vehicleId, organizationId: user.organizationId ?? '__none__' };
 
   const vehicle = await db.vehicle.findFirst({
     where,
@@ -104,17 +105,17 @@ export async function PUT(
     // Validate FK references belong to user's org (cross-tenant FK protection)
     if (branchId !== undefined && branchId) {
       const branch = await db.branch.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: branchId, organizationId: user.organizationId }
-          : { id: branchId },
+        where: user.role === 'super_admin'
+          ? { id: branchId }
+          : { id: branchId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 400 });
     }
     if (driverId !== undefined && driverId) {
       const driver = await db.driver.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: driverId, organizationId: user.organizationId }
-          : { id: driverId },
+        where: user.role === 'super_admin'
+          ? { id: driverId }
+          : { id: driverId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!driver) return NextResponse.json({ error: 'Driver not found' }, { status: 400 });
     }

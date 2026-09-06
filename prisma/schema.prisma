@@ -96,6 +96,7 @@ model Organization {
   sims               SIM[]
   aiConversations    AIConversation[]
   trips              Trip[]
+  telemetryEvents   TelemetryEvent[]
   activities         Activity[]
   backgroundJobs     BackgroundJob[]
   webhookEndpoints   WebhookEndpoint[]
@@ -237,7 +238,7 @@ model Contact {
 model Opportunity {
   id             String    @id @default(cuid())
   name           String
-  value          Decimal?
+  value          Decimal?  @db.Decimal(18, 2)
   stage          String    @default("new")
   leadId         String?   @map("lead_id")
   organizationId String    @map("organization_id")
@@ -313,6 +314,7 @@ model Vehicle {
   driver             Driver?             @relation(fields: [driverId], references: [id])
   device             Device?             @relation(fields: [deviceId], references: [id])
   trips              Trip[]
+  telemetryEvents    TelemetryEvent[]
   installations      Installation[]
   alerts             Alert[]             @relation("AlertVehicle")
   maintenanceRecords MaintenanceRecord[]
@@ -380,12 +382,21 @@ model Device {
   warehouse      String?
   status         String    @default("warehouse")
   purchaseDate   DateTime? @map("purchase_date")
-  purchaseCost   Decimal?  @map("purchase_cost")
+  purchaseCost   Decimal?  @db.Decimal(18, 2) @map("purchase_cost")
   installDate    DateTime? @map("install_date")
   warrantyExpiry DateTime? @map("warranty_expiry")
   lastPingAt     DateTime? @map("last_ping_at")
   batteryLevel   Int?      @map("battery_level")
   notes          String?
+  // P1 telemetry: device credential (SHA-256 hash; raw shown once at
+  // provisioning) + cached latest position for fast realtime queries
+  deviceKeyHash  String?   @unique @map("device_key_hash")
+  lastLat        Float?    @map("last_lat")
+  lastLng        Float?    @map("last_lng")
+  lastSpeed      Float?    @map("last_speed")
+  lastHeading    Float?    @map("last_heading")
+  lastDeviceTime DateTime? @map("last_device_time")
+  telemetryEvents TelemetryEvent[]
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -594,7 +605,7 @@ model MaintenanceRecord {
   triggerValue   Float?   @map("trigger_value")
   scheduledDate  DateTime? @map("scheduled_date")
   completedDate  DateTime? @map("completed_date")
-  cost           Decimal?
+  cost           Decimal?  @db.Decimal(18, 2)
   status         String    @default("upcoming")
   organizationId String    @map("organization_id")
   createdAt      DateTime  @default(now()) @map("created_at")
@@ -616,8 +627,8 @@ model Plan {
   id           String   @id @default(cuid())
   name         String
   description  String?
-  priceMonthly Decimal  @map("price_monthly")
-  priceAnnual  Decimal? @map("price_annual")
+  priceMonthly Decimal  @db.Decimal(18, 2) @map("price_monthly")
+  priceAnnual  Decimal? @db.Decimal(18, 2) @map("price_annual")
   vehicleLimit Int      @default(0) @map("vehicle_limit")
   features     String?
   active       Boolean  @default(true)
@@ -648,9 +659,9 @@ model Invoice {
   invoiceNumber  String    @unique @map("invoice_number")
   organizationId String    @map("organization_id")
   subscriptionId String?   @map("subscription_id")
-  amount         Decimal
-  tax            Decimal   @default(0)
-  total          Decimal
+  amount         Decimal   @db.Decimal(18, 2)
+  tax            Decimal   @db.Decimal(18, 2) @default(0)
+  total          Decimal   @db.Decimal(18, 2)
   status         String    @default("pending")
   dueDate        DateTime  @map("due_date")
   paidAt         DateTime? @map("paid_at")
@@ -675,10 +686,10 @@ model Quotation {
   leadId          String?   @map("lead_id")
   contactId       String?   @map("contact_id")
   organizationId  String    @map("organization_id")
-  subtotal        Decimal
-  taxRate         Decimal   @default(5) @map("tax_rate")
-  tax             Decimal   @default(0)
-  total           Decimal
+  subtotal        Decimal   @db.Decimal(18, 2)
+  taxRate         Decimal   @db.Decimal(18, 2) @default(5) @map("tax_rate")
+  tax             Decimal   @db.Decimal(18, 2) @default(0)
+  total           Decimal   @db.Decimal(18, 2)
   status          String    @default("draft")
   validUntil      DateTime? @map("valid_until")
   notes           String?
@@ -702,7 +713,7 @@ model QuotationItem {
   sortOrder   Int     @default(0) @map("sort_order")
   description String
   quantity    Int
-  unitPrice   Decimal @map("unit_price")
+  unitPrice   Decimal @db.Decimal(18, 2) @map("unit_price")
 
   quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
@@ -830,6 +841,8 @@ model Setting {
 // API KEYS (Phase 9)
 // ----------------------
 
+// P0-⑥: `key` stores a SHA-256 HASH of the raw key (raw shown once at
+// creation/rotation, never persisted). Auth via src/lib/api-keys.ts.
 model ApiKey {
   id             String    @id @default(cuid())
   name           String
@@ -860,7 +873,7 @@ model AIConversation {
   userId         String?  @map("user_id")
   organizationId String?  @map("organization_id")
   type           String   @default("fleet_assistant")
-  messages       Json
+  messages       Json    @default("[]")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -875,13 +888,38 @@ model AIConversation {
 // RATE LIMIT COUNTER (distributed)
 // ----------------------
 
+// P1 — Real telemetry stream (GPS positions ingested from devices).
+// Idempotency/replay protection: unique (device_id, device_time) — a
+// duplicate or replayed event hits the constraint and is skipped.
+model TelemetryEvent {
+  id             String   @id @default(cuid())
+  deviceId       String   @map("device_id")
+  vehicleId      String?  @map("vehicle_id")
+  organizationId String?  @map("organization_id")
+  lat            Float
+  lng            Float
+  speed          Float?
+  heading        Float?
+  deviceTime     DateTime @map("device_time")
+  serverTime     DateTime @default(now()) @map("server_time")
+
+  device       Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle?     @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@unique([deviceId, deviceTime])
+  @@index([vehicleId, deviceTime])
+  @@index([organizationId, deviceTime])
+  @@index([deviceTime])
+}
+
 model RateLimitCounter {
   id        String   @id @default(cuid())
   key       String   @unique
   count     Int      @default(1)
-  resetAt   DateTime @map("reset_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  resetAt   DateTime @db.Timestamptz(3) @map("reset_at")
+  createdAt DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(3) @map("updated_at")
 
   @@index([resetAt])
 }
@@ -926,6 +964,10 @@ model BackgroundJob {
   @@index([status, runAt])
   // Stale lease recovery: find PROCESSING jobs with expired leases
   @@index([status, leasedUntil])
+  // Added by P0-4 parity: DB-side indexes created by 20260819 (keep, don't drop)
+  @@index([type, status])
+  @@index([organizationId])
+  @@index([createdAt])
 }
 
 // ----------------------

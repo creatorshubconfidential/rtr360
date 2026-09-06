@@ -6,6 +6,7 @@ import { requireAuth, hashPassword, validatePasswordStrength } from '@/lib/auth'
 import { requirePermission, USERS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_ROLES = ['super_admin', 'platform_admin', 'operations_manager', 'sales_manager', 'fleet_manager', 'dispatcher', 'viewer', 'org_owner'] as const;
 
 const ROLE_HIERARCHY: Record<string, number> = {
@@ -37,7 +38,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     // Non-super_admin can only edit users in their org
-    if (user.role !== 'super_admin' && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     // Only super_admin can edit other super_admins
@@ -127,7 +128,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const existing = await db.user.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (user.role !== 'super_admin' && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (existing.role === 'super_admin') {

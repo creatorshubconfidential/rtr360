@@ -6,15 +6,13 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const where: Record<string, unknown> = {};
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     const geofences = await db.geofence.findMany({
       where,
@@ -65,7 +63,7 @@ export async function POST(request: Request) {
         centerLng: centerLng ?? null,
         radius: radius ?? null,
         polygonPoints: polygonPoints ? JSON.stringify(polygonPoints) : null,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

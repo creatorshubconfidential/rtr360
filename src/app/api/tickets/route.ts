@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -21,12 +22,7 @@ export async function GET(request: Request) {
     const priority = searchParams.get('priority');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation: super_admin sees all, org users see only their own
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;
@@ -129,9 +125,9 @@ export async function POST(request: Request) {
     // Validate assignedToId belongs to user's org (cross-tenant FK protection)
     if (assignedToId) {
       const assignee = await db.user.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: assignedToId, organizationId: user.organizationId }
-          : { id: assignedToId },
+        where: user.role === 'super_admin'
+          ? { id: assignedToId }
+          : { id: assignedToId, organizationId: user.organizationId ?? '__none__' },
         select: { id: true },
       });
       if (!assignee) return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
@@ -146,7 +142,7 @@ export async function POST(request: Request) {
     const ticket = await db.ticket.create({
       data: {
         ticketNumber,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
         subject: subject.trim(),
         description: description?.trim() || null,
         priority: priority || 'medium',

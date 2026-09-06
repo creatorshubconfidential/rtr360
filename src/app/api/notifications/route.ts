@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       if (!notification) {
         return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
       }
-      if (user.role !== 'super_admin' && notification.organizationId !== user.organizationId) {
+      if (!isTenantAccessible(user, notification.organizationId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
       await db.notification.update({ where: { id: body.id }, data: { read: true } });

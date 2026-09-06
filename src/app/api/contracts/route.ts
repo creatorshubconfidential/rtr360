@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, CONTRACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 const VALID_STATUSES = ['active', 'expired', 'terminated', 'draft'];
 
 export async function GET(request: Request) {
@@ -19,10 +20,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const search = searchParams.get('search')?.trim();
 
-    const where: Record<string, unknown> = {};
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
     if (status && VALID_STATUSES.includes(status)) where.status = status;
     if (search) where.title = { contains: search };
 
@@ -79,7 +77,7 @@ export async function POST(request: Request) {
         endDate: endDate ? new Date(endDate) : null,
         status: status || 'active',
         terms: terms || null,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

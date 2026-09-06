@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, QUOTATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 
 const VALID_STATUSES = ['draft', 'sent', 'accepted', 'rejected', 'expired'];
 
@@ -32,7 +33,7 @@ export async function GET(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && quotation.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, quotation.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -69,7 +70,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
     }
 
-    if (user.role !== 'super_admin' && quotation.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, quotation.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 

@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, LEADS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = [
   'new',
   'contacted',
@@ -50,7 +51,7 @@ export async function GET(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, lead.organizationId)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -86,7 +87,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    if (user.role !== 'super_admin' && lead.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, lead.organizationId)) {
       return NextResponse.json({ error: 'You do not have permission to update this lead' }, { status: 403 });
     }
 
@@ -98,9 +99,9 @@ export async function PATCH(
       if (assignedToId) {
         // Validate assignee belongs to same org (prevent cross-tenant FK assignment)
         const assignee = await db.user.findFirst({
-          where: user.role !== 'super_admin' && user.organizationId
-            ? { id: assignedToId, organizationId: user.organizationId }
-            : { id: assignedToId },
+          where: user.role === 'super_admin'
+            ? { id: assignedToId }
+            : { id: assignedToId, organizationId: user.organizationId ?? '__none__' },
           select: { id: true },
         });
         if (!assignee) {

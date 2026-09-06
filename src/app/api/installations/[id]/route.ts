@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, INSTALLATIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['in_progress', 'cancelled'],
   in_progress: ['testing', 'failed', 'cancelled'],
@@ -40,7 +41,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Installation not found' }, { status: 404 });
     }
 
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -95,9 +96,9 @@ export async function PATCH(
     // Validate technicianId belongs to user's org (cross-tenant FK protection)
     if (technicianId !== undefined && technicianId) {
       const tech = await db.technician.findFirst({
-        where: user.role !== 'super_admin' && user.organizationId
-          ? { id: technicianId, organizationId: user.organizationId }
-          : { id: technicianId },
+        where: user.role === 'super_admin'
+          ? { id: technicianId }
+          : { id: technicianId, organizationId: user.organizationId ?? '__none__' },
       });
       if (!tech) return NextResponse.json({ error: 'Technician not found' }, { status: 400 });
     }
