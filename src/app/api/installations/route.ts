@@ -172,7 +172,7 @@ export async function POST(request: Request) {
     const installation = await db.installation.create({
       data: {
         installationNumber,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
         vehicleId,
         deviceId,
         technicianId: technicianId || null,

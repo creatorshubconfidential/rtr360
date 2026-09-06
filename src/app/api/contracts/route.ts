@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         endDate: endDate ? new Date(endDate) : null,
         status: status || 'active',
         terms: terms || null,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

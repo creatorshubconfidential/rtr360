@@ -123,10 +123,9 @@ export async function POST(request: Request) {
       assignedToId: user.id,
     };
 
-    // If user belongs to an org, assign the lead to that org
-    if (user.organizationId) {
-      leadData.organizationId = user.organizationId;
-    }
+    // Tenant boundary: bind lead to caller's org; org-less callers get the
+    // impossible org — never a NULL-org orphan, never a client-chosen org.
+    leadData.organizationId = user.organizationId ?? '__none__';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lead = await db.lead.create({ data: leadData as any });

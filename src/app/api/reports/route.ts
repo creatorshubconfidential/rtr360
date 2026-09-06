@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { requirePermission, REPORTS_READ } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { getTenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
       default: startDate = new Date(2024, 0, 1);
     }
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
-    const orgFilterStrict = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
+    const orgFilter = getTenantFilter(user);
+    const orgFilterStrict = getTenantFilter(user);
 
     // 1. Revenue metrics
     const [paidInvoices, pendingInvoices, overdueInvoices] = await Promise.all([

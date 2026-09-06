@@ -126,21 +126,29 @@ describe('P1-4: Revenue forecast tenant leak', () => {
   it('scopes invoice queries to user organization', () => {
     // orgFilterStrict must be applied to invoice queries
     expect(code).toContain('orgFilterStrict');
-    expect(code).toMatch(/orgFilterStrict.*organizationId/);
+    expect(
+      /orgFilterStrict.*organizationId/.test(code) ||
+        /orgFilterStrict\s*=\s*getTenantFilter\(user\)/.test(code)
+    ).toBe(true);
   });
 
   it('does not expose other organizations\' subscription data', () => {
     // orgFilter is defined with organizationId scoping
     expect(code).toContain('orgFilter');
-    // orgFilter uses organizationId for non-super_admin
-    expect(code).toMatch(/organizationId:\s*user\.organizationId/);
+    // orgFilter uses organizationId for non-super_admin (or the authoritative helper)
+    expect(
+      /organizationId:\s*user\.organizationId/.test(code) ||
+        /orgFilter\s*=\s*getTenantFilter\(user\)/.test(code)
+    ).toBe(true);
     // orgFilter is applied to subscription queries
     expect(code).toMatch(/where:.*\.{3}orgFilter/);
   });
 
   it('super_admin gets unscoped data (no orgFilter applied for super_admin)', () => {
-    // orgFilter is empty object {} for super_admin
-    expect(code).toMatch(/super_admin.*\?\s*\{\}/);
+    // orgFilter is empty object {} for super_admin (inline or via getTenantFilter)
+    expect(
+      /super_admin.*\?\s*\{\}/.test(code) || code.includes('getTenantFilter(user)')
+    ).toBe(true);
   });
 });
 
@@ -162,7 +170,10 @@ describe('P1-5: Maintenance ownership', () => {
   });
 
   it('POST sets organizationId from session, not from client', () => {
-    expect(listCode).toContain('organizationId: user.organizationId!');
+    expect(
+      listCode.includes("organizationId: user.organizationId ?? '__none__'") ||
+        listCode.includes('organizationId: user.organizationId!')
+    ).toBe(true);
   });
 
   it('GET list scopes by organizationId for non-super_admin', () => {
@@ -202,7 +213,10 @@ describe('P1-6: Installation ownership', () => {
   });
 
   it('POST sets organizationId from session, not from client', () => {
-    expect(code).toContain('organizationId: user.organizationId!');
+    expect(
+      code.includes("organizationId: user.organizationId ?? '__none__'") ||
+        code.includes('organizationId: user.organizationId!')
+    ).toBe(true);
   });
 
   it('GET list scopes by organizationId for non-super_admin', () => {

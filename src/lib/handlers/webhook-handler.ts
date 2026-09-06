@@ -23,6 +23,12 @@ import { metrics, METRIC_NAMES } from '@/lib/metrics';
  * Looks up the endpoint, verifies tenant ownership, delivers.
  */
 export async function handleWebhookJob(job: ClaimedJob): Promise<WebhookDeliveryResult> {
+  // Tenant boundary: webhook jobs MUST carry an organizationId (fail closed)
+  if (!job.organizationId) {
+    throw new ValidationError('Webhook jobs require an organizationId', [
+      { field: 'organizationId', message: 'Tenant-scoped job missing organizationId' },
+    ]);
+  }
   const payload = job.payload as Record<string, unknown>;
   const endpointId = String(payload.endpointId ?? '');
   const eventType = String(payload.eventType ?? '');

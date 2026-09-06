@@ -1,0 +1,1158 @@
+{
+ "findings": [
+  {
+   "file": "src/app/api/activities/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "activity.create",
+    "activity.findMany",
+    "lead.findUnique",
+    "opportunity.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/admin/organizations/[id]/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "invoice.aggregate",
+    "subscription.findFirst",
+    "user.updateMany"
+   ],
+   "platform_calls": [
+    "organization.findUnique",
+    "organization.update"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/organizations/[id]/usage/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "alert.count",
+    "alertRule.count",
+    "device.count",
+    "driver.count",
+    "geofence.count",
+    "invoice.aggregate",
+    "invoice.count",
+    "lead.count",
+    "maintenanceRecord.count",
+    "subscription.findFirst",
+    "ticket.count",
+    "trip.aggregate",
+    "trip.count",
+    "user.count",
+    "user.findMany",
+    "vehicle.count"
+   ],
+   "platform_calls": [
+    "organization.findUnique"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/organizations/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "user.findUnique"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.findFirst",
+    "organization.findMany",
+    "organization.groupBy"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/platform-stats/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "device.count",
+    "driver.count",
+    "invoice.aggregate",
+    "invoice.count",
+    "lead.count",
+    "subscription.count",
+    "ticket.count",
+    "trip.count",
+    "user.count",
+    "vehicle.count"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.findMany"
+   ]
+  },
+  {
+   "file": "src/app/api/ai/chat/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "aIConversation.create",
+    "aIConversation.findMany",
+    "aIConversation.findUnique",
+    "aIConversation.update",
+    "alert.count",
+    "alert.findMany",
+    "driver.count",
+    "driver.findMany",
+    "maintenanceRecord.count",
+    "maintenanceRecord.findMany",
+    "trip.aggregate",
+    "trip.count",
+    "vehicle.aggregate",
+    "vehicle.count",
+    "vehicle.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/ai/conversations/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "aIConversation.delete",
+    "aIConversation.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/alert-rules/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "alertRule.delete",
+    "alertRule.findUnique",
+    "alertRule.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/alert-rules/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "alertRule.count",
+    "alertRule.create",
+    "alertRule.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/analytics/driver-trends/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "driver.findMany",
+    "trip.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/analytics/fleet-health/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/analytics/maintenance-prediction/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "maintenanceRecord.findMany",
+    "maintenanceRecord.groupBy",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/analytics/revenue-forecast/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "invoice.aggregate",
+    "invoice.findMany",
+    "invoice.groupBy",
+    "lead.aggregate",
+    "subscription.findMany"
+   ],
+   "platform_calls": [
+    "organization.count"
+   ]
+  },
+  {
+   "file": "src/app/api/audit-logs/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "auditLog.count",
+    "auditLog.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/auth/login/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "user.findUnique",
+    "user.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/contacts/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "contact.delete",
+    "contact.findUnique",
+    "contact.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/contacts/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "contact.count",
+    "contact.create",
+    "contact.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/contracts/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "contract.delete",
+    "contract.findUnique",
+    "contract.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/contracts/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "contract.count",
+    "contract.create",
+    "contract.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/dashboard/alerts/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "alert.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/dashboard/stats/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "alert.count",
+    "device.count",
+    "driver.count",
+    "installation.count",
+    "lead.count",
+    "technician.count",
+    "ticket.count",
+    "trip.count",
+    "vehicle.aggregate",
+    "vehicle.count",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/devices/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "device.delete",
+    "device.findFirst",
+    "device.update",
+    "vehicle.updateMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/devices/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "device.count",
+    "device.create",
+    "device.findMany",
+    "device.findUnique",
+    "device.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/drivers/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "driver.delete",
+    "driver.findFirst",
+    "driver.update",
+    "vehicle.updateMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/drivers/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "driver.count",
+    "driver.create",
+    "driver.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/geofences/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "geofence.delete",
+    "geofence.findUnique",
+    "geofence.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/geofences/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "geofence.create",
+    "geofence.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/installations/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "device.findUnique",
+    "device.update",
+    "installation.findUnique",
+    "installation.update",
+    "technician.findFirst",
+    "technician.update",
+    "vehicle.findUnique",
+    "vehicle.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/installations/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "device.findUnique",
+    "device.update",
+    "installation.count",
+    "installation.create",
+    "installation.findFirst",
+    "installation.findMany",
+    "installation.groupBy",
+    "technician.findFirst",
+    "vehicle.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/invoices/[id]/pdf/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "invoice.findFirst"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/invoices/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "invoice.findUnique",
+    "invoice.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/invoices/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "invoice.count",
+    "invoice.create",
+    "invoice.findMany",
+    "subscription.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/jobs/dead-letter/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "backgroundJob.count",
+    "backgroundJob.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/jobs/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "backgroundJob.count",
+    "backgroundJob.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/leads/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "lead.findUnique",
+    "lead.update",
+    "user.findFirst"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/leads/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "lead.count",
+    "lead.create",
+    "lead.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/maintenance/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "maintenanceRecord.delete",
+    "maintenanceRecord.findUnique",
+    "maintenanceRecord.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/maintenance/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "maintenanceRecord.count",
+    "maintenanceRecord.create",
+    "maintenanceRecord.findMany",
+    "vehicle.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/notifications/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "notification.count",
+    "notification.findMany",
+    "notification.findUnique",
+    "notification.update",
+    "notification.updateMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/pipeline/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "lead.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/quotations/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "quotation.findUnique",
+    "quotation.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/quotations/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "lead.findUnique",
+    "quotation.count",
+    "quotation.findMany",
+    "quotation.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/realtime/events/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/realtime/vehicles/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "vehicle.count",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/reports/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "device.groupBy",
+    "driver.findMany",
+    "installation.groupBy",
+    "invoice.findMany",
+    "lead.count",
+    "lead.groupBy",
+    "maintenanceRecord.aggregate",
+    "maintenanceRecord.count",
+    "maintenanceRecord.groupBy",
+    "ticket.groupBy",
+    "trip.aggregate",
+    "trip.count",
+    "vehicle.count",
+    "vehicle.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/setup/init/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "alertRule.create",
+    "branch.create",
+    "device.create",
+    "driver.create",
+    "geofence.create",
+    "lead.create",
+    "subscription.create",
+    "technician.create",
+    "user.create",
+    "vehicle.create"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.create",
+    "plan.create",
+    "plan.findFirst",
+    "setting.create"
+   ]
+  },
+  {
+   "file": "src/app/api/setup/seed-demo/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "activity.create",
+    "alert.create",
+    "alertRule.create",
+    "branch.create",
+    "contact.create",
+    "contract.create",
+    "device.create",
+    "driver.create",
+    "driver.findMany",
+    "geofence.create",
+    "installation.create",
+    "invoice.create",
+    "maintenanceRecord.createMany",
+    "notification.create",
+    "opportunity.create",
+    "quotation.create",
+    "subscription.create",
+    "subscription.findFirst",
+    "technician.create",
+    "ticket.create",
+    "trip.createMany",
+    "user.count",
+    "user.create",
+    "user.findMany",
+    "vehicle.create",
+    "vehicle.findMany",
+    "vehicle.update"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.create",
+    "organization.findFirst",
+    "plan.create",
+    "plan.findFirst",
+    "quotationItem.create",
+    "setting.count",
+    "setting.upsert"
+   ]
+  },
+  {
+   "file": "src/app/api/setup/seed/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "subscription.create",
+    "user.count",
+    "user.create"
+   ],
+   "platform_calls": [
+    "organization.create",
+    "plan.create"
+   ]
+  },
+  {
+   "file": "src/app/api/subscriptions/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "subscription.findUnique",
+    "subscription.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/subscriptions/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "subscription.count",
+    "subscription.create",
+    "subscription.findMany",
+    "subscription.findUnique"
+   ],
+   "platform_calls": [
+    "plan.findUnique"
+   ]
+  },
+  {
+   "file": "src/app/api/technicians/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "installation.updateMany",
+    "technician.delete",
+    "technician.findUnique",
+    "technician.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/technicians/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "technician.count",
+    "technician.create",
+    "technician.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/tickets/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "ticket.delete",
+    "ticket.findUnique",
+    "ticket.update",
+    "user.findFirst"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/tickets/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "ticket.count",
+    "ticket.create",
+    "ticket.findMany",
+    "user.findFirst"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/trips/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "trip.delete",
+    "trip.findUnique",
+    "trip.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/trips/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "trip.count",
+    "trip.create",
+    "trip.findMany",
+    "vehicle.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/users/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "user.delete",
+    "user.findUnique",
+    "user.update"
+   ],
+   "platform_calls": [
+    "session.deleteMany"
+   ]
+  },
+  {
+   "file": "src/app/api/users/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "user.count",
+    "user.create",
+    "user.findMany",
+    "user.findUnique"
+   ],
+   "platform_calls": [
+    "organization.findUnique"
+   ]
+  },
+  {
+   "file": "src/app/api/vehicles/[id]/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "branch.findFirst",
+    "driver.findFirst",
+    "vehicle.delete",
+    "vehicle.findFirst",
+    "vehicle.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/vehicles/route.ts",
+   "has_guard": true,
+   "tenant_calls": [
+    "branch.findFirst",
+    "vehicle.count",
+    "vehicle.create",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/ai-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "driver.count",
+    "driver.findMany",
+    "vehicle.count",
+    "vehicle.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/notification-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "notification.createMany",
+    "user.count"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/report-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "driver.findMany",
+    "invoice.findMany",
+    "maintenanceRecord.findMany",
+    "trip.findMany",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/webhook-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "webhookDelivery.create",
+    "webhookDelivery.findUnique",
+    "webhookEndpoint.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/queue.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "backgroundJob.count",
+    "backgroundJob.create",
+    "backgroundJob.findFirst",
+    "backgroundJob.findUnique",
+    "backgroundJob.update",
+    "backgroundJob.updateMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/seed.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "activity.create",
+    "activity.deleteMany",
+    "alert.create",
+    "alert.deleteMany",
+    "alertRule.create",
+    "alertRule.deleteMany",
+    "branch.create",
+    "branch.deleteMany",
+    "contact.create",
+    "contact.deleteMany",
+    "contract.create",
+    "contract.deleteMany",
+    "device.create",
+    "device.deleteMany",
+    "document.deleteMany",
+    "driver.create",
+    "driver.deleteMany",
+    "driver.findMany",
+    "geofence.create",
+    "geofence.deleteMany",
+    "installation.create",
+    "installation.deleteMany",
+    "invoice.create",
+    "invoice.deleteMany",
+    "lead.create",
+    "lead.deleteMany",
+    "maintenanceRecord.create",
+    "maintenanceRecord.deleteMany",
+    "notification.create",
+    "notification.deleteMany",
+    "opportunity.deleteMany",
+    "quotation.create",
+    "quotation.deleteMany",
+    "subscription.create",
+    "subscription.deleteMany",
+    "subscription.upsert",
+    "technician.create",
+    "technician.deleteMany",
+    "ticket.create",
+    "ticket.deleteMany",
+    "trip.create",
+    "trip.deleteMany",
+    "user.create",
+    "user.deleteMany",
+    "vehicle.create",
+    "vehicle.deleteMany",
+    "vehicle.findMany"
+   ],
+   "platform_calls": [
+    "organization.create",
+    "organization.deleteMany",
+    "plan.create",
+    "plan.deleteMany",
+    "session.deleteMany",
+    "setting.deleteMany",
+    "setting.upsert"
+   ]
+  },
+  {
+   "file": "src/lib/webhook-delivery.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "webhookDelivery.findMany",
+    "webhookDelivery.update",
+    "webhookDelivery.updateMany",
+    "webhookEndpoint.findUnique"
+   ],
+   "platform_calls": []
+  }
+ ],
+ "unguarded": [
+  {
+   "file": "src/app/api/admin/organizations/[id]/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "invoice.aggregate",
+    "subscription.findFirst",
+    "user.updateMany"
+   ],
+   "platform_calls": [
+    "organization.findUnique",
+    "organization.update"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/organizations/[id]/usage/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "alert.count",
+    "alertRule.count",
+    "device.count",
+    "driver.count",
+    "geofence.count",
+    "invoice.aggregate",
+    "invoice.count",
+    "lead.count",
+    "maintenanceRecord.count",
+    "subscription.findFirst",
+    "ticket.count",
+    "trip.aggregate",
+    "trip.count",
+    "user.count",
+    "user.findMany",
+    "vehicle.count"
+   ],
+   "platform_calls": [
+    "organization.findUnique"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/organizations/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "user.findUnique"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.findFirst",
+    "organization.findMany",
+    "organization.groupBy"
+   ]
+  },
+  {
+   "file": "src/app/api/admin/platform-stats/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "device.count",
+    "driver.count",
+    "invoice.aggregate",
+    "invoice.count",
+    "lead.count",
+    "subscription.count",
+    "ticket.count",
+    "trip.count",
+    "user.count",
+    "vehicle.count"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.findMany"
+   ]
+  },
+  {
+   "file": "src/app/api/auth/login/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "user.findUnique",
+    "user.update"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/app/api/setup/init/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "alertRule.create",
+    "branch.create",
+    "device.create",
+    "driver.create",
+    "geofence.create",
+    "lead.create",
+    "subscription.create",
+    "technician.create",
+    "user.create",
+    "vehicle.create"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.create",
+    "plan.create",
+    "plan.findFirst",
+    "setting.create"
+   ]
+  },
+  {
+   "file": "src/app/api/setup/seed-demo/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "activity.create",
+    "alert.create",
+    "alertRule.create",
+    "branch.create",
+    "contact.create",
+    "contract.create",
+    "device.create",
+    "driver.create",
+    "driver.findMany",
+    "geofence.create",
+    "installation.create",
+    "invoice.create",
+    "maintenanceRecord.createMany",
+    "notification.create",
+    "opportunity.create",
+    "quotation.create",
+    "subscription.create",
+    "subscription.findFirst",
+    "technician.create",
+    "ticket.create",
+    "trip.createMany",
+    "user.count",
+    "user.create",
+    "user.findMany",
+    "vehicle.create",
+    "vehicle.findMany",
+    "vehicle.update"
+   ],
+   "platform_calls": [
+    "organization.count",
+    "organization.create",
+    "organization.findFirst",
+    "plan.create",
+    "plan.findFirst",
+    "quotationItem.create",
+    "setting.count",
+    "setting.upsert"
+   ]
+  },
+  {
+   "file": "src/app/api/setup/seed/route.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "subscription.create",
+    "user.count",
+    "user.create"
+   ],
+   "platform_calls": [
+    "organization.create",
+    "plan.create"
+   ]
+  },
+  {
+   "file": "src/lib/handlers/ai-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "driver.count",
+    "driver.findMany",
+    "vehicle.count",
+    "vehicle.groupBy"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/notification-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "notification.createMany",
+    "user.count"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/report-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "driver.findMany",
+    "invoice.findMany",
+    "maintenanceRecord.findMany",
+    "trip.findMany",
+    "vehicle.findMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/handlers/webhook-handler.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "webhookDelivery.create",
+    "webhookDelivery.findUnique",
+    "webhookEndpoint.findUnique"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/queue.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "backgroundJob.count",
+    "backgroundJob.create",
+    "backgroundJob.findFirst",
+    "backgroundJob.findUnique",
+    "backgroundJob.update",
+    "backgroundJob.updateMany"
+   ],
+   "platform_calls": []
+  },
+  {
+   "file": "src/lib/seed.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "activity.create",
+    "activity.deleteMany",
+    "alert.create",
+    "alert.deleteMany",
+    "alertRule.create",
+    "alertRule.deleteMany",
+    "branch.create",
+    "branch.deleteMany",
+    "contact.create",
+    "contact.deleteMany",
+    "contract.create",
+    "contract.deleteMany",
+    "device.create",
+    "device.deleteMany",
+    "document.deleteMany",
+    "driver.create",
+    "driver.deleteMany",
+    "driver.findMany",
+    "geofence.create",
+    "geofence.deleteMany",
+    "installation.create",
+    "installation.deleteMany",
+    "invoice.create",
+    "invoice.deleteMany",
+    "lead.create",
+    "lead.deleteMany",
+    "maintenanceRecord.create",
+    "maintenanceRecord.deleteMany",
+    "notification.create",
+    "notification.deleteMany",
+    "opportunity.deleteMany",
+    "quotation.create",
+    "quotation.deleteMany",
+    "subscription.create",
+    "subscription.deleteMany",
+    "subscription.upsert",
+    "technician.create",
+    "technician.deleteMany",
+    "ticket.create",
+    "ticket.deleteMany",
+    "trip.create",
+    "trip.deleteMany",
+    "user.create",
+    "user.deleteMany",
+    "vehicle.create",
+    "vehicle.deleteMany",
+    "vehicle.findMany"
+   ],
+   "platform_calls": [
+    "organization.create",
+    "organization.deleteMany",
+    "plan.create",
+    "plan.deleteMany",
+    "session.deleteMany",
+    "setting.deleteMany",
+    "setting.upsert"
+   ]
+  },
+  {
+   "file": "src/lib/webhook-delivery.ts",
+   "has_guard": false,
+   "tenant_calls": [
+    "webhookDelivery.findMany",
+    "webhookDelivery.update",
+    "webhookDelivery.updateMany",
+    "webhookEndpoint.findUnique"
+   ],
+   "platform_calls": []
+  }
+ ],
+ "raw": [
+  "src/app/api/health/route.ts:20:\\$queryRaw",
+  "src/app/api/ready/route.ts:20:\\$queryRaw",
+  "src/lib/queue.ts:417:\\$queryRaw",
+  "src/lib/queue.ts:703:\\$executeRaw",
+  "src/lib/queue.ts:717:\\$executeRaw"
+ ]
+}

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { createSseLifecycle } from '@/lib/realtime/sse-lifecycle';
+import { getTenantFilter } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
   const { user, error } = await requireAuth(request);
   if (error) return error;
 
-  const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
+  const orgFilter = getTenantFilter(user);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

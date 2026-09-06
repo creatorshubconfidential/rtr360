@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         centerLng: centerLng ?? null,
         radius: radius ?? null,
         polygonPoints: polygonPoints ? JSON.stringify(polygonPoints) : null,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

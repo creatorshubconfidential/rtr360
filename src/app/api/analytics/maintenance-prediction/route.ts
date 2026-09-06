@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { getTenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter = user.role === 'super_admin' ? {} : { organizationId: user.organizationId! };
+    const orgFilter = getTenantFilter(user);
 
     // 1. All vehicles with maintenance history
     const vehicles = await db.vehicle.findMany({

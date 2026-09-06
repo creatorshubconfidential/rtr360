@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     const ticket = await db.ticket.create({
       data: {
         ticketNumber,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
         subject: subject.trim(),
         description: description?.trim() || null,
         priority: priority || 'medium',

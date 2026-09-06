@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         conditions: parsedConditions,
         channels: parsedChannels,
         active: active !== false,
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: { organization: { select: { id: true, name: true } } },
     });

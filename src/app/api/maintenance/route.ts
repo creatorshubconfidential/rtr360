@@ -151,7 +151,7 @@ export async function POST(request: Request) {
         completedDate: completedDate ? new Date(completedDate) : null,
         cost: cost ?? null,
         status: status || 'upcoming',
-        organizationId: user.organizationId!,
+        organizationId: user.organizationId ?? '__none__',
       },
       include: {
         vehicle: {
