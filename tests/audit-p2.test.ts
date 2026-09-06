@@ -55,7 +55,10 @@ describe('P2-3: Audit Logging', () => {
 
   it('all write routes import from @/lib/audit', () => {
     const routeFiles = getRouteFiles();
-    const SKIP = ['auth/login', 'auth/logout', 'setup/seed', 'setup/init']; // Auth handled separately; setup endpoints are bootstrap-only
+    const SKIP = ['auth/login', 'auth/logout', 'setup/seed', 'setup/init',
+      // P1: device telemetry ingestion is machine traffic — security events
+      // (auth failures, spoof rejections) go to structured logs, not user AuditLog
+      'telemetry']; // Auth handled separately; setup endpoints are bootstrap-only
 
     let missing: string[] = [];
     for (const file of routeFiles) {
@@ -80,7 +83,11 @@ describe('P2-3: Audit Logging', () => {
     // notifications POST is actually an update (mark as read), not a create
     const EXCEPTIONS = ['notifications/route.ts', 'setup/seed/route.ts', 'setup/seed-demo/route.ts', 'setup/init/route.ts', 'jobs/[id]/cancel/route.ts', 'jobs/[id]/retry/route.ts',
       // P0-⑥: key rotation is an update, not a create — logs action:'update' via logAudit
-      'api-keys/[id]/rotate/route.ts'];
+      'api-keys/[id]/rotate/route.ts',
+      // P1: device key provisioning is an update, not a create — logs action:'update'
+      'devices/[id]/provision-key/route.ts',
+      // P1: machine ingestion — no user AuditLog (see SKIP note above)
+      'telemetry/route.ts'];
 
     for (const file of routeFiles) {
       const content = fs.readFileSync(file, 'utf-8');

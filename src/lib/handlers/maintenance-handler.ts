@@ -7,8 +7,10 @@
  */
 
 import { logger } from '@/lib/logger';
+import { db } from '@/lib/db';
 import type { ClaimedJob } from '@/lib/queue';
 import { ValidationError } from '@/lib/errors';
+import { TELEMETRY_RETENTION_DAYS } from '@/lib/telemetry';
 
 // ── Allowed Maintenance Tasks ──────────────────────────────────
 
@@ -18,6 +20,7 @@ const ALLOWED_TASKS = new Set([
   'refresh_aggregate_stats',
   'cleanup_old_audit_logs',
   'reconcile_webhook_deliveries',
+  'cleanup_old_telemetry',
 ]) as ReadonlySet<string>;
 
 // ── Task Implementations ────────────────────────────────────────
@@ -52,12 +55,32 @@ async function reconcileWebhookDeliveries(orgId: string | null): Promise<{ recon
   return { reconciled: 0 };
 }
 
+async function cleanupOldTelemetry(orgId: string | null, params?: Record<string, unknown>): Promise<{ cleaned: number }> {
+  // Retention: delete raw telemetry older than the retention window.
+  // Latest positions remain available via the Device position cache.
+  const days =
+    typeof params?.retentionDays === 'number' && params.retentionDays > 0
+      ? Math.min(params.retentionDays, TELEMETRY_RETENTION_DAYS)
+      : TELEMETRY_RETENTION_DAYS;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const result = await db.telemetryEvent.deleteMany({
+    where: { deviceTime: { lt: cutoff }, ...(orgId ? { organizationId: orgId } : {}) },
+  });
+  logger.info('maintenance.task_cleanup_telemetry', {
+    organizationId: orgId,
+    cutoff: cutoff.toISOString(),
+    cleaned: result.count,
+  });
+  return { cleaned: result.count };
+}
+
 const TASK_IMPLEMENTATIONS: Record<string, (orgId: string | null, params?: Record<string, unknown>) => Promise<Record<string, unknown>>> = {
   cleanup_expired_sessions: cleanupExpiredSessions,
   cleanup_stale_rate_limits: cleanupStaleRateLimits,
   refresh_aggregate_stats: refreshAggregateStats,
   cleanup_old_audit_logs: cleanupOldAuditLogs,
   reconcile_webhook_deliveries: reconcileWebhookDeliveries,
+  cleanup_old_telemetry: cleanupOldTelemetry,
 };
 
 // ── Handler ──────────────────────────────────────────────────────
