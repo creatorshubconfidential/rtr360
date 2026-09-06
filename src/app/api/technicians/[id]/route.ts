@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, TECHNICIANS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['active', 'inactive', 'on_leave'];
 
 export async function PATCH(
@@ -31,7 +32,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Technician not found' }, { status: 404 });
     }
 
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -73,7 +74,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Technician not found' }, { status: 404 });
     }
 
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

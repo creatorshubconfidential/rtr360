@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, GEOFENCES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -20,7 +21,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const existing = await db.geofence.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (user.role !== 'super_admin' && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -63,7 +64,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     const existing = await db.geofence.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (user.role !== 'super_admin' && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -68,7 +68,10 @@ describe('P1 FINAL — AI Conversation Security', () => {
 
   it('single conversation GET verifies organization ownership', () => {
     const content = fs.readFileSync(path.join(API_DIR, 'ai/conversations/[id]/route.ts'), 'utf-8');
-    expect(content).toContain('conversation.organizationId !== user.organizationId');
+    expect(
+      content.includes('isTenantAccessible(user, conversation.organizationId)') ||
+        content.includes('conversation.organizationId !== user.organizationId')
+    ).toBe(true);
   });
 });
 

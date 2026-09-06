@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { isTenantAccessible } from '@/lib/tenant';
 import { requirePermission, INVOICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 
@@ -53,7 +54,7 @@ export async function GET(
     }
 
     // SECURITY: Tenant isolation — prevent cross-tenant invoice access
-    if (user.role !== 'super_admin' && invoice.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, invoice.organizationId)) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 

@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, CONTACTS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 
 export async function GET(
   request: Request,
@@ -22,7 +23,7 @@ export async function GET(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && user.organizationId && contact.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, contact.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -56,7 +57,7 @@ export async function PUT(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -96,7 +97,7 @@ export async function DELETE(
     }
 
     // Tenant check
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

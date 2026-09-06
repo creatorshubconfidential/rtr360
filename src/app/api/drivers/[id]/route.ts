@@ -28,9 +28,9 @@ export async function PATCH(
 
     // IDOR-safe: use findFirst with org filter to prevent cross-tenant access
     const existing = await db.driver.findFirst({
-      where: user.role !== 'super_admin' && user.organizationId
-        ? { id, organizationId: user.organizationId }
-        : { id },
+      where: user.role === 'super_admin'
+        ? { id }
+        : { id, organizationId: user.organizationId ?? '__none__' },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
@@ -78,9 +78,9 @@ export async function DELETE(
 
     // IDOR-safe: use findFirst with org filter
     const existing = await db.driver.findFirst({
-      where: user.role !== 'super_admin' && user.organizationId
-        ? { id, organizationId: user.organizationId }
-        : { id },
+      where: user.role === 'super_admin'
+        ? { id }
+        : { id, organizationId: user.organizationId ?? '__none__' },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 });

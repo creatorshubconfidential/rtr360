@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, DEVICES_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['warehouse', 'reserved', 'installed', 'defective', 'returned', 'decommissioned'];
 
 export async function PATCH(
@@ -28,9 +29,9 @@ export async function PATCH(
 
     // IDOR-safe: use findFirst with org filter
     const existing = await db.device.findFirst({
-      where: user.role !== 'super_admin' && user.organizationId
-        ? { id, organizationId: user.organizationId }
-        : { id },
+      where: user.role === 'super_admin'
+        ? { id }
+        : { id, organizationId: user.organizationId ?? '__none__' },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
@@ -47,7 +48,7 @@ export async function PATCH(
         // IDOR: verify SIM belongs to same organization
         const sim = await db.sIM.findUnique({ where: { id: simId }, select: { organizationId: true } });
         if (!sim) return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
-        if (user.role !== 'super_admin' && sim.organizationId !== user.organizationId) {
+        if (!isTenantAccessible(user, sim.organizationId)) {
           return NextResponse.json({ error: 'SIM not found' }, { status: 400 });
         }
       }
@@ -87,9 +88,9 @@ export async function DELETE(
     const { id } = await params;
     // IDOR-safe: use findFirst with org filter
     const existing = await db.device.findFirst({
-      where: user.role !== 'super_admin' && user.organizationId
-        ? { id, organizationId: user.organizationId }
-        : { id },
+      where: user.role === 'super_admin'
+        ? { id }
+        : { id, organizationId: user.organizationId ?? '__none__' },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });

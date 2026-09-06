@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, TICKETS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 const VALID_STATUSES = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
@@ -40,7 +41,7 @@ export async function PATCH(
     }
 
     // Verify ownership (tenant isolation)
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -72,9 +73,9 @@ export async function PATCH(
       if (assignedToId) {
         // Validate assignee belongs to same org (prevent cross-tenant FK assignment)
         const assignee = await db.user.findFirst({
-          where: user.role !== 'super_admin' && user.organizationId
-            ? { id: assignedToId, organizationId: user.organizationId }
-            : { id: assignedToId },
+          where: user.role === 'super_admin'
+            ? { id: assignedToId }
+            : { id: assignedToId, organizationId: user.organizationId ?? '__none__' },
           select: { id: true },
         });
         if (!assignee) {
@@ -128,7 +129,7 @@ export async function DELETE(
     }
 
     // Verify ownership (tenant isolation)
-    if (user.role !== 'super_admin' && user.organizationId && existing.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.organizationId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

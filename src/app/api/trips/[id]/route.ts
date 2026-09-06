@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rl = await checkRateLimit(request, 'api');
   if (rl) return rl;
@@ -23,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       include: { vehicle: { select: { organizationId: true } } },
     });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (user.role !== 'super_admin' && existing.vehicle?.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.vehicle?.organizationId ?? null)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -73,7 +74,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       include: { vehicle: { select: { organizationId: true } } },
     });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (user.role !== 'super_admin' && existing.vehicle?.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, existing.vehicle?.organizationId ?? null)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

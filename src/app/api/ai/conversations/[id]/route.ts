@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, AI_USE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { isTenantAccessible } from '@/lib/tenant';
 
 // ────────────────────────────────────────────────
 // GET /api/ai/conversations/:id — Load a single conversation
@@ -31,7 +32,7 @@ export async function GET(
     }
 
     // Verify ownership
-    if (user.role !== 'super_admin' && conversation.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, conversation.organizationId)) {
       return NextResponse.json(
         { error: 'Not found' },
         { status: 404 },
@@ -102,7 +103,7 @@ export async function DELETE(
     }
 
     // Verify ownership
-    if (user.role !== 'super_admin' && conversation.organizationId !== user.organizationId) {
+    if (!isTenantAccessible(user, conversation.organizationId)) {
       return NextResponse.json(
         { error: 'Not found' },
         { status: 404 },

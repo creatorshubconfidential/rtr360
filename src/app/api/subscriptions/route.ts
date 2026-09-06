@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, SUBSCRIPTIONS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 
 const VALID_STATUSES = ['active', 'paused', 'cancelled', 'expired'];
 
@@ -18,12 +19,7 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
     const status = searchParams.get('status');
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (status && VALID_STATUSES.includes(status)) {
       where.status = status;

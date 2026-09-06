@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { requirePermission, TRIPS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getRelationTenantFilter, isTenantAccessible } from '@/lib/tenant';
 
 const VALID_STATUSES = ['in_progress', 'completed', 'cancelled'];
 
@@ -22,10 +23,8 @@ export async function GET(request: Request) {
     const where: Record<string, unknown> = {};
     if (vehicleId) where.vehicleId = vehicleId;
     if (status && VALID_STATUSES.includes(status)) where.status = status;
-    // Tenant: filter by org via vehicle
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.vehicle = { organizationId: user.organizationId };
-    }
+    // Tenant: filter by org via vehicle (fail closed for orgless non-super_admin)
+    Object.assign(where, getRelationTenantFilter(user, 'vehicle'));
 
     const [trips, total] = await Promise.all([
       db.trip.findMany({
@@ -70,12 +69,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'vehicleId and startTime are required' }, { status: 400 });
     }
 
-    // Verify vehicle belongs to user's org
-    if (user.role !== 'super_admin' && user.organizationId) {
-      const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId } });
-      if (!vehicle || vehicle.organizationId !== user.organizationId) {
-        return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
-      }
+    // Verify vehicle belongs to user's org (fail closed for orgless non-super_admin)
+    const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle || !isTenantAccessible(user, vehicle.organizationId)) {
+      return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
 
     const trip = await db.trip.create({

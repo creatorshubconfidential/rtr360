@@ -23,6 +23,7 @@ import { logger } from '@/lib/logger';
 import { errorResponse, ValidationError } from '@/lib/errors';
 import { getRequestId } from '@/lib/request-id';
 import { logAudit, getClientIp } from '@/lib/audit';
+import { getTenantFilter } from '@/lib/tenant';
 import { db } from '@/lib/db';
 import { JOB_TYPES, JOB_STATUS } from '@/lib/job-types';
 import { Prisma } from '@prisma/client';
@@ -191,12 +192,9 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get('sortBy');
     const sortOrder = searchParams.get('sortOrder');
 
-    // Build tenant-scoped where clause
+    // Build tenant-scoped where clause (fail closed for orgless non-super_admin)
     const where: Prisma.BackgroundJobWhereInput = {};
-
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    Object.assign(where, getTenantFilter(user));
 
     if (status && Object.values(JOB_STATUS).includes(status as (typeof JOB_STATUS)[keyof typeof JOB_STATUS])) {
       where.status = status;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { getTenantFilter } from '@/lib/tenant';
 import { requirePermission, SETTINGS_MANAGE } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 
@@ -20,12 +21,7 @@ export async function GET(request: Request) {
     const entity = searchParams.get('entity');
     const userId = searchParams.get('userId');
 
-    const where: Record<string, unknown> = {};
-
-    // Tenant isolation: platform_admin sees only their org's logs
-    if (user.role !== 'super_admin' && user.organizationId) {
-      where.organizationId = user.organizationId;
-    }
+    const where: Record<string, unknown> = getTenantFilter(user);
 
     if (action) {
       where.action = action;

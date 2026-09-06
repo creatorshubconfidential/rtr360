@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { getTenantFilter } from '@/lib/tenant';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
@@ -8,12 +9,8 @@ export async function GET(request: Request) {
     const { user, error } = await requireAuth(request);
     if (error) return error;
 
-    const orgFilter:
-      | { organizationId: string }
-      | Record<string, never> =
-      user.role !== 'super_admin' && user.organizationId
-        ? { organizationId: user.organizationId }
-        : {};
+    // Tenant isolation (fail closed for orgless non-super_admin users)
+    const orgFilter = getTenantFilter(user);
 
     // For super_admin, count across all organizations (no org filter)
     const vehicleFilter =
@@ -43,7 +40,14 @@ export async function GET(request: Request) {
         where: { ...vehicleFilter, status: 'open' },
       }),
       db.device.count({
-        where: user.role === 'super_admin' ? {} : { OR: [{ ...orgFilter }, { organizationId: null, status: 'warehouse' }] },
+        // super_admin: all devices; org user: own org + unassigned warehouse;
+        // orgless non-super_admin: fail closed (impossible filter)
+        where:
+          user.role === 'super_admin'
+            ? {}
+            : user.organizationId
+              ? { OR: [{ organizationId: user.organizationId }, { organizationId: null, status: 'warehouse' }] }
+              : { organizationId: '__none__' },
       }),
       db.installation.count({
         where: { ...orgFilter, status: { in: ['scheduled', 'in_progress', 'testing'] } },
